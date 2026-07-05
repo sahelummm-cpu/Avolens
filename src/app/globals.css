@@ -1,0 +1,167 @@
+/* ===== AvoLens design tokens ===== */
+
+:root,
+:root[data-theme='light'] {
+  --av-bg: #f5f7f3;
+  --av-surface: #ffffff;
+  --av-surface-2: #f7f9f5;
+  --av-surface-3: #f0f3ef;
+  --av-border: #e5ebe2;
+  --av-border-2: #f0f3ef;
+  --av-ink: #26331a;
+  --av-muted: #7c8a7f;
+  --av-muted-2: #a9b4ab;
+  --av-faint: #c0cac1;
+
+  --av-green: #6e9e3a;
+  --av-green-grad-1: #a9c24a;
+  --av-green-grad-2: #5a8a2e;
+  --av-green-tint: #f2f2e2;
+  --av-green-track: #edf1eb;
+  --av-chart-track: #dcefc5;
+
+  --av-protein: #e4586e;
+  --av-protein-tint: #fbeaed;
+  --av-carbs: #e8a13b;
+  --av-carbs-tint: #fbf1e0;
+  --av-fat: #4da8f0;
+  --av-fat-tint: #e9f3fc;
+  --av-fat-tint-2: #edf6fc;
+  --av-fat-tint-3: #d7eaf8;
+
+  --av-purple: #7c6be6;
+  --av-purple-tint: #f5f3fc;
+  --av-purple-tint-2: #eeebfb;
+  --av-purple-border: #e5e0f5;
+
+  --av-amber-grad-1: #f2b84b;
+  --av-amber-grad-2: #e8862e;
+
+  --av-nav-bg: #26331a;
+  --av-nav-icon: #8fa096;
+
+  --av-shadow-card: 0 30px 60px -30px rgba(22, 40, 31, 0.35);
+  --av-scrim: rgba(0, 0, 0, 0.4);
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --av-bg: #12160f;
+  --av-surface: #1b2117;
+  --av-surface-2: #20261b;
+  --av-surface-3: #262d20;
+  --av-border: #313b2a;
+  --av-border-2: #2a3324;
+  --av-ink: #eef2ea;
+  --av-muted: #9fae96;
+  --av-muted-2: #7c8a74;
+  --av-faint: #5c6854;
+
+  --av-green: #83ba49;
+  --av-green-grad-1: #b7d15f;
+  --av-green-grad-2: #6e9e3a;
+  --av-green-tint: #26311d;
+  --av-green-track: #262d20;
+  --av-chart-track: #33421f;
+
+  --av-protein: #ec7284;
+  --av-protein-tint: #2e1e21;
+  --av-carbs: #f0b458;
+  --av-carbs-tint: #2f2618;
+  --av-fat: #6bb8f4;
+  --av-fat-tint: #1b2733;
+  --av-fat-tint-2: #1c2833;
+  --av-fat-tint-3: #223244;
+
+  --av-purple: #9a8cf0;
+  --av-purple-tint: #221f33;
+  --av-purple-tint-2: #292440;
+  --av-purple-border: #3a3459;
+
+  --av-amber-grad-1: #f2b84b;
+  --av-amber-grad-2: #e8862e;
+
+  --av-nav-bg: #0c0f0a;
+  --av-nav-icon: #6c7a63;
+
+  --av-shadow-card: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+  --av-scrim: rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--av-bg);
+  color: var(--av-ink);
+  font-family: var(--font-body), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+.av-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.av-noscroll::-webkit-scrollbar {
+  display: none;
+}
+.av-noscroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+@keyframes av-card-in {
+  0% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes av-drop-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.2;
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes av-fade-up {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
