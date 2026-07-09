@@ -1,4 +1,4 @@
-import { DAY_LABELS, DEMO_WEEK, mondayIndex } from './constants';
+import { DAY_LABELS, mondayIndex } from './constants';
 import type { AvoLensState } from './types';
 import type { Theme } from './theme';
 
@@ -16,8 +16,9 @@ export function selectedDayTotals(
 ): SelectedDayTotals {
   const todayIdx = mondayIndex(new Date());
   if (state.selectedDay === todayIdx) return liveTotals;
-  const d = DEMO_WEEK[state.selectedDay];
-  return { left: d.kcalLeft, protein: d.protein, carbs: d.carbs, fat: d.fat };
+  // No historical data is stored yet — other days of the week show an empty day
+  // (nothing eaten, full goal remaining) until per-day history exists.
+  return { left: state.goal.calories, protein: 0, carbs: 0, fat: 0 };
 }
 
 export interface DayCell {
@@ -47,8 +48,9 @@ export function buildWeek(state: AvoLensState, todayCalories: number): DayCell[]
 
   return DAY_LABELS.map((label, i) => {
     const isToday = i === todayIdx;
-    const eaten = isToday ? todayCalories : target - DEMO_WEEK[i].kcalLeft;
-    const logged = isToday ? state.todayEntries.length > 0 : eaten > 0;
+    // Only "today" has real data; other days stay empty until history is tracked.
+    const eaten = isToday ? todayCalories : 0;
+    const logged = isToday && state.todayEntries.length > 0;
     const d = new Date(mondayDate);
     d.setDate(mondayDate.getDate() + i);
     return {

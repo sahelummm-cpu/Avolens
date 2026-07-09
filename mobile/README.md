@@ -32,6 +32,13 @@ notifications.
 - **Charts / rings** — all SVG visuals re-rendered with `react-native-svg`,
   with the same entrance animations (ring sweep, card fade-up).
 
+## No demo data
+
+A fresh install starts completely empty — no seeded meals, weight history,
+streak, or activity. Rings, the day strip, and the Progress screen all show
+designed empty states until the user logs real data. Exercise/activity cards
+show a "Connect Apple Health or Google Fit" state (see below).
+
 ## AI scanning
 
 The Anthropic call stays server-side (so no API key ships in the binary).
@@ -58,6 +65,19 @@ npm start          # Expo dev server → press i / a, or scan with Expo Go
 
 Camera and scheduled notifications need a real device (or a development
 build); everything else works in simulators and Expo Go.
+
+## Not yet built (need a custom dev build — can't run in Expo Go)
+
+These require native modules + an EAS **development build** (they cannot be
+tested in Expo Go, and generally need a real device):
+
+- **Home Screen & Lock Screen widgets** — native WidgetKit (iOS) / Glance
+  App Widgets (Android) targets driven by a config plugin, sharing data with
+  the app via App Groups / shared storage. Not implemented yet.
+- **Exercise sync from other devices/apps** — real Apple Health (HealthKit)
+  and Google Fit / Health Connect integration. The Home and Progress
+  "Connect" states are the pre-sync UI; wiring the actual data source is
+  still pending.
 
 ## Building store binaries
 
