@@ -10,7 +10,9 @@ export default function SplashPage() {
   const router = useRouter();
   const { finishOnboarding, theme: t } = useStore();
 
-  const enter = () => {
+  const start = () => router.push('/onboarding');
+
+  const skip = () => {
     finishOnboarding();
     router.push('/home');
   };
@@ -40,8 +42,8 @@ export default function SplashPage() {
         </Text>
 
         <View style={{ position: 'absolute', bottom: 48, left: 40, right: 40, gap: 16 }}>
-          <PrimaryButton onPress={enter}>Get Started</PrimaryButton>
-          <Pressable onPress={enter}>
+          <PrimaryButton onPress={start}>Get Started</PrimaryButton>
+          <Pressable onPress={skip}>
             <Text style={{ textAlign: 'center', fontFamily: F.b600, fontSize: 14, color: t.ink, opacity: 0.6 }}>
               I already have an account
             </Text>

@@ -8,8 +8,18 @@ import {
 } from 'react';
 import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ActivitySummary, AvoLensState, ChartRange, FoodEntry, ThemeMode, WeightUnit } from './types';
+import type {
+  ActivitySummary,
+  AvoLensState,
+  ChartRange,
+  FoodEntry,
+  HeightUnit,
+  OnboardingProfile,
+  ThemeMode,
+  WeightUnit,
+} from './types';
 import { defaultState } from './constants';
+import { computeGoal } from './goals';
 import { darkTheme, lightTheme, type Theme } from './theme';
 import { syncReminder } from './notifications';
 import { getTodayActivity, requestHealthPermissions } from './health';
@@ -36,7 +46,9 @@ interface StoreValue {
   logWeight: (kg: number) => void;
   setGoalCalories: (kcal: number) => void;
   setHeightCm: (cm: number) => void;
+  setHeightUnit: (u: HeightUnit) => void;
   finishOnboarding: () => void;
+  completeOnboarding: (p: OnboardingProfile) => void;
   connectHealth: () => Promise<boolean>;
   disconnectHealth: () => void;
   refreshActivity: () => Promise<void>;
@@ -167,7 +179,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })),
       setGoalCalories: (kcal) => setState((s) => ({ ...s, goal: { ...s.goal, calories: kcal } })),
       setHeightCm: (cm) => setState((s) => ({ ...s, heightCm: cm })),
+      setHeightUnit: (u) => setState((s) => ({ ...s, heightUnit: u })),
       finishOnboarding: () => setState((s) => ({ ...s, hasOnboarded: true })),
+      completeOnboarding: (p) =>
+        setState((s) => ({
+          ...s,
+          goal: { ...s.goal, ...computeGoal(p) },
+          heightCm: p.heightCm,
+          heightUnit: p.heightUnit,
+          unit: p.unit,
+          sex: p.sex,
+          age: p.age,
+          goalType: p.goalType,
+          activityLevel: p.activityLevel,
+          weightLog: [
+            ...s.weightLog,
+            { date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), kg: p.weightKg },
+          ],
+          hasOnboarded: true,
+        })),
       connectHealth: async () => {
         const ok = await requestHealthPermissions();
         if (ok) {

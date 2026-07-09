@@ -178,13 +178,40 @@ export default function HomePage() {
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>Today's Log</Text>
-          <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.green }}>See all</Text>
+          <Pressable
+            onPress={() => router.push('/scanner')}
+            accessibilityRole="button"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
+          >
+            <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.8} strokeLinecap="round">
+              <Path d="M12 5v14M5 12h14" />
+            </Svg>
+            <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Add meal</Text>
+          </Pressable>
         </View>
         <View style={{ gap: 10 }}>
           {state.todayEntries.length === 0 ? (
-            <Text style={{ textAlign: 'center', fontFamily: F.b500, fontSize: 13, color: t.muted, paddingVertical: 24 }}>
-              Nothing logged yet — scan or add a meal.
-            </Text>
+            <View style={{ alignItems: 'center', gap: 14, paddingVertical: 24 }}>
+              <Text style={{ textAlign: 'center', fontFamily: F.b500, fontSize: 13, color: t.muted }}>
+                Nothing logged yet — scan or add a meal.
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Pressable
+                  onPress={() => router.push('/scanner')}
+                  accessibilityRole="button"
+                  style={{ backgroundColor: t.green, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
+                >
+                  <Text style={{ fontFamily: F.d700, fontSize: 13, color: '#fff' }}>Scan a meal</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/manual-entry')}
+                  accessibilityRole="button"
+                  style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
+                >
+                  <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>Add manually</Text>
+                </Pressable>
+              </View>
+            </View>
           ) : (
             state.todayEntries.map((entry, i) => <FoodLogCard key={entry.id} entry={entry} delay={0.45 + i * 0.13} />)
           )}

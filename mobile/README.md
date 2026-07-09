@@ -10,7 +10,8 @@ notifications.
 
 | Route | Screen |
 | --- | --- |
-| `/` | Splash / onboarding |
+| `/` | Splash |
+| `/onboarding` | Goal / body / activity questionnaire → computes calorie & macro targets |
 | `/home` | Dashboard: day strip, calorie/macro rings, GLP-1/water/nutrients carousel, exercise, today's log |
 | `/scanner` | Native camera capture → AI nutrition estimate → add to log |
 | `/progress` | Weight chart, BMI, exercise stats, streak |
@@ -30,7 +31,12 @@ notifications.
   schedules a real weekly local notification (Wednesday 9:00) via
   `expo-notifications`; toggling it off cancels it.
 - **Charts / rings** — all SVG visuals re-rendered with `react-native-svg`,
-  with the same entrance animations (ring sweep, card fade-up).
+  with the same entrance animations (ring sweep, card fade-up). Ring and
+  progress-bar sweeps run on the UI thread via `react-native-reanimated`.
+- **Onboarding** — "Get Started" walks through goal, sex/age, height
+  (cm or ft/in), weight (kg or lb), and activity level, then computes the
+  daily calorie goal (Mifflin-St Jeor × activity, adjusted for the goal)
+  and a 30/40/30 macro split, and lands on the Pro paywall.
 - **Exercise sync** — real Apple Health (HealthKit) and Android Health
   Connect integration. The Settings toggles request permission and, once
   connected, the Home and Progress exercise cards show today's real active
@@ -105,6 +111,14 @@ Platform setup notes:
 - **Android Health Connect** — needs the Health Connect app installed; read
   permissions are declared in `app.json`. Android's home-screen widget is
   defined in JS (`src/widgets/SummaryWidget.tsx`).
+  `plugins/withHealthConnectDelegate.js` injects the required
+  `HealthConnectPermissionDelegate.setPermissionDelegate(this)` into
+  `MainActivity.onCreate` — without it the permission request crashes the
+  app (the library's bundled Expo plugin only patches the manifest).
+- **Emulator camera** — the Android emulator has no real camera, so the
+  Scanner shows the emulator's rendered "virtual scene" room. That is
+  expected; on a physical device the live camera appears. (You can point
+  the emulator at your webcam: Extended controls → Camera → webcam0.)
 
 > **Verification note:** the JS, TypeScript, and config layers are verified
 > here (tsc + Metro bundles for iOS/Android/web all pass). The Swift/Kotlin

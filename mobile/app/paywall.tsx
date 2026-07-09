@@ -18,7 +18,7 @@ export default function PaywallPage() {
   return (
     <Screen>
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))}
         accessibilityRole="button"
         accessibilityLabel="Close"
         style={{
@@ -124,7 +124,7 @@ export default function PaywallPage() {
         </View>
 
         <View style={{ marginTop: 'auto', gap: 12, paddingTop: 24 }}>
-          <PrimaryButton onPress={() => router.push('/home')}>Start 7-day free trial</PrimaryButton>
+          <PrimaryButton onPress={() => router.replace('/home')}>Start 7-day free trial</PrimaryButton>
           <Text style={{ textAlign: 'center', fontFamily: F.b500, fontSize: 12, color: t.muted }}>
             Cancel anytime · Restore purchase
           </Text>

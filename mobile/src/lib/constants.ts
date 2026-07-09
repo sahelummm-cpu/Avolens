@@ -42,7 +42,12 @@ export function defaultState(): AvoLensState {
   return {
     goal: DEFAULT_GOAL,
     heightCm: 174,
+    heightUnit: 'cm',
     unit: 'kg',
+    sex: null,
+    age: null,
+    goalType: null,
+    activityLevel: null,
     themeMode: 'auto',
     glasses: 0,
     dose: 2,

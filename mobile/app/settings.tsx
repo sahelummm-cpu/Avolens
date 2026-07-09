@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
@@ -7,11 +8,14 @@ import { Logo } from '@/components/Logo';
 import { BottomNav } from '@/components/BottomNav';
 import { ToggleSwitch } from '@/components/ToggleSwitch';
 import { PromptModal } from '@/components/PromptModal';
+import { HeightModal } from '@/components/HeightModal';
 import { useStore } from '@/lib/store';
+import { formatHeight } from '@/lib/goals';
 import { F } from '@/lib/fonts';
 
 export default function SettingsPage() {
-  const { state, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, connectHealth, disconnectHealth, theme: t } = useStore();
+  const router = useRouter();
+  const { state, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, setHeightUnit, connectHealth, disconnectHealth, theme: t } = useStore();
   const [editGoal, setEditGoal] = useState(false);
   const [editHeight, setEditHeight] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -64,10 +68,14 @@ export default function SettingsPage() {
             <Text style={{ fontFamily: F.d700, fontSize: 16, color: t.ink }}>Alex Rivera</Text>
             <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 2 }}>alex@avolens.app</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: t.navBg, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 11 }}>
+          <Pressable
+            onPress={() => router.push('/paywall')}
+            accessibilityRole="button"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: t.navBg, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 11 }}
+          >
             <Logo size={13} />
             <Text style={{ fontFamily: F.d700, fontSize: 10, color: '#fff' }}>PRO</Text>
-          </View>
+          </Pressable>
         </View>
 
         <SectionLabel>Preferences</SectionLabel>
@@ -116,7 +124,7 @@ export default function SettingsPage() {
           </Row>
           <Row border onPress={() => setEditHeight(true)}>
             <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Height</Text>
-            <ChevronValue>{state.heightCm} cm</ChevronValue>
+            <ChevronValue>{formatHeight(state.heightCm, state.heightUnit)}</ChevronValue>
           </Row>
         </View>
 
@@ -182,14 +190,13 @@ export default function SettingsPage() {
         />
       )}
       {editHeight && (
-        <PromptModal
-          title="Height (cm)"
-          placeholder="e.g. 174"
-          initial={String(state.heightCm)}
+        <HeightModal
+          heightCm={state.heightCm}
+          heightUnit={state.heightUnit}
           onClose={() => setEditHeight(false)}
-          onSubmit={(v) => {
-            const n = parseInt(v, 10);
-            if (Number.isFinite(n) && n > 0) setHeightCm(n);
+          onSubmit={(cm, unit) => {
+            setHeightCm(cm);
+            setHeightUnit(unit);
             setEditHeight(false);
           }}
         />

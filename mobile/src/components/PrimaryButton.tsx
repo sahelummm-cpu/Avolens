@@ -6,16 +6,20 @@ export function PrimaryButton({
   children,
   onPress,
   small,
+  disabled,
 }: {
   children: React.ReactNode;
   onPress?: () => void;
   small?: boolean;
+  disabled?: boolean;
 }) {
   const t = useTheme();
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={({ pressed }) => ({
+        opacity: disabled ? 0.45 : 1,
         height: small ? 50 : 56,
         borderRadius: small ? 16 : 20,
         backgroundColor: t.green,

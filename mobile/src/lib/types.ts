@@ -1,6 +1,23 @@
 export type ThemeMode = 'auto' | 'light' | 'dark';
 export type WeightUnit = 'kg' | 'lb';
+export type HeightUnit = 'cm' | 'ftin';
 export type ChartRange = 'W' | 'M' | 'Y';
+
+export type Sex = 'male' | 'female';
+export type GoalType = 'lose' | 'maintain' | 'gain';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'very';
+
+/** Answers collected by the onboarding questionnaire. */
+export interface OnboardingProfile {
+  goalType: GoalType;
+  sex: Sex;
+  age: number;
+  heightCm: number;
+  heightUnit: HeightUnit;
+  weightKg: number;
+  unit: WeightUnit;
+  activityLevel: ActivityLevel;
+}
 
 export interface FoodEntry {
   id: string;
@@ -70,7 +87,12 @@ export interface AvoLensState {
     water: number;
   };
   heightCm: number;
+  heightUnit: HeightUnit;
   unit: WeightUnit;
+  sex: Sex | null;
+  age: number | null;
+  goalType: GoalType | null;
+  activityLevel: ActivityLevel | null;
   themeMode: ThemeMode;
   glasses: number;
   dose: number;

@@ -32,6 +32,7 @@ function ThemedApp() {
           animation: 'fade',
         }}
       >
+        <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="scanner" options={{ contentStyle: { backgroundColor: '#121614' } }} />
         <Stack.Screen name="manual-entry" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="paywall" options={{ animation: 'slide_from_bottom' }} />
