@@ -2,6 +2,8 @@
 
 A calorie & macro tracking web app, implemented from the `Nibbl v2.dc.html` design bundle in the repo root.
 
+> **Native app:** a 1:1 React Native (Expo) port of this app lives in [`mobile/`](mobile/README.md) — same screens, theme, and state model, plus native camera scanning and real local notifications.
+
 ## Stack
 
 Next.js (App Router) + TypeScript, plain CSS variables for the design tokens (no Tailwind styling — see `src/app/globals.css`), client-side state persisted to `localStorage` (`src/lib/store.tsx`), and a server route (`src/app/api/scan`) that calls the Claude API for real food-photo nutrition estimation.

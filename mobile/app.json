@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "AvoLens",
+    "slug": "avolens",
+    "version": "0.1.0",
+    "scheme": "avolens",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.avolens.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AvoLens uses the camera to scan your meals and estimate their nutrition."
+      }
+    },
+    "android": {
+      "package": "app.avolens.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#f5f7f3",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["android.permission.CAMERA"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AvoLens uses the camera to scan your meals and estimate their nutrition."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#6e9e3a"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/avo-logo.png",
+          "imageWidth": 140,
+          "backgroundColor": "#f5f7f3",
+          "dark": {
+            "backgroundColor": "#12160f"
+          }
+        }
+      ]
+    ]
+  }
+}
