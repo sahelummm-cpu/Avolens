@@ -15,8 +15,9 @@ import { F } from '@/lib/fonts';
 const kgToLb = (kg: number) => kg * 2.20462;
 
 export default function ProgressPage() {
-  const { state, setChartRange, logWeight, theme: t } = useStore();
+  const { state, setChartRange, logWeight, activity, theme: t } = useStore();
   const [showLogModal, setShowLogModal] = useState(false);
+  const hasActivity = state.healthConnected && activity != null;
 
   const isLb = state.unit === 'lb';
   const conv = (kg: number) => (isLb ? kgToLb(kg) : kg);
@@ -213,25 +214,53 @@ export default function ProgressPage() {
           </View>
         )}
 
-        {/* Exercise — empty until a health source is connected */}
-        <View style={card}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-            <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: t.greenTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-                <Path d="M6.5 6.5 17.5 17.5" />
-                <Path d="M4 8V6a2 2 0 0 1 2-2h2" />
-                <Path d="M20 16v2a2 2 0 0 1-2 2h-2" />
-                <Path d="M2 12h2M20 12h2M12 2v2M12 20v2" />
-              </Svg>
+        {/* Exercise — real synced stats when connected, else an empty state */}
+        {hasActivity && activity ? (
+          <View style={card}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+              <View>
+                <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Exercise</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5, marginTop: 4 }}>
+                  <Text style={{ fontFamily: F.d800, fontSize: 26, color: t.green, letterSpacing: -0.52 }}>
+                    {activity.activeCalories.toLocaleString('en-US')}
+                  </Text>
+                  <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted }}>kcal burned today</Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+                  <Path d="M21 3v5h-5" />
+                </Svg>
+                <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Auto-sync</Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Exercise</Text>
-              <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 3 }}>
-                Connect Apple Health or Google Fit to see workouts and calories burned.
-              </Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+              <StatBlock value={activity.steps.toLocaleString('en-US')} label="steps" color={t.green} />
+              <StatBlock value={String(activity.activeMinutes)} label="active min" />
+              <StatBlock value={String(activity.workouts)} label="workouts" />
             </View>
           </View>
-        </View>
+        ) : (
+          <View style={card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: t.greenTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M6.5 6.5 17.5 17.5" />
+                  <Path d="M4 8V6a2 2 0 0 1 2-2h2" />
+                  <Path d="M20 16v2a2 2 0 0 1-2 2h-2" />
+                  <Path d="M2 12h2M20 12h2M12 2v2M12 20v2" />
+                </Svg>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Exercise</Text>
+                <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 3 }}>
+                  Connect Apple Health or Google Fit to see workouts and calories burned.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Calories eaten — needs day-over-day history */}
         <View style={card}>
@@ -310,5 +339,15 @@ export default function ProgressPage() {
 
       <BottomNav active="progress" />
     </Screen>
+  );
+}
+
+function StatBlock({ value, label, color }: { value: string; label: string; color?: string }) {
+  const { theme: t } = useStore();
+  return (
+    <View style={{ flex: 1, backgroundColor: t.surface2, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 12 }}>
+      <Text style={{ fontFamily: F.d800, fontSize: 20, color: color ?? t.ink }}>{value}</Text>
+      <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted, marginTop: 2 }}>{label}</Text>
+    </View>
   );
 }

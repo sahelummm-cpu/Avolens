@@ -8,10 +8,12 @@ import {
 } from 'react';
 import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { AvoLensState, ChartRange, FoodEntry, ThemeMode, WeightUnit } from './types';
+import type { ActivitySummary, AvoLensState, ChartRange, FoodEntry, ThemeMode, WeightUnit } from './types';
 import { defaultState } from './constants';
 import { darkTheme, lightTheme, type Theme } from './theme';
 import { syncReminder } from './notifications';
+import { getTodayActivity, requestHealthPermissions } from './health';
+import { publishSnapshot } from './widgets';
 
 const STORAGE_KEY = 'avolens.state.v1';
 
@@ -19,6 +21,7 @@ interface StoreValue {
   state: AvoLensState;
   resolvedDark: boolean;
   theme: Theme;
+  activity: ActivitySummary | null;
   selectDay: (i: number) => void;
   addGlass: () => void;
   removeGlass: () => void;
@@ -34,6 +37,9 @@ interface StoreValue {
   setGoalCalories: (kcal: number) => void;
   setHeightCm: (cm: number) => void;
   finishOnboarding: () => void;
+  connectHealth: () => Promise<boolean>;
+  disconnectHealth: () => void;
+  refreshActivity: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -45,6 +51,7 @@ function getSystemDark(): boolean {
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AvoLensState>(() => defaultState());
   const [systemDark, setSystemDark] = useState(() => getSystemDark());
+  const [activity, setActivity] = useState<ActivitySummary | null>(null);
   const hydrated = useRef(false);
 
   // Load persisted state after mount.
@@ -78,11 +85,52 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const resolvedDark = state.themeMode === 'auto' ? systemDark : state.themeMode === 'dark';
   const theme = resolvedDark ? darkTheme : lightTheme;
 
+  // Keep the Home / Lock Screen widgets in sync with today's log.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const totals = state.todayEntries.reduce(
+      (acc, e) => ({
+        calories: acc.calories + e.calories,
+        protein: acc.protein + e.protein,
+        carbs: acc.carbs + e.carbs,
+        fat: acc.fat + e.fat,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    );
+    publishSnapshot({
+      kcalLeft: Math.max(0, state.goal.calories - totals.calories),
+      kcalGoal: state.goal.calories,
+      protein: totals.protein,
+      proteinGoal: state.goal.protein,
+      carbs: totals.carbs,
+      carbsGoal: state.goal.carbs,
+      fat: totals.fat,
+      fatGoal: state.goal.fat,
+      streak: state.streak,
+    });
+  }, [state.todayEntries, state.goal, state.streak]);
+
+  // Pull today's activity from Apple Health / Health Connect while connected.
+  useEffect(() => {
+    if (!state.healthConnected) {
+      setActivity(null);
+      return;
+    }
+    let cancelled = false;
+    getTodayActivity().then((a) => {
+      if (!cancelled) setActivity(a);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.healthConnected]);
+
   const value = useMemo<StoreValue>(
     () => ({
       state,
       resolvedDark,
       theme,
+      activity,
       selectDay: (i) => setState((s) => ({ ...s, selectedDay: i })),
       addGlass: () =>
         setState((s) => ({ ...s, glasses: Math.min(s.goal.water, s.glasses + 1) })),
@@ -120,8 +168,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setGoalCalories: (kcal) => setState((s) => ({ ...s, goal: { ...s.goal, calories: kcal } })),
       setHeightCm: (cm) => setState((s) => ({ ...s, heightCm: cm })),
       finishOnboarding: () => setState((s) => ({ ...s, hasOnboarded: true })),
+      connectHealth: async () => {
+        const ok = await requestHealthPermissions();
+        if (ok) {
+          setState((s) => ({ ...s, healthConnected: true }));
+          setActivity(await getTodayActivity());
+        }
+        return ok;
+      },
+      disconnectHealth: () => {
+        setState((s) => ({ ...s, healthConnected: false }));
+        setActivity(null);
+      },
+      refreshActivity: async () => {
+        if (!state.healthConnected) return;
+        const a = await getTodayActivity();
+        if (a) setActivity(a);
+      },
     }),
-    [state, resolvedDark, theme, systemDark],
+    [state, resolvedDark, theme, systemDark, activity],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

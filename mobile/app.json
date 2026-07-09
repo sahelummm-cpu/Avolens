@@ -10,6 +10,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.avolens.mobile",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.app.avolens.mobile"]
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "AvoLens uses the camera to scan your meals and estimate their nutrition."
       }
@@ -22,7 +25,12 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["android.permission.CAMERA"],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.READ_EXERCISE"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -51,6 +59,33 @@
           "dark": {
             "backgroundColor": "#12160f"
           }
+        }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "AvoLens reads your activity (energy burned, steps, and workouts) to show your exercise stats.",
+          "background": false
+        }
+      ],
+      "react-native-health-connect",
+      "@bacons/apple-targets",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "AvoLensSummary",
+              "label": "AvoLens",
+              "description": "Calories left and macros at a glance.",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 3,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/avo-logo.png"
+            }
+          ]
         }
       ]
     ]

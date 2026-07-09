@@ -37,6 +37,27 @@ export interface DemoDay {
   logged: boolean;
 }
 
+/** Today's activity, sourced from Apple Health (iOS) or Health Connect (Android). */
+export interface ActivitySummary {
+  activeCalories: number;
+  steps: number;
+  workouts: number;
+  activeMinutes: number;
+}
+
+/** The compact daily summary pushed to the Home / Lock Screen widgets. */
+export interface WidgetSnapshot {
+  kcalLeft: number;
+  kcalGoal: number;
+  protein: number;
+  proteinGoal: number;
+  carbs: number;
+  carbsGoal: number;
+  fat: number;
+  fatGoal: number;
+  streak: number;
+}
+
 export interface AvoLensState {
   goal: {
     calories: number;
@@ -54,6 +75,7 @@ export interface AvoLensState {
   glasses: number;
   dose: number;
   reminderOn: boolean;
+  healthConnected: boolean;
   streak: number;
   chartRange: ChartRange;
   selectedDay: number;

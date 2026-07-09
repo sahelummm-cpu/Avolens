@@ -31,6 +31,15 @@ notifications.
   `expo-notifications`; toggling it off cancels it.
 - **Charts / rings** — all SVG visuals re-rendered with `react-native-svg`,
   with the same entrance animations (ring sweep, card fade-up).
+- **Exercise sync** — real Apple Health (HealthKit) and Android Health
+  Connect integration. The Settings toggles request permission and, once
+  connected, the Home and Progress exercise cards show today's real active
+  energy, steps, active minutes, and workouts. (`src/lib/health*.ts`)
+- **Home + Lock Screen widgets** — a native iOS WidgetKit widget (Home
+  Screen `systemSmall`/`systemMedium` plus Lock Screen accessory families)
+  and an Android home-screen widget, both showing "kcal left", macros, and
+  the streak. The app pushes a fresh snapshot whenever the log changes.
+  (`src/widgets/`, `targets/widget/`, `src/lib/widgets*.ts`)
 
 ## No demo data
 
@@ -63,23 +72,47 @@ npm install
 npm start          # Expo dev server → press i / a, or scan with Expo Go
 ```
 
-Camera and scheduled notifications need a real device (or a development
-build); everything else works in simulators and Expo Go.
+Camera, scheduled notifications, health sync, and widgets need a real device
+and a **development build** (see below); the rest works in simulators and
+Expo Go. Note that the health-sync and widget native modules mean the app can
+no longer run in **Expo Go** — use a dev build.
 
-## Not yet built (need a custom dev build — can't run in Expo Go)
+## Development build (required for health sync + widgets)
 
-These require native modules + an EAS **development build** (they cannot be
-tested in Expo Go, and generally need a real device):
+Health sync and the widgets use native modules and native targets, so they
+only run in a custom dev/production build — not Expo Go:
 
-- **Home Screen & Lock Screen widgets** — native WidgetKit (iOS) / Glance
-  App Widgets (Android) targets driven by a config plugin, sharing data with
-  the app via App Groups / shared storage. Not implemented yet.
-- **Exercise sync from other devices/apps** — real Apple Health (HealthKit)
-  and Google Fit / Health Connect integration. The Home and Progress
-  "Connect" states are the pre-sync UI; wiring the actual data source is
-  still pending.
+```bash
+# one-time
+npm install -g eas-cli && eas login
+# generate native projects locally (applies all config plugins / targets)
+npx expo prebuild --clean
+# or build a dev client on EAS and install it on a device
+eas build --profile development --platform ios      # or android
+```
+
+Platform setup notes:
+
+- **iOS widget** — set `expo.ios.appleTeamId` in `app.json` to your Apple
+  Developer Team ID (the `@bacons/apple-targets` plugin needs it to sign the
+  WidgetKit extension). The widget + app share the App Group
+  `group.app.avolens.mobile` (declared in `app.json` and
+  `targets/widget/expo-target.config.js`); the SwiftUI source is
+  `targets/widget/index.swift`.
+- **HealthKit** — the `@kingstinct/react-native-healthkit` plugin adds the
+  HealthKit entitlement + usage strings. Requires a real device and a paid
+  Apple Developer account.
+- **Android Health Connect** — needs the Health Connect app installed; read
+  permissions are declared in `app.json`. Android's home-screen widget is
+  defined in JS (`src/widgets/SummaryWidget.tsx`).
+
+> **Verification note:** the JS, TypeScript, and config layers are verified
+> here (tsc + Metro bundles for iOS/Android/web all pass). The Swift/Kotlin
+> native paths (HealthKit queries, WidgetKit timeline, Health Connect
+> aggregation) follow each library's documented API but must be exercised in
+> a dev build on a real device — they can't be compiled in a JS-only CI.
 
 ## Building store binaries
 
-Use EAS: `npx eas build --platform ios|android` (requires an Expo account).
+Use EAS: `eas build --platform ios|android` (requires an Expo account).
 The bundle IDs are `app.avolens.mobile` in `app.json`.

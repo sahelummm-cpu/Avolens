@@ -47,6 +47,7 @@ export function defaultState(): AvoLensState {
     glasses: 0,
     dose: 2,
     reminderOn: false,
+    healthConnected: false,
     streak: 0,
     chartRange: 'M',
     selectedDay: mondayIndex(new Date()),

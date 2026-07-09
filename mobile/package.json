@@ -1,10 +1,12 @@
 {
   "name": "avolens-mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "dependencies": {
+    "@bacons/apple-targets": "^4.0.7",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo-google-fonts/poppins": "^0.4.1",
+    "@kingstinct/react-native-healthkit": "^14.0.2",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "expo": "~57.0.4",
     "expo-camera": "~57.0.1",
@@ -19,6 +21,9 @@
     "expo-status-bar": "~57.0.0",
     "react": "19.2.3",
     "react-native": "0.86.0",
+    "react-native-android-widget": "^0.20.3",
+    "react-native-health-connect": "^3.5.3",
+    "react-native-nitro-modules": "^0.36.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "^4.25.2",
     "react-native-svg": "^15.15.4"

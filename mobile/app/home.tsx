@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, Pressable } from 'react-native';
+import { Platform, ScrollView, Text, View, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +17,7 @@ const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', mon
 
 export default function HomePage() {
   const router = useRouter();
-  const { state, theme: t } = useStore();
+  const { state, theme: t, activity } = useStore();
   const liveTotals = useDailyTotals();
   const totals = selectedDayTotals(state, liveTotals);
 
@@ -128,24 +128,52 @@ export default function HomePage() {
               <Path d="M2 12h2M20 12h2M12 2v2M12 20v2" />
             </Svg>
           </View>
-          <View style={{ flex: 1, gap: 3 }}>
-            <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Exercise</Text>
-            <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>
-              Connect a device to auto-sync activity
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => router.push('/settings')}
-            accessibilityRole="button"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
-          >
-            <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M9 17H7A5 5 0 0 1 7 7h2" />
-              <Path d="M15 7h2a5 5 0 0 1 0 10h-2" />
-              <Path d="M8 12h8" />
-            </Svg>
-            <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Connect</Text>
-          </Pressable>
+          {state.healthConnected && activity ? (
+            <>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Exercise</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                    <Path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+                    <Path d="M21 3v5h-5" />
+                  </Svg>
+                  <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>
+                    Auto-synced · {Platform.OS === 'android' ? 'Health Connect' : 'Apple Health'}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.green }}>
+                  {activity.activeCalories.toLocaleString('en-US')}
+                  <Text style={{ fontFamily: F.d600, fontSize: 11, color: t.muted2 }}> kcal</Text>
+                </Text>
+                <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: 1 }}>
+                  {activity.steps.toLocaleString('en-US')} steps
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={{ flex: 1, gap: 3 }}>
+                <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Exercise</Text>
+                <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>
+                  Connect a device to auto-sync activity
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => router.push('/settings')}
+                accessibilityRole="button"
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
+              >
+                <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M9 17H7A5 5 0 0 1 7 7h2" />
+                  <Path d="M15 7h2a5 5 0 0 1 0 10h-2" />
+                  <Path d="M8 12h8" />
+                </Svg>
+                <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Connect</Text>
+              </Pressable>
+            </>
+          )}
         </View>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>

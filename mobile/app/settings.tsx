@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
@@ -11,11 +11,25 @@ import { useStore } from '@/lib/store';
 import { F } from '@/lib/fonts';
 
 export default function SettingsPage() {
-  const { state, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, theme: t } = useStore();
+  const { state, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, connectHealth, disconnectHealth, theme: t } = useStore();
   const [editGoal, setEditGoal] = useState(false);
   const [editHeight, setEditHeight] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
   const isLb = state.unit === 'lb';
+
+  const toggleHealth = async () => {
+    if (state.healthConnected) {
+      disconnectHealth();
+      return;
+    }
+    setConnecting(true);
+    try {
+      await connectHealth();
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   return (
     <Screen>
@@ -108,23 +122,48 @@ export default function SettingsPage() {
 
         <SectionLabel>Connected apps</SectionLabel>
         <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 22, overflow: 'hidden' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, paddingHorizontal: 18 }}>
-            <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.proteinTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill={t.protein}>
-                <Path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z" />
-              </Svg>
+          {Platform.OS !== 'android' && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, paddingHorizontal: 18 }}>
+              <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.proteinTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill={t.protein}>
+                  <Path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z" />
+                </Svg>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Apple Health</Text>
+                {connecting && <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.green, marginTop: 1 }}>Connecting…</Text>}
+              </View>
+              <ToggleSwitch on={state.healthConnected} onChange={toggleHealth} />
             </View>
-            <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 14, color: t.ink }}>Apple Health</Text>
-            <ToggleSwitch on onChange={() => {}} />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, paddingHorizontal: 18, borderTopWidth: 1, borderTopColor: t.border2 }}>
+          )}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              paddingVertical: 15,
+              paddingHorizontal: 18,
+              borderTopWidth: Platform.OS !== 'android' ? 1 : 0,
+              borderTopColor: t.border2,
+            }}
+          >
             <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.fatTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Svg width={18} height={18} viewBox="0 0 24 24" fill={t.fat}>
                 <Circle cx={12} cy={12} r={8} />
               </Svg>
             </View>
-            <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 14, color: t.ink }}>Google Fit</Text>
-            <ToggleSwitch on={false} onChange={() => {}} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>
+                {Platform.OS === 'android' ? 'Health Connect' : 'Google Fit'}
+              </Text>
+              {connecting && Platform.OS === 'android' && (
+                <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.green, marginTop: 1 }}>Connecting…</Text>
+              )}
+            </View>
+            <ToggleSwitch
+              on={Platform.OS === 'android' ? state.healthConnected : false}
+              onChange={Platform.OS === 'android' ? toggleHealth : () => {}}
+            />
           </View>
         </View>
       </ScrollView>
