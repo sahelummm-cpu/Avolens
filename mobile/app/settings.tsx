@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
@@ -15,6 +16,7 @@ import { F } from '@/lib/fonts';
 
 export default function SettingsPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { state, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, setHeightUnit, connectHealth, disconnectHealth, theme: t } = useStore();
   const [editGoal, setEditGoal] = useState(false);
   const [editHeight, setEditHeight] = useState(false);
@@ -29,15 +31,23 @@ export default function SettingsPage() {
     }
     setConnecting(true);
     try {
-      await connectHealth();
+      const ok = await connectHealth();
+      if (!ok) {
+        Alert.alert(
+          Platform.OS === 'android' ? 'Health Connect unavailable' : 'Apple Health unavailable',
+          Platform.OS === 'android'
+            ? "Couldn't connect. Install the “Health Connect” app from the Play Store, then grant AvoLens permission. Note: most emulators don't have Health Connect, so this only works on a real device."
+            : "Couldn't connect to Apple Health. Make sure you're on a real device and allow AvoLens access when prompted.",
+        );
+      }
     } finally {
       setConnecting(false);
     }
   };
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ paddingTop: 20, paddingHorizontal: 22, paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+    <Screen inset={false}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 12, paddingHorizontal: 22, paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 18 }}>
           <Logo size={28} />
           <Text style={{ fontFamily: F.d700, fontSize: 24, color: t.ink }}>Settings</Text>

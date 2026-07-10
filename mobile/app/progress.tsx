@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
@@ -15,6 +16,7 @@ import { F } from '@/lib/fonts';
 const kgToLb = (kg: number) => kg * 2.20462;
 
 export default function ProgressPage() {
+  const insets = useSafeAreaInsets();
   const { state, setChartRange, logWeight, activity, theme: t } = useStore();
   const [showLogModal, setShowLogModal] = useState(false);
   const hasActivity = state.healthConnected && activity != null;
@@ -87,8 +89,8 @@ export default function ProgressPage() {
   );
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ paddingTop: 24, paddingHorizontal: 24, paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+    <Screen inset={false}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 24, paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 2 }}>
           <Logo size={28} />
           <Text style={{ fontFamily: F.d700, fontSize: 24, color: t.ink }}>Progress</Text>

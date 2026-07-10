@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { Screen } from '@/components/Screen';
 import { Logo } from '@/components/Logo';
@@ -12,18 +13,19 @@ const FEATURES = ['Unlimited AI food scans', 'Barcode, label & fridge modes', 'A
 
 export default function PaywallPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { theme: t } = useStore();
   const [plan, setPlan] = useState<'monthly' | 'yearly'>('yearly');
 
   return (
-    <Screen>
+    <Screen inset={false}>
       <Pressable
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))}
         accessibilityRole="button"
         accessibilityLabel="Close"
         style={{
           position: 'absolute',
-          top: 24,
+          top: insets.top + 10,
           right: 22,
           width: 34,
           height: 34,
@@ -41,7 +43,7 @@ export default function PaywallPage() {
         </Svg>
       </Pressable>
 
-      <ScrollView contentContainerStyle={{ paddingTop: 80, paddingHorizontal: 26, paddingBottom: 26, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingHorizontal: 26, paddingBottom: 26, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         <View style={{ alignItems: 'center', marginBottom: 24 }}>
           <Logo size={96} shadow />
           <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green, letterSpacing: 2.16, marginTop: 14 }}>AVOLENS PRO</Text>

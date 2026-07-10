@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Keyboard, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
@@ -126,7 +126,13 @@ export default function OnboardingPage() {
           </View>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+          contentContainerStyle={{ paddingBottom: 24 }}
+        >
           {step === 0 && (
             <Animated.View key="s0" entering={FadeInRight.duration(260)} exiting={FadeOutLeft.duration(160)}>
               <Title t={t.ink}>What's your goal?</Title>
@@ -205,6 +211,7 @@ export default function OnboardingPage() {
             </PrimaryButton>
           </View>
         )}
+        </KeyboardAvoidingView>
       </View>
     </Screen>
   );

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -92,7 +92,16 @@ export default function ManualEntryPage() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingTop: 2, paddingHorizontal: 22, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView
+        contentContainerStyle={{ paddingTop: 2, paddingHorizontal: 22, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
         <View
           style={{
             flexDirection: 'row',
@@ -241,6 +250,7 @@ export default function ManualEntryPage() {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <LinearGradient

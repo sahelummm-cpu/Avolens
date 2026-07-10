@@ -1,5 +1,6 @@
 import { Platform, ScrollView, Text, View, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '@/components/Screen';
@@ -17,6 +18,7 @@ const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', mon
 
 export default function HomePage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { state, theme: t, activity } = useStore();
   const liveTotals = useDailyTotals();
   const totals = selectedDayTotals(state, liveTotals);
@@ -29,8 +31,8 @@ export default function HomePage() {
   };
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ paddingTop: 24, paddingHorizontal: 24, paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+    <Screen inset={false}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: 24, paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
             <Logo size={30} />
