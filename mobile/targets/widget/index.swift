@@ -5,7 +5,70 @@ import SwiftUI
 private let appGroup = "group.app.avolens.mobile"
 private let storageKey = "avolens.widget.snapshot.v1"
 
-private let avoGreen = Color(red: 0.51, green: 0.73, blue: 0.29)
+// Light-theme card palette (src/lib/theme.tsx → lightTheme).
+extension Color {
+  init(hex: UInt32) {
+    self.init(
+      .sRGB,
+      red: Double((hex >> 16) & 0xff) / 255,
+      green: Double((hex >> 8) & 0xff) / 255,
+      blue: Double(hex & 0xff) / 255,
+      opacity: 1
+    )
+  }
+}
+
+private let inkColor = Color(hex: 0x26331a)
+private let greenGrad = LinearGradient(
+  colors: [Color(hex: 0xa9c24a), Color(hex: 0x5a8a2e)],
+  startPoint: .topLeading, endPoint: .bottomTrailing
+)
+private let greenTrack = Color(hex: 0xedf1eb)
+private let proteinColor = Color(hex: 0xe4586e)
+private let proteinTint = Color(hex: 0xfbeaed)
+private let carbsColor = Color(hex: 0xe8a13b)
+private let carbsTint = Color(hex: 0xfbf1e0)
+private let fatColor = Color(hex: 0x4da8f0)
+private let fatTint = Color(hex: 0xe9f3fc)
+
+private func frac(_ value: Int, _ total: Int) -> Double {
+  total > 0 ? min(max(Double(value) / Double(total), 0), 1) : 0
+}
+
+// One ring: a full track circle plus the rounded progress arc, rotated -90°.
+struct RingArc<S: ShapeStyle>: View {
+  let diameter: CGFloat
+  let lineWidth: CGFloat
+  let track: Color
+  let style: S
+  let frac: Double
+  var body: some View {
+    ZStack {
+      Circle().stroke(track, lineWidth: lineWidth)
+      Circle()
+        .trim(from: 0, to: CGFloat(min(max(frac, 0), 1)))
+        .stroke(style, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+        .rotationEffect(.degrees(-90))
+    }
+    .frame(width: diameter, height: diameter)
+  }
+}
+
+// The four concentric calorie/macro rings from the Home dashboard card.
+struct AvoRing: View {
+  let s: AvoSnapshot
+  let size: CGFloat
+  var body: some View {
+    let u = size / 116
+    ZStack {
+      RingArc(diameter: 116 * u, lineWidth: 11 * u, track: greenTrack, style: greenGrad, frac: frac(s.kcalGoal - s.kcalLeft, s.kcalGoal))
+      RingArc(diameter: 90 * u, lineWidth: 9 * u, track: proteinTint, style: proteinColor, frac: frac(s.protein, s.proteinGoal))
+      RingArc(diameter: 66 * u, lineWidth: 9 * u, track: carbsTint, style: carbsColor, frac: frac(s.carbs, s.carbsGoal))
+      RingArc(diameter: 44 * u, lineWidth: 9 * u, track: fatTint, style: fatColor, frac: frac(s.fat, s.fatGoal))
+    }
+    .frame(width: size, height: size)
+  }
+}
 
 struct AvoSnapshot: Codable {
   var kcalLeft: Int
@@ -59,32 +122,54 @@ struct AvoProvider: TimelineProvider {
 // MARK: - Home Screen (systemSmall / systemMedium)
 
 struct HomeWidgetView: View {
+  @Environment(\.widgetFamily) var family
   let entry: AvoEntry
+
   var body: some View {
-    VStack(alignment: .leading, spacing: 6) {
-      HStack {
-        Text("AvoLens").font(.system(size: 12, weight: .semibold)).foregroundColor(.secondary)
-        Spacer()
-        Text("🔥 \(entry.snapshot.streak)").font(.system(size: 12, weight: .semibold)).foregroundColor(avoGreen)
-      }
-      Spacer()
-      Text("\(entry.snapshot.kcalLeft)").font(.system(size: 34, weight: .heavy))
-      Text("kcal left").font(.system(size: 12)).foregroundColor(.secondary)
-      Spacer()
-      HStack(spacing: 14) {
-        macro("P", entry.snapshot.protein, entry.snapshot.proteinGoal)
-        macro("C", entry.snapshot.carbs, entry.snapshot.carbsGoal)
-        macro("F", entry.snapshot.fat, entry.snapshot.fatGoal)
+    Group {
+      if family == .systemSmall {
+        smallLayout
+      } else {
+        mediumLayout
       }
     }
-    .padding()
     .containerBackground(for: .widget) { Color(.systemBackground) }
   }
 
-  func macro(_ label: String, _ value: Int, _ goal: Int) -> some View {
-    VStack(alignment: .leading, spacing: 1) {
-      Text(label).font(.system(size: 10)).foregroundColor(.secondary)
-      Text("\(value)/\(goal)").font(.system(size: 12, weight: .medium))
+  // systemSmall: the ring with the kcal-left number in the middle.
+  var smallLayout: some View {
+    ZStack {
+      AvoRing(s: entry.snapshot, size: 128)
+      VStack(spacing: 0) {
+        Text("\(entry.snapshot.kcalLeft)").font(.system(size: 26, weight: .heavy)).foregroundColor(.primary)
+        Text("kcal left").font(.system(size: 10)).foregroundColor(.secondary)
+      }
+    }
+    .padding(12)
+  }
+
+  // systemMedium: ring on the left, number + macro rows on the right (Home card).
+  var mediumLayout: some View {
+    HStack(spacing: 16) {
+      AvoRing(s: entry.snapshot, size: 112)
+      VStack(alignment: .leading, spacing: 2) {
+        Text("\(entry.snapshot.kcalLeft)").font(.system(size: 30, weight: .heavy)).foregroundColor(.primary)
+        Text("kcal left").font(.system(size: 12)).foregroundColor(.secondary)
+        Spacer().frame(height: 6)
+        macroRow("Protein", entry.snapshot.protein, entry.snapshot.proteinGoal, proteinColor)
+        macroRow("Carbs", entry.snapshot.carbs, entry.snapshot.carbsGoal, carbsColor)
+        macroRow("Fat", entry.snapshot.fat, entry.snapshot.fatGoal, fatColor)
+      }
+    }
+    .padding()
+  }
+
+  func macroRow(_ label: String, _ value: Int, _ goal: Int, _ color: Color) -> some View {
+    HStack(spacing: 7) {
+      Circle().fill(color).frame(width: 8, height: 8)
+      Text(label).font(.system(size: 12)).foregroundColor(.secondary)
+      Spacer()
+      Text("\(value)/\(goal)g").font(.system(size: 12, weight: .semibold)).foregroundColor(.primary)
     }
   }
 }
