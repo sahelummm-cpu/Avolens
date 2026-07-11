@@ -73,6 +73,14 @@ show a "Connect Apple Health or Google Fit" state (see below).
 - **Weekly insights** — average kcal/protein per logged day, vs last week.
 - **AI Coach** — the sparkle tab opens a chat that knows today's log and
   your goals (needs the Supabase backend below, plus sign-in).
+- **GLP-1 medication tracker** — pick your medication (Semaglutide,
+  Tirzepatide, Liraglutide, Dulaglutide) with its real dose ladder and
+  weekly/daily cadence, choose the dose day + time (reminder follows it,
+  with a missed-dose follow-up ~14h later), tap "Mark as taken" to log the
+  injection with rotation-suggested sites, and see an adherence card
+  (streak + last 8 cycles) plus injection markers on the weight chart.
+  Hidden entirely via onboarding answer or Settings → GLP-1 tracking.
+  (`src/lib/meds.ts`)
 
 ## Supabase backend (accounts, sync, AI scan + coach)
 

@@ -1,11 +1,25 @@
-import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '@/lib/store';
 import { F } from '@/lib/fonts';
 
-export function WeightChart({ values, goal }: { values: number[]; goal?: number }) {
+export function WeightChart({
+  values,
+  goal,
+  markers,
+}: {
+  values: number[];
+  goal?: number;
+  /** Per-value flags (aligned with `values`) — true draws an injection dot. */
+  markers?: boolean[];
+}) {
   const t = useTheme();
   const bars = values.slice(-8);
-  while (bars.length < 8) bars.unshift(bars[0] ?? 0);
+  const marks = (markers ?? []).slice(-8);
+  while (marks.length < bars.length) marks.unshift(false);
+  while (bars.length < 8) {
+    bars.unshift(bars[0] ?? 0);
+    marks.unshift(false);
+  }
 
   const min = Math.min(...bars, ...(goal != null ? [goal] : []));
   const max = Math.max(...bars, ...(goal != null ? [goal] : []));
@@ -33,6 +47,12 @@ export function WeightChart({ values, goal }: { values: number[]; goal?: number 
         const isLast = i === bars.length - 1;
         return <Rect key={i} x={x} y={y} width={barW} height={h} rx={11} fill={isLast ? t.green : t.chartTrack} />;
       })}
+      {/* injection-day markers */}
+      {marks.map((hit, i) =>
+        hit ? (
+          <Circle key={`m${i}`} cx={4 + i * step + barW / 2} cy={bottom - heights[i] - 7} r={3.4} fill={t.purple} />
+        ) : null,
+      )}
       {goal != null && (
         <>
           <Line x1={0} y1={yFor(goal)} x2={300} y2={yFor(goal)} stroke={t.muted2} strokeWidth={1.5} strokeDasharray="5 5" />

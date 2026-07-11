@@ -16,15 +16,17 @@ import type {
   ChartRange,
   FoodEntry,
   HeightUnit,
+  InjectionSite,
   OnboardingProfile,
   ThemeMode,
   WeightUnit,
 } from './types';
 import { defaultState } from './constants';
 import { computeGoal } from './goals';
-import { computeStreak, rolledOver } from './days';
+import { computeStreak, dayKey, rolledOver } from './days';
+import { getMedication, nextDoseAt, takenThisCycle } from './meds';
 import { darkTheme, lightTheme, type Theme } from './theme';
-import { syncLogReminder, syncReminder } from './notifications';
+import { armMissedDoseCheck, syncLogReminder, syncMedReminder } from './notifications';
 import { getTodayActivity, requestHealthPermissions } from './health';
 import { publishSnapshot } from './widgets';
 import { supabase } from './supabase';
@@ -42,6 +44,10 @@ interface StoreValue {
   addGlass: () => void;
   removeGlass: () => void;
   setDose: (i: number) => void;
+  setMedication: (key: string) => void;
+  setMedSchedule: (day: number, hour: number, minute: number) => void;
+  setMedEnabled: (on: boolean) => void;
+  markShot: (site: InjectionSite) => void;
   toggleReminder: () => void;
   toggleLogReminder: () => void;
   setUnit: (u: WeightUnit) => void;
@@ -147,6 +153,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, [state.todayEntries, state.goal, streak]);
 
+  // Keep the dose reminder + missed-dose follow-up in sync with the schedule.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const med = getMedication(state.medKey);
+    const on = state.medEnabled && state.reminderOn;
+    syncMedReminder({
+      on,
+      medName: med.name,
+      frequency: med.frequency,
+      day: state.medDay,
+      hour: state.medHour,
+      minute: state.medMinute,
+    });
+    const sched = {
+      medKey: state.medKey,
+      medDay: state.medDay,
+      medHour: state.medHour,
+      medMinute: state.medMinute,
+      shots: state.shots,
+    };
+    const missedAt =
+      on && !takenThisCycle(sched)
+        ? new Date(nextDoseAt(sched).getTime() + 14 * 60 * 60 * 1000)
+        : null;
+    armMissedDoseCheck(missedAt, med.name);
+  }, [state.medEnabled, state.reminderOn, state.medKey, state.medDay, state.medHour, state.medMinute, state.shots]);
+
   // Pull today's activity from Apple Health / Health Connect while connected.
   useEffect(() => {
     if (!state.healthConnected) {
@@ -223,12 +256,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           return { ...r, glasses: Math.max(0, r.glasses - 1) };
         }),
       setDose: (i) => setState((s) => ({ ...s, dose: i })),
-      toggleReminder: () =>
-        setState((s) => {
-          const reminderOn = !s.reminderOn;
-          syncReminder(reminderOn);
-          return { ...s, reminderOn };
-        }),
+      setMedication: (key) =>
+        setState((s) => ({
+          ...s,
+          medKey: key,
+          dose: Math.min(s.dose, getMedication(key).doses.length - 1),
+        })),
+      setMedSchedule: (day, hour, minute) =>
+        setState((s) => ({ ...s, medDay: day, medHour: hour, medMinute: minute })),
+      setMedEnabled: (on) => setState((s) => ({ ...s, medEnabled: on })),
+      markShot: (site) =>
+        setState((s) => ({
+          ...s,
+          shots: [
+            ...s.shots,
+            {
+              date: dayKey(new Date()),
+              time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+              doseMg: getMedication(s.medKey).doses[s.dose] ?? '',
+              site,
+            },
+          ],
+        })),
+      toggleReminder: () => setState((s) => ({ ...s, reminderOn: !s.reminderOn })),
       toggleLogReminder: () =>
         setState((s) => {
           const logReminderOn = !s.logReminderOn;
@@ -286,6 +336,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           goalType: p.goalType,
           activityLevel: p.activityLevel,
           targetWeightKg: p.targetWeightKg ?? s.targetWeightKg,
+          medEnabled: p.usesGlp1 ?? s.medEnabled,
           weightLog: [
             ...s.weightLog,
             { date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), kg: p.weightKg },

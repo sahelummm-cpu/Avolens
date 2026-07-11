@@ -18,7 +18,7 @@ import { F } from '@/lib/fonts';
 export default function SettingsPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, session, signOut, toggleLogReminder, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, setHeightUnit, connectHealth, disconnectHealth, theme: t } = useStore();
+  const { state, session, signOut, toggleLogReminder, setMedEnabled, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, setHeightUnit, connectHealth, disconnectHealth, theme: t } = useStore();
   const [editGoal, setEditGoal] = useState(false);
   const [editHeight, setEditHeight] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -143,6 +143,13 @@ export default function SettingsPage() {
               <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Daily at 8:00 PM</Text>
             </View>
             <ToggleSwitch on={state.logReminderOn} onChange={toggleLogReminder} />
+          </Row>
+          <Row border>
+            <View style={{ gap: 1 }}>
+              <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>GLP-1 tracking</Text>
+              <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Dose reminders & injection log on Home</Text>
+            </View>
+            <ToggleSwitch on={state.medEnabled} onChange={() => setMedEnabled(!state.medEnabled)} />
           </Row>
         </View>
 

@@ -18,6 +18,7 @@ export interface OnboardingProfile {
   unit: WeightUnit;
   activityLevel: ActivityLevel;
   targetWeightKg?: number | null;
+  usesGlp1?: boolean;
 }
 
 export interface FoodEntry {
@@ -46,6 +47,26 @@ export interface WeightEntry {
 export interface DayRecord {
   entries: FoodEntry[];
   glasses: number;
+}
+
+export type MedFrequency = 'weekly' | 'daily';
+
+export interface Medication {
+  key: string;
+  name: string;
+  brands: string;
+  frequency: MedFrequency;
+  doses: string[]; // mg ladder, low → high
+}
+
+export type InjectionSite = 'Belly L' | 'Belly R' | 'Thigh L' | 'Thigh R' | 'Arm L' | 'Arm R';
+
+/** One logged injection. */
+export interface ShotRecord {
+  date: string; // 'YYYY-MM-DD'
+  time: string; // display time, e.g. "8:02 PM"
+  doseMg: string;
+  site: InjectionSite;
 }
 
 export interface DemoDay {
@@ -103,7 +124,14 @@ export interface AvoLensState {
   targetWeightKg: number | null;
   themeMode: ThemeMode;
   glasses: number;
-  dose: number;
+  /** GLP-1 tracking */
+  medEnabled: boolean;
+  medKey: string;
+  dose: number; // index into the medication's dose ladder
+  medDay: number; // 0=Sun … 6=Sat (weekly meds)
+  medHour: number;
+  medMinute: number;
+  shots: ShotRecord[];
   reminderOn: boolean;
   logReminderOn: boolean;
   healthConnected: boolean;

@@ -52,7 +52,13 @@ export function defaultState(): AvoLensState {
     targetWeightKg: null,
     themeMode: 'auto',
     glasses: 0,
+    medEnabled: true,
+    medKey: 'semaglutide',
     dose: 2,
+    medDay: 3, // Wednesday
+    medHour: 9,
+    medMinute: 0,
+    shots: [],
     reminderOn: false,
     logReminderOn: false,
     healthConnected: false,

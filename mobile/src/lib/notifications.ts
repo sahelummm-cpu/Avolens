@@ -68,11 +68,20 @@ export async function syncLogReminder(on: boolean): Promise<void> {
   }
 }
 
-/** Schedule (on) or cancel (off) the weekly Wednesday 9:00 reminder. */
-export async function syncReminder(on: boolean): Promise<void> {
+export interface MedReminderConfig {
+  on: boolean;
+  medName: string;
+  frequency: 'weekly' | 'daily';
+  day: number; // 0=Sun … 6=Sat (weekly only)
+  hour: number;
+  minute: number;
+}
+
+/** Schedule (on) or cancel (off) the dose reminder at the user's slot. */
+export async function syncMedReminder(cfg: MedReminderConfig): Promise<void> {
   try {
     await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => {});
-    if (!on) return;
+    if (!cfg.on) return;
 
     const ok = await ensureNotificationPermission();
     if (!ok) return;
@@ -82,18 +91,57 @@ export async function syncReminder(on: boolean): Promise<void> {
       identifier: REMINDER_ID,
       content: {
         title: 'GLP-1 Medication',
-        body: 'Time for your weekly Semaglutide dose.',
+        body: `Time for your ${cfg.frequency} ${cfg.medName} dose.`,
+        sound: true,
+      },
+      trigger:
+        cfg.frequency === 'daily'
+          ? {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
+              hour: cfg.hour,
+              minute: cfg.minute,
+              ...(Platform.OS === 'android' ? { channelId: 'reminders' } : null),
+            }
+          : {
+              type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+              weekday: cfg.day + 1, // expo: 1 = Sunday
+              hour: cfg.hour,
+              minute: cfg.minute,
+              ...(Platform.OS === 'android' ? { channelId: 'reminders' } : null),
+            },
+    });
+  } catch {
+    // Notifications are best-effort; never crash the UI over them.
+  }
+}
+
+const MISSED_ID = 'med-missed-dose';
+
+/**
+ * One-shot "did you take your dose?" follow-up ~14h after the scheduled
+ * time. Pass null (dose logged / reminders off) to cancel it.
+ */
+export async function armMissedDoseCheck(at: Date | null, medName: string): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(MISSED_ID).catch(() => {});
+    if (!at || at.getTime() <= Date.now()) return;
+    const ok = await ensureNotificationPermission();
+    if (!ok) return;
+    await ensureAndroidChannel();
+    await Notifications.scheduleNotificationAsync({
+      identifier: MISSED_ID,
+      content: {
+        title: 'Missed dose?',
+        body: `Looks like your ${medName} dose isn't logged yet. Tap "Mark as taken" if you already injected.`,
         sound: true,
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-        weekday: 4, // Wednesday (1 = Sunday)
-        hour: 9,
-        minute: 0,
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: at,
         ...(Platform.OS === 'android' ? { channelId: 'reminders' } : null),
       },
     });
   } catch {
-    // Notifications are best-effort; never crash the UI over them.
+    // best-effort
   }
 }

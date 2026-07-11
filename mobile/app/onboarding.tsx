@@ -40,6 +40,7 @@ export default function OnboardingPage() {
   const [unit, setUnit] = useState<WeightUnit>('kg');
   const [weight, setWeight] = useState('');
   const [targetWeight, setTargetWeight] = useState('');
+  const [usesGlp1, setUsesGlp1] = useState(false);
 
   const heightCm = (): number => {
     if (heightUnit === 'cm') return parseInt(cm, 10) || 0;
@@ -81,6 +82,7 @@ export default function OnboardingPage() {
       unit,
       activityLevel,
       targetWeightKg: targetKg != null ? Math.round(targetKg * 10) / 10 : null,
+      usesGlp1,
     });
     router.replace('/paywall');
   };
@@ -160,6 +162,14 @@ export default function OnboardingPage() {
               </View>
               <FieldLabel t={t.muted2}>Age</FieldLabel>
               <Input value={age} onChangeText={setAge} placeholder="e.g. 28" suffix="years" />
+              <FieldLabel t={t.muted2}>Do you use GLP-1 medication?</FieldLabel>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Chip label="Yes" selected={usesGlp1} onPress={() => setUsesGlp1(true)} />
+                <Chip label="No" selected={!usesGlp1} onPress={() => setUsesGlp1(false)} />
+              </View>
+              <Text style={{ fontFamily: F.b500, fontSize: 11.5, color: t.muted2, marginTop: 8 }}>
+                Ozempic, Wegovy, Mounjaro, Saxenda… adds dose reminders and injection tracking.
+              </Text>
             </Animated.View>
           )}
 

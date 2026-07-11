@@ -12,6 +12,7 @@ import { MiniBarChart } from '@/components/MiniBarChart';
 import { PromptModal } from '@/components/PromptModal';
 import { useStore } from '@/lib/store';
 import { daysAgoKey, sumCalories, weeklyInsights } from '@/lib/days';
+import { getMedication, recentCycles, shotStreak } from '@/lib/meds';
 import type { ChartRange } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
@@ -78,6 +79,21 @@ export default function ProgressPage() {
 
   const goalKg = state.targetWeightKg;
   const toGo = latest && goalKg != null ? conv(latest.kg) - conv(goalKg) : null;
+
+  // GLP-1 adherence + shot markers on the weight chart (matched by display date).
+  const med = getMedication(state.medKey);
+  const medSched = { medKey: state.medKey, medDay: state.medDay, medHour: state.medHour, medMinute: state.medMinute, shots: state.shots };
+  const shotDisplayDates = useMemo(
+    () =>
+      new Set(
+        state.shots.map((s) =>
+          new Date(`${s.date}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        ),
+      ),
+    [state.shots],
+  );
+  const chartMarkers = state.weightLog.map((w) => shotDisplayDates.has(w.date));
+  const lastShot = state.shots[state.shots.length - 1];
 
   const avgHealth =
     state.todayEntries.length > 0
@@ -205,7 +221,7 @@ export default function ProgressPage() {
                 />
               </View>
 
-              <WeightChart values={chartValues} goal={goalKg != null ? conv(goalKg) : undefined} />
+              <WeightChart values={chartValues} goal={goalKg != null ? conv(goalKg) : undefined} markers={state.medEnabled ? chartMarkers : undefined} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
                 {rangeLabels.map((lab, i) => (
                   <Text key={i} style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2 }}>{lab}</Text>
@@ -339,6 +355,56 @@ export default function ProgressPage() {
             </Text>
           )}
         </View>
+
+        {/* GLP-1 adherence */}
+        {state.medEnabled && (
+          <View style={card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <View>
+                <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>{med.name}</Text>
+                <Text style={{ fontFamily: F.b500, fontSize: 11.5, color: t.muted, marginTop: 2 }}>
+                  {lastShot
+                    ? `Last dose ${lastShot.doseMg} mg · ${lastShot.site}`
+                    : 'No injections logged yet — use "Mark as taken" on Home.'}
+                </Text>
+              </View>
+              {state.shots.length > 0 && (
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ fontFamily: F.d800, fontSize: 22, color: t.purple }}>{shotStreak(medSched)}</Text>
+                  <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>
+                    {med.frequency === 'weekly' ? 'week streak' : 'day streak'}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {recentCycles(medSched).map((hit, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flex: 1,
+                    height: 26,
+                    borderRadius: 9,
+                    backgroundColor: hit ? t.purple : t.surface2,
+                    borderWidth: hit ? 0 : 1,
+                    borderColor: t.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {hit && (
+                    <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round">
+                      <Path d="m5 12 5 5 9-11" />
+                    </Svg>
+                  )}
+                </View>
+              ))}
+            </View>
+            <Text style={{ fontFamily: F.b500, fontSize: 10.5, color: t.muted2, marginTop: 7 }}>
+              Last 8 {med.frequency === 'weekly' ? 'weeks' : 'days'} · {state.shots.length} injection{state.shots.length === 1 ? '' : 's'} logged
+            </Text>
+          </View>
+        )}
 
         {/* Weekly insights */}
         {insights.daysLogged > 0 && (
