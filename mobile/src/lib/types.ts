@@ -165,6 +165,7 @@ export interface AvoLensState {
   goalType: GoalType | null;
   activityLevel: ActivityLevel | null;
   targetWeightKg: number | null;
+  displayName: string;
   themeMode: ThemeMode;
   glasses: number;
   /** GLP-1 tracking */
@@ -181,6 +182,8 @@ export interface AvoLensState {
   shots: ShotRecord[];
   reminderOn: boolean;
   logReminderOn: boolean;
+  logReminderHour: number;
+  logReminderMinute: number;
   healthConnected: boolean;
   chartRange: ChartRange;
   selectedDay: number;

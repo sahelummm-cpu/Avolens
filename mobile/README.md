@@ -116,6 +116,23 @@ The Trends tab (`app/progress.tsx`, `src/lib/progress.ts`) includes:
 - **Export & share** — CSV export of your log/weight/measurements
   (`expo-sharing`) and a shareable progress summary.
 
+## Settings
+
+- **Profile** — real account (email / "Guest"), editable display name, sex,
+  age, and activity level.
+- **Goals** — edit daily calories, macro targets (with quick splits:
+  balanced / high-protein / low-carb / keto), and water goal; plus
+  **Recalculate from my stats** which re-runs Mifflin-St Jeor from your
+  current weight/age/activity.
+- **Reminders** — meal-log reminder with a configurable time, and the
+  GLP-1 tracking toggle.
+- **Data & privacy** — export CSV, clear logged data, and **delete
+  account** (calls the `delete-account` edge function to remove the user
+  + data, then wipes local state).
+- **About** — version, privacy policy / terms links, contact support,
+  rate the app. (Edit the placeholder URLs/email at the top of
+  `app/settings.tsx`.)
+
 ## Supabase backend (accounts, sync, AI scan + coach)
 
 Set the two env vars (Supabase dashboard → Settings → API — use the
@@ -134,7 +151,7 @@ npx supabase link --project-ref <ref>
 npx supabase db push                          # applies supabase/migrations/*
                                               # (incl. the progress-photos bucket)
 npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-npx supabase functions deploy scan coach      # deploys supabase/functions/*
+npx supabase functions deploy scan coach delete-account   # deploys supabase/functions/*
 ```
 
 That enables: email/password accounts (Settings → Account), state sync

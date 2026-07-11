@@ -72,9 +72,15 @@ interface StoreValue {
   removePhoto: (id: string) => void;
   markAchievementsSeen: (ids: string[]) => void;
   setGoalCalories: (kcal: number) => void;
+  setGoal: (patch: Partial<AvoLensState['goal']>) => void;
   setHeightCm: (cm: number) => void;
   setHeightUnit: (u: HeightUnit) => void;
   setTargetWeight: (kg: number | null) => void;
+  setDisplayName: (name: string) => void;
+  setProfile: (p: { sex?: AvoLensState['sex']; age?: number | null; activityLevel?: AvoLensState['activityLevel'] }) => void;
+  recalcGoals: () => boolean;
+  setLogReminderTime: (hour: number, minute: number) => void;
+  clearLoggedData: () => void;
   finishOnboarding: () => void;
   completeOnboarding: (p: OnboardingProfile) => void;
   connectHealth: () => Promise<boolean>;
@@ -83,6 +89,7 @@ interface StoreValue {
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<string | null>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -308,7 +315,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       toggleLogReminder: () =>
         setState((s) => {
           const logReminderOn = !s.logReminderOn;
-          syncLogReminder(logReminderOn);
+          syncLogReminder(logReminderOn, s.logReminderHour, s.logReminderMinute);
           return { ...s, logReminderOn };
         }),
       setUnit: (u) => setState((s) => ({ ...s, unit: u })),
@@ -391,9 +398,52 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       markAchievementsSeen: (ids) =>
         setState((s) => ({ ...s, achievementsSeen: Array.from(new Set([...s.achievementsSeen, ...ids])) })),
       setGoalCalories: (kcal) => setState((s) => ({ ...s, goal: { ...s.goal, calories: kcal } })),
+      setGoal: (patch) => setState((s) => ({ ...s, goal: { ...s.goal, ...patch } })),
       setHeightCm: (cm) => setState((s) => ({ ...s, heightCm: cm })),
       setHeightUnit: (u) => setState((s) => ({ ...s, heightUnit: u })),
       setTargetWeight: (kg) => setState((s) => ({ ...s, targetWeightKg: kg })),
+      setDisplayName: (name) => setState((s) => ({ ...s, displayName: name })),
+      setProfile: (p) => setState((s) => ({ ...s, ...p })),
+      recalcGoals: () => {
+        let ok = false;
+        setState((s) => {
+          const weightKg = s.weightLog[s.weightLog.length - 1]?.kg;
+          if (s.sex == null || s.age == null || s.activityLevel == null || s.goalType == null || weightKg == null) {
+            return s;
+          }
+          ok = true;
+          const g = computeGoal({
+            goalType: s.goalType,
+            sex: s.sex,
+            age: s.age,
+            heightCm: s.heightCm,
+            heightUnit: s.heightUnit,
+            weightKg,
+            unit: s.unit,
+            activityLevel: s.activityLevel,
+          });
+          return { ...s, goal: { ...s.goal, ...g } };
+        });
+        return ok;
+      },
+      setLogReminderTime: (hour, minute) =>
+        setState((s) => {
+          if (s.logReminderOn) syncLogReminder(true, hour, minute);
+          return { ...s, logReminderHour: hour, logReminderMinute: minute };
+        }),
+      clearLoggedData: () =>
+        setState((s) => ({
+          ...s,
+          todayEntries: [],
+          history: {},
+          weightLog: [],
+          measurements: [],
+          photos: [],
+          shots: [],
+          favorites: [],
+          glasses: 0,
+          achievementsSeen: [],
+        })),
       finishOnboarding: () => setState((s) => ({ ...s, hasOnboarded: true })),
       completeOnboarding: (p) =>
         setState((s) => ({
@@ -443,6 +493,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
       signOut: async () => {
         await supabase?.auth.signOut();
+      },
+      deleteAccount: async () => {
+        try {
+          if (supabase && session) {
+            const { error } = await supabase.functions.invoke('delete-account');
+            if (error) return 'Could not delete your account. Please try again.';
+            await supabase.auth.signOut();
+          }
+        } catch {
+          return 'Could not delete your account. Please try again.';
+        }
+        // Wipe local data back to a fresh install.
+        setState(() => ({ ...defaultState(), hasOnboarded: true }));
+        return null;
       },
     }),
     [state, resolvedDark, theme, systemDark, activity, streak, session],

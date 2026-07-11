@@ -39,8 +39,8 @@ async function ensureAndroidChannel() {
 
 const LOG_REMINDER_ID = 'daily-log-reminder';
 
-/** Schedule (on) or cancel (off) the daily 20:00 "log your meals" reminder. */
-export async function syncLogReminder(on: boolean): Promise<void> {
+/** Schedule (on) or cancel (off) the daily "log your meals" reminder. */
+export async function syncLogReminder(on: boolean, hour = 20, minute = 0): Promise<void> {
   try {
     await Notifications.cancelScheduledNotificationAsync(LOG_REMINDER_ID).catch(() => {});
     if (!on) return;
@@ -58,8 +58,8 @@ export async function syncLogReminder(on: boolean): Promise<void> {
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 20,
-        minute: 0,
+        hour,
+        minute,
         ...(Platform.OS === 'android' ? { channelId: 'reminders' } : null),
       },
     });
