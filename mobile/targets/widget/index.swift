@@ -148,14 +148,19 @@ struct HomeWidgetView: View {
     .padding(12)
   }
 
-  // systemMedium: ring on the left, number + macro rows on the right (Home card).
+  // systemMedium: ring (with the kcal-left number inside) on the left, macro
+  // rows on the right — matching the Nibbl v2 widget layout.
   var mediumLayout: some View {
     HStack(spacing: 16) {
-      AvoRing(s: entry.snapshot, size: 112)
-      VStack(alignment: .leading, spacing: 2) {
-        Text("\(entry.snapshot.kcalLeft)").font(.system(size: 30, weight: .heavy)).foregroundColor(.primary)
-        Text("kcal left").font(.system(size: 12)).foregroundColor(.secondary)
-        Spacer().frame(height: 6)
+      ZStack {
+        AvoRing(s: entry.snapshot, size: 118)
+        VStack(spacing: 0) {
+          Text("\(entry.snapshot.kcalLeft)").font(.system(size: 24, weight: .heavy)).foregroundColor(.primary)
+          Text("LEFT").font(.system(size: 9, weight: .semibold)).tracking(1).foregroundColor(.secondary)
+        }
+      }
+      VStack(alignment: .leading, spacing: 7) {
+        Text("AvoLens").font(.system(size: 13, weight: .semibold)).foregroundColor(.primary)
         macroRow("Protein", entry.snapshot.protein, entry.snapshot.proteinGoal, proteinColor)
         macroRow("Carbs", entry.snapshot.carbs, entry.snapshot.carbsGoal, carbsColor)
         macroRow("Fat", entry.snapshot.fat, entry.snapshot.fatGoal, fatColor)

@@ -5,9 +5,10 @@ import type { WidgetSnapshot } from '@/lib/types';
 
 /**
  * Android home-screen widget — a slice of the app's Home dashboard card:
- * the same four-ring calorie/macro ring (rendered as an SVG string via
- * SvgWidget), the big "kcal left" number, and the macro rows. It renders
- * headlessly, so the light-theme card palette from `theme.tsx` is inlined.
+ * the four-ring calorie/macro ring (rendered as an SVG string via SvgWidget)
+ * with the "kcal left" number in the center of the ring, and the macro rows
+ * beside it. It renders headlessly, so the light-theme card palette from
+ * `theme.tsx` is inlined.
  */
 
 const EMPTY: WidgetSnapshot = {
@@ -50,7 +51,10 @@ function ring(r: number, sw: number, track: string, stroke: string, frac: number
   );
 }
 
-/** Builds the four-ring calorie/macro ring as an SVG string (156×156 viewBox). */
+/**
+ * Builds the four-ring calorie/macro ring as an SVG string (156×156 viewBox),
+ * with the kcal-left number + "LEFT" label centered inside (Nibbl v2 widget).
+ */
 function ringSvg(s: WidgetSnapshot): string {
   const cal = clamp(s.kcalGoal - s.kcalLeft, s.kcalGoal);
   const p = clamp(s.protein, s.proteinGoal);
@@ -65,6 +69,8 @@ function ringSvg(s: WidgetSnapshot): string {
     ring(51, 10, PROTEIN_TINT, PROTEIN, p) +
     ring(38, 10, CARBS_TINT, CARBS, c) +
     ring(25, 10, FAT_TINT, FAT, f) +
+    `<text x="78" y="80" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="30" fill="#26331a">${s.kcalLeft.toLocaleString('en-US')}</text>` +
+    `<text x="78" y="98" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="12" letter-spacing="1.5" fill="#7c8a7f">LEFT</text>` +
     `</svg>`
   );
 }
@@ -95,11 +101,10 @@ export function SummaryWidget({ snapshot = EMPTY }: { snapshot?: WidgetSnapshot 
         alignItems: 'center',
       }}
     >
-      <SvgWidget svg={ringSvg(s)} style={{ width: 116, height: 116, marginRight: 16 }} />
+      <SvgWidget svg={ringSvg(s)} style={{ width: 122, height: 122, marginRight: 16 }} />
 
       <FlexWidget style={{ flexDirection: 'column', flex: 1 }}>
-        <TextWidget text={`${s.kcalLeft.toLocaleString('en-US')}`} style={{ fontSize: 30, color: INK, fontFamily: 'sans-serif-black' }} />
-        <TextWidget text="kcal left" style={{ fontSize: 12, color: MUTED, marginBottom: 4 }} />
+        <TextWidget text="AvoLens" style={{ fontSize: 13, color: INK, fontFamily: 'sans-serif-medium', marginBottom: 8 }} />
         <Macro label="Protein" value={s.protein} goal={s.proteinGoal} color={PROTEIN} />
         <Macro label="Carbs" value={s.carbs} goal={s.carbsGoal} color={CARBS} />
         <Macro label="Fat" value={s.fat} goal={s.fatGoal} color={FAT} />
