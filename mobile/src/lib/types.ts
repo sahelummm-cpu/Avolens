@@ -36,6 +36,25 @@ export interface FoodEntry {
   healthScore: number;
   ingredients?: string[];
   icon?: 'yogurt' | 'bowl' | 'generic';
+  /** Display portion, e.g. amount 150 unit 'g'. Macros above stay absolute. */
+  amount?: number;
+  unit?: 'g' | 'ml' | 'serving' | 'item' | 'kcal';
+}
+
+/** A saved food the user can re-log in one tap (per-100g basis). */
+export interface FavoriteFood {
+  id: string;
+  name: string;
+  brands?: string;
+  calories: number; // per 100 g
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  sodium: number;
+  sugar: number;
+  healthScore: number;
+  servingG?: number;
 }
 
 export interface WeightEntry {
@@ -147,6 +166,7 @@ export interface AvoLensState {
   todayEntries: FoodEntry[];
   /** Past days ('YYYY-MM-DD' → what was logged). Today lives in todayEntries. */
   history: Record<string, DayRecord>;
+  favorites: FavoriteFood[];
   weightLog: WeightEntry[];
   hasOnboarded: boolean;
 }
@@ -163,4 +183,6 @@ export interface ScanResult {
   sugar: number;
   healthScore: number;
   ingredients: string[];
+  /** Per-100g basis, when the result came from a database lookup. */
+  per100?: import('./foods').FoodBasis;
 }

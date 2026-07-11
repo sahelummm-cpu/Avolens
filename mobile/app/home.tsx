@@ -12,15 +12,24 @@ import { FoodLogCard } from '@/components/FoodLogCard';
 import { BottomNav } from '@/components/BottomNav';
 import { useDailyTotals, useStore } from '@/lib/store';
 import { selectedDayTotals } from '@/lib/dayStrip';
+import { daysAgoKey } from '@/lib/days';
+import type { FoodEntry } from '@/lib/types';
 import { F } from '@/lib/fonts';
+
+const MEAL_ORDER: FoodEntry['meal'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
 const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
 export default function HomePage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, theme: t, activity, streak } = useStore();
+  const { state, theme: t, activity, streak, copyDayToToday } = useStore();
   const liveTotals = useDailyTotals();
+  const yesterdayEntries = state.history[daysAgoKey(1)]?.entries ?? [];
+  const mealGroups = MEAL_ORDER.map((m) => ({
+    meal: m,
+    entries: state.todayEntries.filter((e) => e.meal === m),
+  })).filter((g) => g.entries.length > 0);
   const totals = selectedDayTotals(state, liveTotals);
 
   const fractions = {
@@ -191,40 +200,59 @@ export default function HomePage() {
             <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Add meal</Text>
           </Pressable>
         </View>
-        <View style={{ gap: 10 }}>
-          {state.todayEntries.length === 0 ? (
-            <View style={{ alignItems: 'center', gap: 14, paddingVertical: 24 }}>
-              <Text style={{ textAlign: 'center', fontFamily: F.b500, fontSize: 13, color: t.muted }}>
-                Nothing logged yet — scan or add a meal.
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Pressable
-                  onPress={() => router.push('/scanner')}
-                  accessibilityRole="button"
-                  style={{ backgroundColor: t.green, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
-                >
-                  <Text style={{ fontFamily: F.d700, fontSize: 13, color: '#fff' }}>Scan a meal</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => router.push('/manual-entry')}
-                  accessibilityRole="button"
-                  style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
-                >
-                  <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>Add manually</Text>
-                </Pressable>
-              </View>
+        {state.todayEntries.length === 0 ? (
+          <View style={{ alignItems: 'center', gap: 14, paddingVertical: 24 }}>
+            <Text style={{ textAlign: 'center', fontFamily: F.b500, fontSize: 13, color: t.muted }}>
+              Nothing logged yet — scan or add a meal.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable
+                onPress={() => router.push('/scanner')}
+                accessibilityRole="button"
+                style={{ backgroundColor: t.green, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
+              >
+                <Text style={{ fontFamily: F.d700, fontSize: 13, color: '#fff' }}>Scan a meal</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/manual-entry')}
+                accessibilityRole="button"
+                style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
+              >
+                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>Add manually</Text>
+              </Pressable>
             </View>
-          ) : (
-            state.todayEntries.map((entry, i) => (
-              <FoodLogCard
-                key={entry.id}
-                entry={entry}
-                delay={0.45 + i * 0.13}
-                onPress={() => router.push({ pathname: '/manual-entry', params: { edit: entry.id } })}
-              />
-            ))
-          )}
-        </View>
+            {yesterdayEntries.length > 0 && (
+              <Pressable onPress={() => copyDayToToday(daysAgoKey(1))} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                  <Path d="M8 4h9a2 2 0 0 1 2 2v11M6 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" />
+                </Svg>
+                <Text style={{ fontFamily: F.b600, fontSize: 12.5, color: t.muted }}>Copy yesterday's {yesterdayEntries.length} meals</Text>
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          <View style={{ gap: 16 }}>
+            {mealGroups.map((group, gi) => {
+              const subtotal = group.entries.reduce((a, e) => a + e.calories, 0);
+              return (
+                <View key={group.meal} style={{ gap: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 }}>
+                    <Text style={{ fontFamily: F.b700, fontSize: 11.5, color: t.muted2, letterSpacing: 0.6, textTransform: 'uppercase' }}>{group.meal}</Text>
+                    <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.muted }}>{subtotal.toLocaleString('en-US')} kcal</Text>
+                  </View>
+                  {group.entries.map((entry, i) => (
+                    <FoodLogCard
+                      key={entry.id}
+                      entry={entry}
+                      delay={0.4 + (gi + i) * 0.1}
+                      onPress={() => router.push({ pathname: '/manual-entry', params: { edit: entry.id } })}
+                    />
+                  ))}
+                </View>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
       <BottomNav active="home" />

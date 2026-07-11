@@ -6,9 +6,27 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/Screen';
 import { useStore } from '@/lib/store';
-import { lookupBarcode, scanMeal } from '@/lib/api';
+import { scanMeal } from '@/lib/api';
+import { barcodeBasis, scaleBasis, type FoodBasis } from '@/lib/foods';
 import type { ScanResult } from '@/lib/types';
 import { F } from '@/lib/fonts';
+
+function scanResultFromBasis(b: FoodBasis, grams: number): ScanResult {
+  const s = scaleBasis(b, grams);
+  return {
+    name: b.brands ? `${b.name} (${b.brands})` : b.name,
+    matchConfidence: 100,
+    calories: s.calories,
+    protein: s.protein,
+    carbs: s.carbs,
+    fat: s.fat,
+    fiber: s.fiber,
+    sodium: s.sodium,
+    sugar: s.sugar,
+    healthScore: b.healthScore,
+    ingredients: [`${grams} g`],
+  };
+}
 
 const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] as const;
 
@@ -31,6 +49,8 @@ export default function ScannerPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [mode, setMode] = useState<'food' | 'barcode'>('food');
+  const [basis, setBasis] = useState<FoodBasis | null>(null);
+  const [grams, setGrams] = useState(100);
   const scanningBarcode = useRef(false);
 
   useEffect(() => {
@@ -57,6 +77,7 @@ export default function ScannerPage() {
     setLoading(true);
     setScanError(null);
     setResult(null);
+    setBasis(null);
     try {
       const photo = await cameraRef.current?.takePictureAsync({ base64: true, quality: 0.85 });
       if (!photo?.base64) throw new Error('Could not capture a photo.');
@@ -75,8 +96,11 @@ export default function ScannerPage() {
     setLoading(true);
     setScanError(null);
     try {
-      const data = await lookupBarcode(code);
-      setResult(data);
+      const b = await barcodeBasis(code);
+      const g = b.servingG ?? 100;
+      setBasis(b);
+      setGrams(g);
+      setResult(scanResultFromBasis(b, g));
     } catch (err) {
       setScanError(err instanceof Error ? err.message : 'Lookup failed');
     } finally {
@@ -91,6 +115,12 @@ export default function ScannerPage() {
   const removeIngredient = (i: number) => {
     if (!result) return;
     setResult({ ...result, ingredients: result.ingredients.filter((_, idx) => idx !== i) });
+  };
+
+  const setPortion = (g: number) => {
+    const clamped = Math.max(1, Math.round(g));
+    setGrams(clamped);
+    if (basis) setResult(scanResultFromBasis(basis, clamped));
   };
 
   const addToLog = () => {
@@ -109,6 +139,7 @@ export default function ScannerPage() {
       healthScore: Math.round(result.healthScore),
       ingredients: result.ingredients,
       icon: 'generic',
+      ...(basis ? { amount: grams, unit: 'g' as const } : null),
     });
     router.push('/home');
   };
@@ -215,6 +246,21 @@ export default function ScannerPage() {
                 <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: -4 }}>kcal</Text>
               </View>
             </View>
+
+            {basis && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, backgroundColor: t.surface2, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}>
+                <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
+                  Portion <Text style={{ color: t.muted }}>· {basis.calories} kcal / 100g</Text>
+                </Text>
+                <Pressable onPress={() => setPortion(grams - 10)} accessibilityLabel="Less" style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
+                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
+                </Pressable>
+                <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink, minWidth: 52, textAlign: 'center' }}>{grams} g</Text>
+                <Pressable onPress={() => setPortion(grams + 10)} accessibilityLabel="More" style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
+                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
+                </Pressable>
+              </View>
+            )}
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
               <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.muted2, width: '100%' }}>Ingredients</Text>

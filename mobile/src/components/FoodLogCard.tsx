@@ -133,7 +133,9 @@ export function FoodLogCard({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <MealTimeIcon meal={entry.meal} />
           <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2 }}>
-            {entry.meal} · {entry.time}
+            {entry.amount && entry.unit && entry.unit !== 'kcal' && entry.unit !== 'serving'
+              ? `${entry.amount} ${entry.unit} · ${entry.time}`
+              : `${entry.meal} · ${entry.time}`}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>

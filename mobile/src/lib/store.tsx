@@ -14,6 +14,7 @@ import type {
   ActivitySummary,
   AvoLensState,
   ChartRange,
+  FavoriteFood,
   FoodEntry,
   HeightUnit,
   InjectionSite,
@@ -57,8 +58,12 @@ interface StoreValue {
   toggleDarkManual: () => void;
   setChartRange: (r: ChartRange) => void;
   addEntry: (e: Omit<FoodEntry, 'id'>) => void;
+  /** Log to a specific 'YYYY-MM-DD' (today or a past day). */
+  addEntryToDay: (dateKey: string, e: Omit<FoodEntry, 'id'>) => void;
   updateEntry: (id: string, patch: Partial<Omit<FoodEntry, 'id'>>) => void;
   removeEntry: (id: string) => void;
+  toggleFavorite: (f: Omit<FavoriteFood, 'id'>) => void;
+  copyDayToToday: (fromKey: string) => void;
   logWeight: (kg: number) => void;
   setGoalCalories: (kcal: number) => void;
   setHeightCm: (cm: number) => void;
@@ -319,6 +324,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             ],
           };
         }),
+      addEntryToDay: (dateKey, e) =>
+        setState((s) => {
+          const r = rolledOver(s);
+          const entry: FoodEntry = { ...e, id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
+          if (dateKey === r.todayKey) {
+            return { ...r, todayEntries: [entry, ...r.todayEntries] };
+          }
+          const prev = r.history[dateKey] ?? { entries: [], glasses: 0 };
+          return { ...r, history: { ...r.history, [dateKey]: { ...prev, entries: [entry, ...prev.entries] } } };
+        }),
       updateEntry: (id, patch) =>
         setState((s) => ({
           ...s,
@@ -326,6 +341,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })),
       removeEntry: (id) =>
         setState((s) => ({ ...s, todayEntries: s.todayEntries.filter((e) => e.id !== id) })),
+      toggleFavorite: (f) =>
+        setState((s) => {
+          const key = (x: { name: string; brands?: string }) => `${x.name.toLowerCase()}|${x.brands ?? ''}`;
+          const exists = s.favorites.find((x) => key(x) === key(f));
+          if (exists) return { ...s, favorites: s.favorites.filter((x) => x.id !== exists.id) };
+          return {
+            ...s,
+            favorites: [{ ...f, id: `f-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }, ...s.favorites],
+          };
+        }),
+      copyDayToToday: (fromKey) =>
+        setState((s) => {
+          const r = rolledOver(s);
+          const src = fromKey === r.todayKey ? r.todayEntries : (r.history[fromKey]?.entries ?? []);
+          if (src.length === 0) return r;
+          const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          const copies = src.map((e) => ({
+            ...e,
+            id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${e.id.slice(-3)}`,
+            time: now,
+          }));
+          return { ...r, todayEntries: [...copies, ...r.todayEntries] };
+        }),
       logWeight: (kg) =>
         setState((s) => ({
           ...s,

@@ -62,11 +62,25 @@ show a "Connect Apple Health or Google Fit" state (see below).
   all read from real history. (`src/lib/days.ts`)
 - **Edit / delete meals** — tap any card in Today's Log to edit it
   (prefilled manual-entry) or delete it (trash icon).
+- **Food database search** — manual entry searches the free OpenFoodFacts
+  database (debounced); pick a result and it prefills with the food's
+  per-100g nutrition. (`src/lib/foods.ts`)
+- **Portion / serving sizes** — database and barcode foods log by weight
+  (grams), and all macros scale to the amount eaten — so the barcode scan
+  reflects your actual portion, not a flat per-100g value.
+- **Log to any day** — the entry screen has a day selector (Today,
+  Yesterday, last 7 days) so you can backfill a forgotten meal.
+- **Quick-add calories** — a "calories only" toggle for rough entries
+  without macros.
 - **Barcode scanning** — the Barcode chip on the Scanner reads
-  EAN/UPC/Code-128 via `expo-camera` and looks the product up in the free
-  OpenFoodFacts database (values per 100 g). No API key needed.
-- **Recents** — recently logged meals appear as one-tap chips in manual
-  entry.
+  EAN/UPC/Code-128 via `expo-camera`, looks the product up in
+  OpenFoodFacts, and lets you adjust the portion before logging.
+- **Favorites + recents** — star any food to pin it as a one-tap chip;
+  recently logged meals also appear automatically (brand-new users get a
+  short "Suggested" starter list instead).
+- **Meal grouping** — Today's Log groups entries by Breakfast / Lunch /
+  Dinner / Snack with a per-meal calorie subtotal, and "copy yesterday's
+  meals" repeats a day in one tap.
 - **Weight goal** — set a target weight in onboarding or on Progress; the
   chart shows a dashed goal line and "X kg to go".
 - **Daily log reminder** — Settings toggle for an 8 PM local notification.

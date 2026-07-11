@@ -23,11 +23,11 @@ export function average(values: number[]): number {
 }
 
 /**
- * Quick-add suggestions for the manual-entry screen. These are food templates
- * (not logged data) — a UI affordance, not seeded history. `color` is a Theme
- * token key so the dot follows light/dark mode.
+ * Starter suggestions shown in manual entry only for brand-new users who have
+ * no favorites or recents yet. Not seeded history — a UI affordance. `color` is
+ * a Theme token key so the dot follows light/dark mode.
  */
-export const FREQUENT_FOODS: { name: string; color: keyof Theme; calories: number; protein: number; carbs: number; fat: number }[] = [
+export const SUGGESTED_FOODS: { name: string; color: keyof Theme; calories: number; protein: number; carbs: number; fat: number }[] = [
   { name: 'Greek yogurt', color: 'protein', calories: 130, protein: 17, carbs: 8, fat: 3 },
   { name: 'Banana', color: 'carbs', calories: 105, protein: 1, carbs: 27, fat: 0 },
   { name: 'Chicken breast', color: 'green', calories: 165, protein: 31, carbs: 0, fat: 4 },
@@ -70,6 +70,7 @@ export function defaultState(): AvoLensState {
     todayKey: dayKey(new Date()),
     todayEntries: [],
     history: {},
+    favorites: [],
     weightLog: [],
     hasOnboarded: false,
   };
