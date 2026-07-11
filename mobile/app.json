@@ -103,6 +103,28 @@
               "targetCellHeight": 2,
               "resizeMode": "horizontal|vertical",
               "previewImage": "./assets/images/avo-logo.png"
+            },
+            {
+              "name": "AvoLensStreak",
+              "label": "AvoLens Streak",
+              "description": "Your current logging streak.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "none",
+              "previewImage": "./assets/images/avo-logo.png"
+            },
+            {
+              "name": "AvoLensWater",
+              "label": "AvoLens Water",
+              "description": "Water logged today.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "none",
+              "previewImage": "./assets/images/avo-logo.png"
             }
           ]
         }

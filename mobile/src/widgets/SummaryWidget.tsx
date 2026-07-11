@@ -1,14 +1,17 @@
 import * as React from 'react';
-import { FlexWidget, SvgWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, ImageWidget, SvgWidget, TextWidget } from 'react-native-android-widget';
 import type { ColorProp } from 'react-native-android-widget';
 import type { WidgetSnapshot } from '@/lib/types';
 
 /**
- * Android home-screen widget — a slice of the app's Home dashboard card:
- * the four-ring calorie/macro ring (rendered as an SVG string via SvgWidget)
- * with the "kcal left" number in the center of the ring, and the macro rows
- * beside it. It renders headlessly, so the light-theme card palette from
- * `theme.tsx` is inlined.
+ * Android home-screen widgets — the "Home Widget" screen from the Nibbl v2
+ * design. Three separate widgets the user can place independently:
+ *   • AvoLensSummary — the ring card: calorie/macro ring with "kcal LEFT" in
+ *     the center, the AvoLens brand, and Protein/Carbs progress bars.
+ *   • AvoLensStreak  — a small "N day streak" card with a flame.
+ *   • AvoLensWater   — a small "N.N L water today" card with a droplet.
+ * They render headlessly, so the light-theme card palette from `theme.tsx` is
+ * inlined here.
  */
 
 const EMPTY: WidgetSnapshot = {
@@ -21,21 +24,24 @@ const EMPTY: WidgetSnapshot = {
   fat: 0,
   fatGoal: 56,
   streak: 0,
+  glasses: 0,
+  glassesGoal: 5,
 };
 
 // Light-theme tokens (src/lib/theme.tsx → lightTheme).
 const SURFACE = '#ffffff';
 const INK: ColorProp = '#26331a';
 const MUTED: ColorProp = '#7c8a7f';
-const GREEN_GRAD1 = '#a9c24a';
-const GREEN_GRAD2 = '#5a8a2e';
+const GREEN = '#6e9e3a';
 const GREEN_TRACK = '#edf1eb';
 const PROTEIN = '#e4586e';
-const PROTEIN_TINT = '#fbeaed';
+const PROTEIN_TINT = '#f1e6e9';
 const CARBS = '#e8a13b';
-const CARBS_TINT = '#fbf1e0';
-const FAT = '#4da8f0';
-const FAT_TINT = '#e9f3fc';
+const CARBS_TINT = '#f3ecdd';
+const FLAME = '#e8862e';
+const WATER = '#4da8f0';
+
+const AVO_LOGO = require('../../assets/images/avo-logo.png');
 
 const clamp = (v: number, total: number) => (total > 0 ? Math.max(0, Math.min(1, v / total)) : 0);
 
@@ -52,40 +58,43 @@ function ring(r: number, sw: number, track: string, stroke: string, frac: number
 }
 
 /**
- * Builds the four-ring calorie/macro ring as an SVG string (156×156 viewBox),
- * with the kcal-left number + "LEFT" label centered inside (Nibbl v2 widget).
+ * The concentric calorie / protein / carbs ring as an SVG string (156×156
+ * viewBox), with the kcal-left number + "LEFT" label centered inside — the
+ * Nibbl v2 widget ring.
  */
 function ringSvg(s: WidgetSnapshot): string {
   const cal = clamp(s.kcalGoal - s.kcalLeft, s.kcalGoal);
   const p = clamp(s.protein, s.proteinGoal);
   const c = clamp(s.carbs, s.carbsGoal);
-  const f = clamp(s.fat, s.fatGoal);
   return (
     `<svg width="156" height="156" viewBox="0 0 156 156" xmlns="http://www.w3.org/2000/svg">` +
-    `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
-    `<stop offset="0" stop-color="${GREEN_GRAD1}"/><stop offset="1" stop-color="${GREEN_GRAD2}"/>` +
-    `</linearGradient></defs>` +
-    ring(66, 12, GREEN_TRACK, 'url(#g)', cal) +
-    ring(51, 10, PROTEIN_TINT, PROTEIN, p) +
-    ring(38, 10, CARBS_TINT, CARBS, c) +
-    ring(25, 10, FAT_TINT, FAT, f) +
+    ring(66, 12, GREEN_TRACK, GREEN, cal) +
+    ring(51, 12, PROTEIN_TINT, PROTEIN, p) +
+    ring(36, 12, CARBS_TINT, CARBS, c) +
     `<text x="78" y="80" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="30" fill="#26331a">${s.kcalLeft.toLocaleString('en-US')}</text>` +
     `<text x="78" y="98" text-anchor="middle" font-family="sans-serif" font-weight="bold" font-size="12" letter-spacing="1.5" fill="#7c8a7f">LEFT</text>` +
     `</svg>`
   );
 }
 
-function Macro({ label, value, goal, color }: { label: string; value: number; goal: number; color: ColorProp }) {
+/** A rounded track with a colored fill sized to `frac` of a fixed-width bar. */
+function Bar({ label, value, frac, color, track }: { label: string; value: string; frac: number; color: ColorProp; track: ColorProp }) {
+  const W = 130;
   return (
-    <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent', marginTop: 5 }}>
-      <FlexWidget style={{ width: 8, height: 8, borderRadius: 8, backgroundColor: color, marginRight: 7 }} />
-      <TextWidget text={label} style={{ fontSize: 12, color: MUTED }} />
-      <FlexWidget style={{ flex: 1 }} />
-      <TextWidget text={`${value}/${goal}g`} style={{ fontSize: 12, color: INK, fontFamily: 'sans-serif-medium' }} />
+    <FlexWidget style={{ flexDirection: 'column', width: 'match_parent', marginTop: 8 }}>
+      <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent', marginBottom: 4 }}>
+        <TextWidget text={label} style={{ fontSize: 11, color: MUTED }} />
+        <FlexWidget style={{ flex: 1 }} />
+        <TextWidget text={value} style={{ fontSize: 11, color: INK, fontFamily: 'sans-serif-medium' }} />
+      </FlexWidget>
+      <FlexWidget style={{ width: W, height: 6, borderRadius: 6, backgroundColor: track }}>
+        <FlexWidget style={{ width: Math.max(0, Math.round(W * frac)), height: 6, borderRadius: 6, backgroundColor: color }} />
+      </FlexWidget>
     </FlexWidget>
   );
 }
 
+/** The ring card (medium): ring + AvoLens brand + Protein/Carbs bars. */
 export function SummaryWidget({ snapshot = EMPTY }: { snapshot?: WidgetSnapshot }) {
   const s = snapshot;
   return (
@@ -101,13 +110,75 @@ export function SummaryWidget({ snapshot = EMPTY }: { snapshot?: WidgetSnapshot 
         alignItems: 'center',
       }}
     >
-      <SvgWidget svg={ringSvg(s)} style={{ width: 122, height: 122, marginRight: 16 }} />
+      <SvgWidget svg={ringSvg(s)} style={{ width: 116, height: 116, marginRight: 16 }} />
 
       <FlexWidget style={{ flexDirection: 'column', flex: 1 }}>
-        <TextWidget text="AvoLens" style={{ fontSize: 13, color: INK, fontFamily: 'sans-serif-medium', marginBottom: 8 }} />
-        <Macro label="Protein" value={s.protein} goal={s.proteinGoal} color={PROTEIN} />
-        <Macro label="Carbs" value={s.carbs} goal={s.carbsGoal} color={CARBS} />
-        <Macro label="Fat" value={s.fat} goal={s.fatGoal} color={FAT} />
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+          <ImageWidget image={AVO_LOGO} imageWidth={22} imageHeight={22} style={{ width: 22, height: 22, marginRight: 6 }} />
+          <TextWidget text="AvoLens" style={{ fontSize: 14, color: INK, fontFamily: 'sans-serif-medium' }} />
+        </FlexWidget>
+        <Bar label="Protein" value={`${s.protein}g`} frac={clamp(s.protein, s.proteinGoal)} color={PROTEIN} track={PROTEIN_TINT} />
+        <Bar label="Carbs" value={`${s.carbs}g`} frac={clamp(s.carbs, s.carbsGoal)} color={CARBS} track={CARBS_TINT} />
+      </FlexWidget>
+    </FlexWidget>
+  );
+}
+
+const FLAME_SVG =
+  `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">` +
+  `<path d="M12 2c1 4 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 1-3-1 5 3 5 3 2 0-3-1-5 0-8Z" fill="${FLAME}"/></svg>`;
+
+const DROPLET_SVG =
+  `<svg width="20" height="26" viewBox="0 0 20 26" xmlns="http://www.w3.org/2000/svg">` +
+  `<path d="M10 1 C10 1 18 12 18 17.5 A8 8 0 0 1 2 17.5 C2 12 10 1 10 1 Z" fill="${WATER}"/></svg>`;
+
+/** Small "N day streak" card. */
+export function StreakWidget({ snapshot = EMPTY }: { snapshot?: WidgetSnapshot }) {
+  return (
+    <FlexWidget
+      clickAction="OPEN_APP"
+      style={{
+        height: 'match_parent',
+        width: 'match_parent',
+        backgroundColor: SURFACE,
+        borderRadius: 24,
+        padding: 16,
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      <SvgWidget svg={FLAME_SVG} style={{ width: 24, height: 24 }} />
+      <FlexWidget style={{ flexDirection: 'column' }}>
+        <TextWidget text={`${snapshot.streak}`} style={{ fontSize: 26, color: INK, fontFamily: 'sans-serif-black' }} />
+        <TextWidget text="day streak" style={{ fontSize: 11, color: MUTED, marginTop: 3 }} />
+      </FlexWidget>
+    </FlexWidget>
+  );
+}
+
+/** Small "N.N L water today" card. */
+export function WaterWidget({ snapshot = EMPTY }: { snapshot?: WidgetSnapshot }) {
+  const liters = (snapshot.glasses * 0.5).toFixed(1);
+  return (
+    <FlexWidget
+      clickAction="OPEN_APP"
+      style={{
+        height: 'match_parent',
+        width: 'match_parent',
+        backgroundColor: SURFACE,
+        borderRadius: 24,
+        padding: 16,
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      <SvgWidget svg={DROPLET_SVG} style={{ width: 20, height: 26 }} />
+      <FlexWidget style={{ flexDirection: 'column' }}>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+          <TextWidget text={liters} style={{ fontSize: 26, color: INK, fontFamily: 'sans-serif-black' }} />
+          <TextWidget text=" L" style={{ fontSize: 13, color: MUTED, fontFamily: 'sans-serif-medium' }} />
+        </FlexWidget>
+        <TextWidget text="water today" style={{ fontSize: 11, color: MUTED, marginTop: 3 }} />
       </FlexWidget>
     </FlexWidget>
   );

@@ -170,8 +170,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       fat: totals.fat,
       fatGoal: state.goal.fat,
       streak,
+      glasses: state.glasses,
+      glassesGoal: state.goal.water,
     });
-  }, [state.todayEntries, state.goal, streak]);
+  }, [state.todayEntries, state.goal, streak, state.glasses]);
 
   // Keep the dose reminder + missed-dose follow-up in sync with the schedule.
   useEffect(() => {

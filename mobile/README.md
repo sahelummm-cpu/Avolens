@@ -47,10 +47,16 @@ notifications.
   Connect integration. The Settings toggles request permission and, once
   connected, the Home and Progress exercise cards show today's real active
   energy, steps, active minutes, and workouts. (`src/lib/health*.ts`)
-- **Home + Lock Screen widgets** — a native iOS WidgetKit widget (Home
-  Screen `systemSmall`/`systemMedium` plus Lock Screen accessory families)
-  and an Android home-screen widget, both showing "kcal left", macros, and
-  the streak. The app pushes a fresh snapshot whenever the log changes.
+- **Home + Lock Screen widgets** — the Nibbl v2 widget suite, native on both
+  platforms. Three widgets: a **Summary** ring card (calorie/protein/carbs
+  ring with "kcal LEFT" in the center, the AvoLens brand, and Protein/Carbs
+  progress bars), a **Streak** card (🔥 N day streak), and a **Water** card
+  (💧 N.N L water today). On iOS these are three WidgetKit widgets in a
+  `WidgetBundle` — Home Screen `systemSmall`/`systemMedium` plus Lock Screen
+  accessories, so the Lock Screen can show the Calories / Water / Streak
+  circulars and a rectangular macro line side by side. On Android they are
+  three `react-native-android-widget` home-screen widgets. The app pushes a
+  fresh snapshot (calories, macros, streak, water) whenever the log changes.
   (`src/widgets/`, `targets/widget/`, `src/lib/widgets*.ts`)
 
 ## No demo data

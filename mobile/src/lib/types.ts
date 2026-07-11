@@ -147,6 +147,9 @@ export interface WidgetSnapshot {
   fat: number;
   fatGoal: number;
   streak: number;
+  /** Water, in 500 ml glasses (matches the app's water tracker). */
+  glasses: number;
+  glassesGoal: number;
 }
 
 export interface AvoLensState {

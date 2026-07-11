@@ -13,6 +13,8 @@ import type { WidgetSnapshot } from './types';
 export const APP_GROUP = 'group.app.avolens.mobile';
 export const WIDGET_STORAGE_KEY = 'avolens.widget.snapshot.v1';
 export const ANDROID_WIDGET_NAME = 'AvoLensSummary';
+export const ANDROID_STREAK_WIDGET_NAME = 'AvoLensStreak';
+export const ANDROID_WATER_WIDGET_NAME = 'AvoLensWater';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function publishSnapshot(_snapshot: WidgetSnapshot): Promise<void> {

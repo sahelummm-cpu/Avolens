@@ -1,9 +1,21 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WidgetSnapshot } from './types';
-import { ANDROID_WIDGET_NAME, APP_GROUP, WIDGET_STORAGE_KEY } from './widgets';
+import {
+  ANDROID_STREAK_WIDGET_NAME,
+  ANDROID_WATER_WIDGET_NAME,
+  ANDROID_WIDGET_NAME,
+  APP_GROUP,
+  WIDGET_STORAGE_KEY,
+} from './widgets';
 
-export { APP_GROUP, WIDGET_STORAGE_KEY, ANDROID_WIDGET_NAME } from './widgets';
+export {
+  APP_GROUP,
+  WIDGET_STORAGE_KEY,
+  ANDROID_WIDGET_NAME,
+  ANDROID_STREAK_WIDGET_NAME,
+  ANDROID_WATER_WIDGET_NAME,
+} from './widgets';
 
 /**
  * Push the daily summary to the platform widget. Everything is wrapped in
@@ -37,13 +49,22 @@ export async function publishSnapshot(snapshot: WidgetSnapshot): Promise<void> {
       // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-explicit-any
       const { requestWidgetUpdate } = require('react-native-android-widget') as any;
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { SummaryWidget } = require('../widgets/SummaryWidget');
-      await requestWidgetUpdate({
-        widgetName: ANDROID_WIDGET_NAME,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        renderWidget: () => SummaryWidget({ snapshot }) as any,
-        widgetNotFound: () => {},
-      });
+      const { SummaryWidget, StreakWidget, WaterWidget } = require('../widgets/SummaryWidget');
+      const updates: Array<[string, (p: { snapshot: WidgetSnapshot }) => unknown]> = [
+        [ANDROID_WIDGET_NAME, SummaryWidget],
+        [ANDROID_STREAK_WIDGET_NAME, StreakWidget],
+        [ANDROID_WATER_WIDGET_NAME, WaterWidget],
+      ];
+      await Promise.all(
+        updates.map(([widgetName, render]) =>
+          requestWidgetUpdate({
+            widgetName,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            renderWidget: () => render({ snapshot }) as any,
+            widgetNotFound: () => {},
+          }),
+        ),
+      );
     } catch {
       // native module not present
     }
