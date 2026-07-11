@@ -31,11 +31,19 @@ const ACTIVITY_FACTOR: Record<ActivityLevel, number> = {
   very: 1.725,
 };
 
-const GOAL_ADJUST: Record<GoalType, number> = {
-  lose: -500,
-  maintain: 0,
-  gain: 300,
+export type DietSplit = 'balanced' | 'high-protein' | 'low-carb' | 'keto';
+
+/** protein / carb / fat fractions of daily calories. */
+export const DIET_SPLITS: Record<DietSplit, { p: number; c: number; f: number }> = {
+  balanced: { p: 0.3, c: 0.4, f: 0.3 },
+  'high-protein': { p: 0.4, c: 0.3, f: 0.3 },
+  'low-carb': { p: 0.35, c: 0.25, f: 0.4 },
+  keto: { p: 0.3, c: 0.1, f: 0.6 },
 };
+
+/** Default weekly pace (kg/week) when the user doesn't pick one. */
+const DEFAULT_PACE: Record<GoalType, number> = { lose: 0.5, maintain: 0, gain: 0.25 };
+const KCAL_PER_KG = 7700;
 
 export interface ComputedGoal {
   calories: number;
@@ -44,21 +52,28 @@ export interface ComputedGoal {
   fat: number;
 }
 
+export function maintenanceCalories(p: Pick<OnboardingProfile, 'weightKg' | 'heightCm' | 'age' | 'sex' | 'activityLevel'>): number {
+  const bmr = 10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age + (p.sex === 'male' ? 5 : -161);
+  return bmr * ACTIVITY_FACTOR[p.activityLevel];
+}
+
 /**
  * Daily calorie / macro targets from the onboarding answers.
- * Mifflin-St Jeor BMR × activity factor, adjusted for the goal, with a
- * 30 / 40 / 30 protein-carb-fat split (4-4-9 kcal per gram).
+ * Mifflin-St Jeor BMR × activity factor, adjusted by the chosen weekly pace
+ * (7700 kcal ≈ 1 kg), split by the chosen diet (4-4-9 kcal per gram).
  */
 export function computeGoal(p: OnboardingProfile): ComputedGoal {
-  const bmr =
-    10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age + (p.sex === 'male' ? 5 : -161);
-  const tdee = bmr * ACTIVITY_FACTOR[p.activityLevel];
-  const calories = Math.max(1200, Math.round((tdee + GOAL_ADJUST[p.goalType]) / 10) * 10);
+  const tdee = maintenanceCalories(p);
+  const pace = p.paceKgPerWeek ?? DEFAULT_PACE[p.goalType];
+  const dir = p.goalType === 'lose' ? -1 : p.goalType === 'gain' ? 1 : 0;
+  const dailyAdjust = (dir * pace * KCAL_PER_KG) / 7;
+  const calories = Math.max(1200, Math.round((tdee + dailyAdjust) / 10) * 10);
 
+  const split = DIET_SPLITS[p.dietSplit ?? 'balanced'];
   return {
     calories,
-    protein: Math.round((calories * 0.3) / 4),
-    carbs: Math.round((calories * 0.4) / 4),
-    fat: Math.round((calories * 0.3) / 9),
+    protein: Math.round((calories * split.p) / 4),
+    carbs: Math.round((calories * split.c) / 4),
+    fat: Math.round((calories * split.f) / 9),
   };
 }

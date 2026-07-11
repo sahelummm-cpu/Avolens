@@ -33,10 +33,16 @@ notifications.
 - **Charts / rings** — all SVG visuals re-rendered with `react-native-svg`,
   with the same entrance animations (ring sweep, card fade-up). Ring and
   progress-bar sweeps run on the UI thread via `react-native-reanimated`.
-- **Onboarding** — "Get Started" walks through goal, sex/age, height
-  (cm or ft/in), weight (kg or lb), and activity level, then computes the
-  daily calorie goal (Mifflin-St Jeor × activity, adjusted for the goal)
-  and a 30/40/30 macro split, and lands on the Pro paywall.
+- **Onboarding** — "Get Started" walks through name, goal, body stats,
+  **weekly pace** (loss/gain rate → deficit), **diet split** (balanced /
+  high-protein / low-carb / keto), and activity level, then shows a
+  **plan summary** — computed daily calories, macros, and a goal ETA —
+  with reminder/health opt-in toggles and a Terms/Privacy consent line
+  before the paywall. Goals use Mifflin-St Jeor × activity, adjusted by
+  the chosen pace (7700 kcal ≈ 1 kg).
+- **Sign in with Google & Apple** — the auth screen offers email/password
+  plus Google (in-app browser OAuth) and Apple (native on iOS). See the
+  provider setup note under the Supabase section.
 - **Exercise sync** — real Apple Health (HealthKit) and Android Health
   Connect integration. The Settings toggles request permission and, once
   connected, the Home and Progress exercise cards show today's real active
@@ -153,6 +159,23 @@ npx supabase db push                          # applies supabase/migrations/*
 npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 npx supabase functions deploy scan coach delete-account   # deploys supabase/functions/*
 ```
+
+### Google / Apple sign-in setup
+
+In the Supabase dashboard → Authentication → Providers, enable **Google**
+and **Apple** and fill in their credentials (Google OAuth client, Apple
+Services ID / key). Then under Authentication → URL Configuration add the
+app's redirect URL to the allow-list:
+
+```
+avolens://auth-callback
+```
+
+Apple sign-in on iOS uses the native id-token flow (the app's
+`expo-apple-authentication` + `usesAppleSignIn` are already configured);
+Google (and Apple on Android) use the in-app browser OAuth flow. Without
+provider config the buttons show but return a clear "not configured"
+message.
 
 That enables: email/password accounts (Settings → Account), state sync
 (one jsonb row per user in `public.profiles`, RLS-protected,

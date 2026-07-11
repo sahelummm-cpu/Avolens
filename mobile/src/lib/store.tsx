@@ -458,6 +458,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           activityLevel: p.activityLevel,
           targetWeightKg: p.targetWeightKg ?? s.targetWeightKg,
           medEnabled: p.usesGlp1 ?? s.medEnabled,
+          displayName: p.name?.trim() ? p.name.trim() : s.displayName,
           weightLog: [
             ...s.weightLog,
             { date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), kg: p.weightKg },

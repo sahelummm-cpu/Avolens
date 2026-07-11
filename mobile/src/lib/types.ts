@@ -19,6 +19,9 @@ export interface OnboardingProfile {
   activityLevel: ActivityLevel;
   targetWeightKg?: number | null;
   usesGlp1?: boolean;
+  paceKgPerWeek?: number;
+  dietSplit?: import('./goals').DietSplit;
+  name?: string;
 }
 
 export interface FoodEntry {
