@@ -96,6 +96,26 @@ show a "Connect Apple Health or Google Fit" state (see below).
   Hidden entirely via onboarding answer or Settings → GLP-1 tracking.
   (`src/lib/meds.ts`)
 
+## Progress analytics
+
+The Trends tab (`app/progress.tsx`, `src/lib/progress.ts`) includes:
+
+- **Smoothed weight trend line** (EMA) over the raw weigh-ins, plus a
+  **goal projection** — least-squares slope → "you'll reach your goal
+  around <date> (~N weeks)".
+- **Net calories & deficit** (when health is connected): eaten − burned,
+  and the deficit vs. your target with an estimated kg/week.
+- **Protein trend + adherence** — 7-day protein chart and "hit protein
+  X/7 days" / "on calorie target X/7 days".
+- **Logging heatmap** — a month calendar of logged days.
+- **Achievements** — streak / weight-loss / consistency badges.
+- **Body measurements** — waist/chest/hips/arm/thigh over time with change.
+- **Progress photos** — camera/library pictures with a before/after view,
+  uploaded to a private Supabase bucket (`progress-photos`, see below) and
+  kept locally when signed out.
+- **Export & share** — CSV export of your log/weight/measurements
+  (`expo-sharing`) and a shareable progress summary.
+
 ## Supabase backend (accounts, sync, AI scan + coach)
 
 Set the two env vars (Supabase dashboard → Settings → API — use the
@@ -112,6 +132,7 @@ Then, from the repo root with the Supabase CLI (`npx supabase login`):
 ```bash
 npx supabase link --project-ref <ref>
 npx supabase db push                          # applies supabase/migrations/*
+                                              # (incl. the progress-photos bucket)
 npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 npx supabase functions deploy scan coach      # deploys supabase/functions/*
 ```

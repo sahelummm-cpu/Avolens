@@ -60,6 +60,29 @@ export interface FavoriteFood {
 export interface WeightEntry {
   date: string;
   kg: number;
+  /** Epoch ms of the weigh-in (added for trend/projection math). */
+  ts?: number;
+}
+
+/** Body measurements logged over time. All values in cm. */
+export interface MeasurementEntry {
+  date: string;
+  ts: number;
+  waist?: number;
+  chest?: number;
+  hips?: number;
+  arm?: number;
+  thigh?: number;
+}
+
+/** A progress photo stored in the Supabase bucket (or a local uri offline). */
+export interface ProgressPhoto {
+  id: string;
+  ts: number;
+  date: string;
+  uri: string; // remote (signed/public) or local file uri
+  path?: string; // storage path when uploaded
+  weightKg?: number;
 }
 
 /** Everything logged on one calendar day, keyed by 'YYYY-MM-DD' in history. */
@@ -168,6 +191,9 @@ export interface AvoLensState {
   history: Record<string, DayRecord>;
   favorites: FavoriteFood[];
   weightLog: WeightEntry[];
+  measurements: MeasurementEntry[];
+  photos: ProgressPhoto[];
+  achievementsSeen: string[];
   hasOnboarded: boolean;
 }
 

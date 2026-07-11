@@ -18,8 +18,10 @@ import type {
   FoodEntry,
   HeightUnit,
   InjectionSite,
+  MeasurementEntry,
   MedFrequency,
   OnboardingProfile,
+  ProgressPhoto,
   ThemeMode,
   WeightUnit,
 } from './types';
@@ -65,6 +67,10 @@ interface StoreValue {
   toggleFavorite: (f: Omit<FavoriteFood, 'id'>) => void;
   copyDayToToday: (fromKey: string) => void;
   logWeight: (kg: number) => void;
+  addMeasurement: (m: Omit<MeasurementEntry, 'date' | 'ts'>) => void;
+  addPhoto: (photo: ProgressPhoto) => void;
+  removePhoto: (id: string) => void;
+  markAchievementsSeen: (ids: string[]) => void;
   setGoalCalories: (kcal: number) => void;
   setHeightCm: (cm: number) => void;
   setHeightUnit: (u: HeightUnit) => void;
@@ -369,9 +375,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           ...s,
           weightLog: [
             ...s.weightLog,
-            { date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), kg },
+            { date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), kg, ts: Date.now() },
           ],
         })),
+      addMeasurement: (m) =>
+        setState((s) => ({
+          ...s,
+          measurements: [
+            ...s.measurements,
+            { ...m, date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), ts: Date.now() },
+          ],
+        })),
+      addPhoto: (photo) => setState((s) => ({ ...s, photos: [{ ...photo }, ...s.photos] })),
+      removePhoto: (id) => setState((s) => ({ ...s, photos: s.photos.filter((p) => p.id !== id) })),
+      markAchievementsSeen: (ids) =>
+        setState((s) => ({ ...s, achievementsSeen: Array.from(new Set([...s.achievementsSeen, ...ids])) })),
       setGoalCalories: (kcal) => setState((s) => ({ ...s, goal: { ...s.goal, calories: kcal } })),
       setHeightCm: (cm) => setState((s) => ({ ...s, heightCm: cm })),
       setHeightUnit: (u) => setState((s) => ({ ...s, heightUnit: u })),

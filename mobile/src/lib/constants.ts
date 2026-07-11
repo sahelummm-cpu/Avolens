@@ -72,6 +72,9 @@ export function defaultState(): AvoLensState {
     history: {},
     favorites: [],
     weightLog: [],
+    measurements: [],
+    photos: [],
+    achievementsSeen: [],
     hasOnboarded: false,
   };
 }

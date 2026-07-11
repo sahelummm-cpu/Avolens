@@ -59,6 +59,13 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "AvoLens uses your photos to add progress pictures.",
+          "cameraPermission": "AvoLens uses the camera to take progress pictures."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/avo-logo.png",

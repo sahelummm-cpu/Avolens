@@ -1,4 +1,4 @@
-import Svg, { Circle, Line, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '@/lib/store';
 import { F } from '@/lib/fonts';
 
@@ -6,23 +6,30 @@ export function WeightChart({
   values,
   goal,
   markers,
+  trend,
 }: {
   values: number[];
   goal?: number;
   /** Per-value flags (aligned with `values`) — true draws an injection dot. */
   markers?: boolean[];
+  /** Smoothed trend weight (aligned with `values`) — drawn as a line. */
+  trend?: number[];
 }) {
   const t = useTheme();
   const bars = values.slice(-8);
   const marks = (markers ?? []).slice(-8);
+  const trendVals = (trend ?? []).slice(-8);
   while (marks.length < bars.length) marks.unshift(false);
+  while (trendVals.length < bars.length) trendVals.unshift(trendVals[0] ?? bars[0] ?? 0);
   while (bars.length < 8) {
     bars.unshift(bars[0] ?? 0);
     marks.unshift(false);
+    trendVals.unshift(trendVals[0] ?? 0);
   }
 
-  const min = Math.min(...bars, ...(goal != null ? [goal] : []));
-  const max = Math.max(...bars, ...(goal != null ? [goal] : []));
+  const showTrend = (trend?.length ?? 0) >= 2;
+  const min = Math.min(...bars, ...(goal != null ? [goal] : []), ...(showTrend ? trendVals : []));
+  const max = Math.max(...bars, ...(goal != null ? [goal] : []), ...(showTrend ? trendVals : []));
   const span = Math.max(0.1, max - min);
   const top = 14;
   const bottom = 104;
@@ -47,6 +54,18 @@ export function WeightChart({
         const isLast = i === bars.length - 1;
         return <Rect key={i} x={x} y={y} width={barW} height={h} rx={11} fill={isLast ? t.green : t.chartTrack} />;
       })}
+      {/* smoothed trend line */}
+      {showTrend && (
+        <Path
+          d={trendVals.map((v, i) => `${i === 0 ? 'M' : 'L'} ${4 + i * step + barW / 2} ${yFor(v)}`).join(' ')}
+          fill="none"
+          stroke={t.ink}
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={0.55}
+        />
+      )}
       {/* injection-day markers */}
       {marks.map((hit, i) =>
         hit ? (

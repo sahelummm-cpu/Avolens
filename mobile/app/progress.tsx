@@ -10,8 +10,11 @@ import { SegmentedControl } from '@/components/SegmentedControl';
 import { WeightChart } from '@/components/WeightChart';
 import { MiniBarChart } from '@/components/MiniBarChart';
 import { PromptModal } from '@/components/PromptModal';
+import { AchievementsCard, AdherenceCard, ExportCard, HeatmapCard, NetCaloriesCard, ProjectionCard } from '@/components/ProgressCards';
+import { MeasurementsCard, PhotosCard } from '@/components/BodyProgress';
 import { useStore } from '@/lib/store';
 import { daysAgoKey, sumCalories, weeklyInsights } from '@/lib/days';
+import { weightTrend } from '@/lib/progress';
 import { recentCycles, resolveMedication, shotStreak } from '@/lib/meds';
 import type { ChartRange } from '@/lib/types';
 import { F } from '@/lib/fonts';
@@ -51,15 +54,6 @@ export default function ProgressPage() {
   const bmiCat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
   const bmiMarker = Math.min(96, Math.max(4, ((bmi - 15) / (40 - 15)) * 100));
 
-  const daysLogged = useMemo(() => {
-    let n = state.todayEntries.length > 0 ? 1 : 0;
-    for (let i = 1; i < 30; i++) {
-      if ((state.history[daysAgoKey(i)]?.entries.length ?? 0) > 0) n++;
-    }
-    return n;
-  }, [state.todayEntries, state.history]);
-  const daysLoggedFrac = daysLogged / 30;
-  const circ = 2 * Math.PI * 29;
 
   const insights = useMemo(() => weeklyInsights(state), [state]);
 
@@ -230,7 +224,7 @@ export default function ProgressPage() {
                 />
               </View>
 
-              <WeightChart values={chartValues} goal={goalKg != null ? conv(goalKg) : undefined} markers={state.medEnabled ? chartMarkers : undefined} />
+              <WeightChart values={chartValues} goal={goalKg != null ? conv(goalKg) : undefined} markers={state.medEnabled ? chartMarkers : undefined} trend={weightTrend(chartValues)} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
                 {rangeLabels.map((lab, i) => (
                   <Text key={i} style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2 }}>{lab}</Text>
@@ -256,6 +250,9 @@ export default function ProgressPage() {
             </View>
           )}
         </View>
+
+        {/* Weight trend projection */}
+        <ProjectionCard />
 
         {/* BMI — only once there's a weight to compute it from */}
         {hasWeight && (
@@ -346,6 +343,9 @@ export default function ProgressPage() {
           </View>
         )}
 
+        {/* Net calories / deficit (needs health sync) */}
+        <NetCaloriesCard />
+
         {/* Calories eaten — last 7 days */}
         <View style={card}>
           <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Calories eaten</Text>
@@ -415,6 +415,9 @@ export default function ProgressPage() {
           </View>
         )}
 
+        {/* Protein trend + goal adherence */}
+        <AdherenceCard />
+
         {/* Weekly insights */}
         {insights.daysLogged > 0 && (
           <View style={card}>
@@ -434,33 +437,18 @@ export default function ProgressPage() {
           </View>
         )}
 
-        {/* Days logged */}
-        <View style={{ ...card, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <View style={{ width: 72, height: 72, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <Svg width={72} height={72} viewBox="0 0 72 72" style={{ position: 'absolute' }}>
-              <Circle cx={36} cy={36} r={29} fill="none" stroke={t.greenTrack} strokeWidth={8} />
-              {daysLogged > 0 && (
-                <Circle
-                  cx={36}
-                  cy={36}
-                  r={29}
-                  fill="none"
-                  stroke={t.green}
-                  strokeWidth={8}
-                  strokeLinecap="round"
-                  strokeDasharray={`${circ}`}
-                  strokeDashoffset={circ * (1 - daysLoggedFrac)}
-                  transform="rotate(-90 36 36)"
-                />
-              )}
-            </Svg>
-            <Text style={{ fontFamily: F.d800, fontSize: 19, color: t.ink }}>{daysLogged}</Text>
-          </View>
-          <View>
-            <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Days logged</Text>
-            <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 2 }}>of 30 days this month</Text>
-          </View>
-        </View>
+        {/* Body measurements + progress photos */}
+        <MeasurementsCard />
+        <PhotosCard />
+
+        {/* Logging heatmap */}
+        <HeatmapCard />
+
+        {/* Achievements */}
+        <AchievementsCard />
+
+        {/* Export + share */}
+        <ExportCard />
 
         {/* Summary tiles */}
         <View style={{ flexDirection: 'row', gap: 10 }}>
