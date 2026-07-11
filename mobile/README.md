@@ -54,21 +54,63 @@ streak, or activity. Rings, the day strip, and the Progress screen all show
 designed empty states until the user logs real data. Exercise/activity cards
 show a "Connect Apple Health or Google Fit" state (see below).
 
-## AI scanning
+## App features
 
-The Anthropic call stays server-side (so no API key ships in the binary).
-The app POSTs the captured photo to the web app's `/api/scan` route:
+- **Dated history + streaks** — meals are stored per calendar day
+  (`state.history`), rolling over automatically at midnight (water resets
+  too). The day strip, streak counter, Progress trends, and weekly insights
+  all read from real history. (`src/lib/days.ts`)
+- **Edit / delete meals** — tap any card in Today's Log to edit it
+  (prefilled manual-entry) or delete it (trash icon).
+- **Barcode scanning** — the Barcode chip on the Scanner reads
+  EAN/UPC/Code-128 via `expo-camera` and looks the product up in the free
+  OpenFoodFacts database (values per 100 g). No API key needed.
+- **Recents** — recently logged meals appear as one-tap chips in manual
+  entry.
+- **Weight goal** — set a target weight in onboarding or on Progress; the
+  chart shows a dashed goal line and "X kg to go".
+- **Daily log reminder** — Settings toggle for an 8 PM local notification.
+- **Weekly insights** — average kcal/protein per logged day, vs last week.
+- **AI Coach** — the sparkle tab opens a chat that knows today's log and
+  your goals (needs the Supabase backend below, plus sign-in).
+
+## Supabase backend (accounts, sync, AI scan + coach)
+
+Set the two env vars (Supabase dashboard → Settings → API — use the
+**legacy anon JWT key**):
 
 ```bash
-cp .env.example .env   # then set EXPO_PUBLIC_API_URL
+cp .env.example .env
+# EXPO_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+# EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```
+
+Then, from the repo root with the Supabase CLI (`npx supabase login`):
+
+```bash
+npx supabase link --project-ref <ref>
+npx supabase db push                          # applies supabase/migrations/*
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+npx supabase functions deploy scan coach      # deploys supabase/functions/*
+```
+
+That enables: email/password accounts (Settings → Account), state sync
+(one jsonb row per user in `public.profiles`, RLS-protected,
+last-write-wins), the AI meal scan (`scan` function), and the AI coach
+chat (`coach` function). Without the env vars the app runs fully offline
+and hides account UI.
+
+## AI scanning (fallback)
+
+If Supabase is **not** configured, the scanner falls back to the web app's
+`/api/scan` route:
 
 - Deployed: `EXPO_PUBLIC_API_URL=https://<your-avolens>.vercel.app`
 - Local dev: run `npm run dev` in the repo root and use your machine's LAN
   address, e.g. `EXPO_PUBLIC_API_URL=http://192.168.1.20:3000`
 
-Without it, the Scanner shows a clear error and manual entry still works —
-same graceful degradation as the web app.
+Without either backend, the Scanner shows a clear error; barcode scanning
+and manual entry still work.
 
 ## Running
 

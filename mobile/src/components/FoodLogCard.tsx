@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, Text, View } from 'react-native';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { FoodEntry } from '@/lib/types';
 import { useTheme } from '@/lib/store';
@@ -82,7 +84,15 @@ function MacroDot({ color, grams }: { color: string; grams: number }) {
   );
 }
 
-export function FoodLogCard({ entry, delay = 0 }: { entry: FoodEntry; delay?: number }) {
+export function FoodLogCard({
+  entry,
+  delay = 0,
+  onPress,
+}: {
+  entry: FoodEntry;
+  delay?: number;
+  onPress?: () => void;
+}) {
   const t = useTheme();
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -98,7 +108,10 @@ export function FoodLogCard({ entry, delay = 0 }: { entry: FoodEntry; delay?: nu
   }, [anim, delay]);
 
   return (
-    <Animated.View
+    <AnimatedPressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
@@ -143,6 +156,6 @@ export function FoodLogCard({ entry, delay = 0 }: { entry: FoodEntry; delay?: nu
           </Text>
         </View>
       </View>
-    </Animated.View>
+    </AnimatedPressable>
   );
 }

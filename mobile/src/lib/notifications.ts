@@ -37,6 +37,37 @@ async function ensureAndroidChannel() {
   });
 }
 
+const LOG_REMINDER_ID = 'daily-log-reminder';
+
+/** Schedule (on) or cancel (off) the daily 20:00 "log your meals" reminder. */
+export async function syncLogReminder(on: boolean): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(LOG_REMINDER_ID).catch(() => {});
+    if (!on) return;
+
+    const ok = await ensureNotificationPermission();
+    if (!ok) return;
+    await ensureAndroidChannel();
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: LOG_REMINDER_ID,
+      content: {
+        title: 'AvoLens',
+        body: "Don't forget to log today's meals 🥑",
+        sound: true,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour: 20,
+        minute: 0,
+        ...(Platform.OS === 'android' ? { channelId: 'reminders' } : null),
+      },
+    });
+  } catch {
+    // Notifications are best-effort; never crash the UI over them.
+  }
+}
+
 /** Schedule (on) or cancel (off) the weekly Wednesday 9:00 reminder. */
 export async function syncReminder(on: boolean): Promise<void> {
   try {

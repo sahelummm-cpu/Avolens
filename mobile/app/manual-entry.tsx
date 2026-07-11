@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/Screen';
 import { useStore } from '@/lib/store';
 import { FREQUENT_FOODS } from '@/lib/constants';
+import { recentMeals } from '@/lib/days';
 import type { FoodEntry } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
@@ -14,21 +15,30 @@ const MEALS: FoodEntry['meal'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
 export default function ManualEntryPage() {
   const router = useRouter();
-  const { addEntry, theme: t } = useStore();
+  const { state, addEntry, updateEntry, removeEntry, theme: t } = useStore();
   const insets = useSafeAreaInsets();
+  const { edit } = useLocalSearchParams<{ edit?: string }>();
+  const editing = useMemo(
+    () => (edit ? state.todayEntries.find((e) => e.id === edit) : undefined),
+    // Freeze the looked-up entry: state changes as the user types shouldn't reset the form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [edit],
+  );
 
   const [search, setSearch] = useState('');
-  const [name, setName] = useState('Avocado toast');
-  const [meal, setMeal] = useState<FoodEntry['meal']>('Breakfast');
+  const [name, setName] = useState(editing?.name ?? 'Avocado toast');
+  const [meal, setMeal] = useState<FoodEntry['meal']>(editing?.meal ?? 'Breakfast');
   const [mealPickerOpen, setMealPickerOpen] = useState(false);
   const [servings, setServings] = useState(1);
-  const [protein, setProtein] = useState(12);
-  const [carbs, setCarbs] = useState(34);
-  const [fat, setFat] = useState(16);
-  const [fiber, setFiber] = useState(8);
-  const [sodium, setSodium] = useState(380);
-  const [sugar, setSugar] = useState(4);
+  const [protein, setProtein] = useState(editing?.protein ?? 12);
+  const [carbs, setCarbs] = useState(editing?.carbs ?? 34);
+  const [fat, setFat] = useState(editing?.fat ?? 16);
+  const [fiber, setFiber] = useState(editing?.fiber ?? 8);
+  const [sodium, setSodium] = useState(editing?.sodium ?? 380);
+  const [sugar, setSugar] = useState(editing?.sugar ?? 4);
   const [showMoreNutrients, setShowMoreNutrients] = useState(false);
+
+  const recents = useMemo(() => recentMeals(state), [state]);
 
   const calories = useMemo(() => Math.round((protein * 4 + carbs * 4 + fat * 9) * servings), [protein, carbs, fat, servings]);
 
@@ -42,6 +52,21 @@ export default function ManualEntryPage() {
   };
 
   const save = () => {
+    if (editing) {
+      updateEntry(editing.id, {
+        name,
+        meal,
+        calories,
+        protein: protein * servings,
+        carbs: carbs * servings,
+        fat: fat * servings,
+        fiber: fiber * servings,
+        sodium: sodium * servings,
+        sugar: sugar * servings,
+      });
+      router.push('/home');
+      return;
+    }
     const now = new Date();
     addEntry({
       name,
@@ -57,6 +82,12 @@ export default function ManualEntryPage() {
       healthScore: 7,
       icon: 'generic',
     });
+    router.push('/home');
+  };
+
+  const deleteEntry = () => {
+    if (!editing) return;
+    removeEntry(editing.id);
     router.push('/home');
   };
 
@@ -86,10 +117,19 @@ export default function ManualEntryPage() {
             <Path d="m15 5-7 7 7 7" />
           </Svg>
         </Pressable>
-        <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>Add Food</Text>
-        <Pressable onPress={save} accessibilityRole="button" style={{ width: 36, alignItems: 'flex-end' }}>
-          <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.green }}>Save</Text>
-        </Pressable>
+        <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>{editing ? 'Edit Food' : 'Add Food'}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          {editing && (
+            <Pressable onPress={deleteEntry} accessibilityRole="button" accessibilityLabel="Delete entry">
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={t.protein} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <Path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+              </Svg>
+            </Pressable>
+          )}
+          <Pressable onPress={save} accessibilityRole="button">
+            <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.green }}>Save</Text>
+          </Pressable>
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -102,64 +142,110 @@ export default function ManualEntryPage() {
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-            backgroundColor: t.surface,
-            borderWidth: 1,
-            borderColor: t.border,
-            borderRadius: 16,
-            paddingVertical: 3,
-            paddingHorizontal: 15,
-            marginBottom: 18,
-          }}
-        >
-          <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={t.muted2} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-            <Circle cx={11} cy={11} r={7} />
-            <Path d="m21 21-4.3-4.3" />
-          </Svg>
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search food database"
-            placeholderTextColor={t.muted2}
-            style={{ flex: 1, fontFamily: F.b500, fontSize: 14, color: t.ink, paddingVertical: 10 }}
-          />
-        </View>
-
-        <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 10 }}>
-          Frequent
-        </Text>
-        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-          {filteredFrequent.map((f) => (
-            <Pressable
-              key={f.name}
-              onPress={() => applyFrequent(f)}
+        {!editing && (
+          <>
+            <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 6,
+                gap: 10,
                 backgroundColor: t.surface,
                 borderWidth: 1,
                 borderColor: t.border,
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 99,
+                borderRadius: 16,
+                paddingVertical: 3,
+                paddingHorizontal: 15,
+                marginBottom: 18,
               }}
             >
-              <View style={{ width: 7, height: 7, borderRadius: 9, backgroundColor: t[f.color] as string }} />
-              <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.ink }}>{f.name}</Text>
-            </Pressable>
-          ))}
-        </View>
+              <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={t.muted2} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <Circle cx={11} cy={11} r={7} />
+                <Path d="m21 21-4.3-4.3" />
+              </Svg>
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search food database"
+                placeholderTextColor={t.muted2}
+                style={{ flex: 1, fontFamily: F.b500, fontSize: 14, color: t.ink, paddingVertical: 10 }}
+              />
+            </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: t.border }} />
-          <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.muted2 }}>Or create custom</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: t.border }} />
-        </View>
+            {recents.length > 0 && (
+              <>
+                <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 10 }}>
+                  Recent
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                  {recents
+                    .filter((r) => r.name.toLowerCase().includes(search.toLowerCase()))
+                    .map((r) => (
+                      <Pressable
+                        key={r.id}
+                        onPress={() => {
+                          setName(r.name);
+                          setMeal(r.meal);
+                          setProtein(r.protein);
+                          setCarbs(r.carbs);
+                          setFat(r.fat);
+                          setFiber(r.fiber);
+                          setSodium(r.sodium);
+                          setSugar(r.sugar);
+                        }}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          backgroundColor: t.greenTint,
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          borderRadius: 99,
+                        }}
+                      >
+                        <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                          <Circle cx={12} cy={12} r={9} />
+                          <Path d="M12 7v5l3 3" />
+                        </Svg>
+                        <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.greenGrad2 }}>{r.name}</Text>
+                      </Pressable>
+                    ))}
+                </View>
+              </>
+            )}
+
+            <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 10 }}>
+              Frequent
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+              {filteredFrequent.map((f) => (
+                <Pressable
+                  key={f.name}
+                  onPress={() => applyFrequent(f)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    backgroundColor: t.surface,
+                    borderWidth: 1,
+                    borderColor: t.border,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 99,
+                  }}
+                >
+                  <View style={{ width: 7, height: 7, borderRadius: 9, backgroundColor: t[f.color] as string }} />
+                  <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.ink }}>{f.name}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: t.border }} />
+              <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.muted2 }}>Or create custom</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: t.border }} />
+            </View>
+          </>
+        )}
 
         <FieldLabel>Food name</FieldLabel>
         <TextInput value={name} onChangeText={setName} style={{ ...inputStyle, marginBottom: 14 }} />

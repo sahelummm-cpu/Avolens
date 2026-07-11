@@ -1,5 +1,6 @@
 import type { AvoLensState } from './types';
 import type { Theme } from './theme';
+import { dayKey } from './days';
 
 export const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -48,15 +49,18 @@ export function defaultState(): AvoLensState {
     age: null,
     goalType: null,
     activityLevel: null,
+    targetWeightKg: null,
     themeMode: 'auto',
     glasses: 0,
     dose: 2,
     reminderOn: false,
+    logReminderOn: false,
     healthConnected: false,
-    streak: 0,
     chartRange: 'M',
     selectedDay: mondayIndex(new Date()),
+    todayKey: dayKey(new Date()),
     todayEntries: [],
+    history: {},
     weightLog: [],
     hasOnboarded: false,
   };

@@ -17,6 +17,7 @@ export interface OnboardingProfile {
   weightKg: number;
   unit: WeightUnit;
   activityLevel: ActivityLevel;
+  targetWeightKg?: number | null;
 }
 
 export interface FoodEntry {
@@ -39,6 +40,12 @@ export interface FoodEntry {
 export interface WeightEntry {
   date: string;
   kg: number;
+}
+
+/** Everything logged on one calendar day, keyed by 'YYYY-MM-DD' in history. */
+export interface DayRecord {
+  entries: FoodEntry[];
+  glasses: number;
 }
 
 export interface DemoDay {
@@ -93,15 +100,20 @@ export interface AvoLensState {
   age: number | null;
   goalType: GoalType | null;
   activityLevel: ActivityLevel | null;
+  targetWeightKg: number | null;
   themeMode: ThemeMode;
   glasses: number;
   dose: number;
   reminderOn: boolean;
+  logReminderOn: boolean;
   healthConnected: boolean;
-  streak: number;
   chartRange: ChartRange;
   selectedDay: number;
+  /** The 'YYYY-MM-DD' key todayEntries/glasses belong to; rolls over at midnight. */
+  todayKey: string;
   todayEntries: FoodEntry[];
+  /** Past days ('YYYY-MM-DD' → what was logged). Today lives in todayEntries. */
+  history: Record<string, DayRecord>;
   weightLog: WeightEntry[];
   hasOnboarded: boolean;
 }

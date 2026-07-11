@@ -39,6 +39,7 @@ export default function OnboardingPage() {
   const [inch, setInch] = useState('');
   const [unit, setUnit] = useState<WeightUnit>('kg');
   const [weight, setWeight] = useState('');
+  const [targetWeight, setTargetWeight] = useState('');
 
   const heightCm = (): number => {
     if (heightUnit === 'cm') return parseInt(cm, 10) || 0;
@@ -68,6 +69,8 @@ export default function OnboardingPage() {
   };
 
   const finish = (activityLevel: ActivityLevel) => {
+    const target = parseFloat(targetWeight);
+    const targetKg = Number.isFinite(target) && target > 0 ? (unit === 'kg' ? target : target * KG_PER_LB) : null;
     completeOnboarding({
       goalType: goalType!,
       sex: sex!,
@@ -77,6 +80,7 @@ export default function OnboardingPage() {
       weightKg: Math.round(weightKg() * 10) / 10,
       unit,
       activityLevel,
+      targetWeightKg: targetKg != null ? Math.round(targetKg * 10) / 10 : null,
     });
     router.replace('/paywall');
   };
@@ -188,6 +192,18 @@ export default function OnboardingPage() {
                 <Chip label="lb" small selected={unit === 'lb'} onPress={() => switchWeightUnit('lb')} />
               </View>
               <Input value={weight} onChangeText={setWeight} placeholder={unit === 'kg' ? 'e.g. 72' : 'e.g. 159'} suffix={unit} />
+
+              {goalType !== 'maintain' && (
+                <>
+                  <FieldLabel t={t.muted2}>Target weight (optional)</FieldLabel>
+                  <Input
+                    value={targetWeight}
+                    onChangeText={setTargetWeight}
+                    placeholder={unit === 'kg' ? 'e.g. 68' : 'e.g. 150'}
+                    suffix={unit}
+                  />
+                </>
+              )}
             </Animated.View>
           )}
 

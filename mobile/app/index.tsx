@@ -4,6 +4,7 @@ import { Screen } from '@/components/Screen';
 import { Logo } from '@/components/Logo';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useStore } from '@/lib/store';
+import { supabaseConfigured } from '@/lib/supabase';
 import { F } from '@/lib/fonts';
 
 export default function SplashPage() {
@@ -14,7 +15,9 @@ export default function SplashPage() {
 
   const skip = () => {
     finishOnboarding();
-    router.push('/home');
+    // With a backend configured, "I already have an account" means signing in
+    // (which pulls the synced state down); otherwise it just enters the app.
+    router.push(supabaseConfigured ? '/auth' : '/home');
   };
 
   return (

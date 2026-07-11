@@ -1,4 +1,5 @@
 import type { ScanResult } from './types';
+import { supabase } from './supabase';
 
 /**
  * The AI scan runs on the web app's server route (/api/scan) so the Anthropic
@@ -8,9 +9,61 @@ import type { ScanResult } from './types';
  */
 const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/$/, '');
 
+/**
+ * Barcode lookup via the free OpenFoodFacts database. Values are per 100 g.
+ */
+export async function lookupBarcode(code: string): Promise<ScanResult> {
+  const res = await fetch(
+    `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,nutriments,nutriscore_grade,ingredients`,
+    { headers: { 'User-Agent': 'AvoLens/1.0 (mobile)' } },
+  );
+  if (!res.ok) throw new Error('Barcode lookup failed. Check your connection.');
+  const data = await res.json();
+  if (data.status !== 1 || !data.product) {
+    throw new Error('Product not found in the food database.');
+  }
+  const p = data.product;
+  const n = p.nutriments ?? {};
+  const grade: string = (p.nutriscore_grade ?? '').toLowerCase();
+  const healthScore = { a: 9, b: 8, c: 6, d: 4, e: 2 }[grade as 'a'] ?? 6;
+  const ingredients: string[] = Array.isArray(p.ingredients)
+    ? p.ingredients
+        .map((i: { text?: string }) => (i.text ?? '').trim())
+        .filter(Boolean)
+        .slice(0, 6)
+    : [];
+  return {
+    name: [p.product_name, p.brands ? `(${String(p.brands).split(',')[0].trim()})` : '']
+      .filter(Boolean)
+      .join(' ') || 'Scanned product',
+    matchConfidence: 100,
+    calories: Math.round(n['energy-kcal_100g'] ?? 0),
+    protein: Math.round(n.proteins_100g ?? 0),
+    carbs: Math.round(n.carbohydrates_100g ?? 0),
+    fat: Math.round(n.fat_100g ?? 0),
+    fiber: Math.round(n.fiber_100g ?? 0),
+    sodium: Math.round((n.sodium_100g ?? 0) * 1000),
+    sugar: Math.round(n.sugars_100g ?? 0),
+    healthScore,
+    ingredients: ['per 100g', ...ingredients],
+  };
+}
+
 export async function scanMeal(imageBase64: string, mediaType = 'image/jpeg'): Promise<ScanResult> {
+  // Prefer the Supabase 'scan' edge function when the backend is configured;
+  // fall back to the web app's /api/scan route.
+  if (supabase) {
+    const { data, error } = await supabase.functions.invoke('scan', {
+      body: { imageBase64, mediaType },
+    });
+    if (error) {
+      throw new Error('Scan failed. Is the "scan" edge function deployed with ANTHROPIC_API_KEY set?');
+    }
+    if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+    return data as ScanResult;
+  }
   if (!API_URL) {
-    throw new Error('EXPO_PUBLIC_API_URL is not configured. Set it to your AvoLens web app URL.');
+    throw new Error('No scan backend configured. Set EXPO_PUBLIC_SUPABASE_URL (+key) or EXPO_PUBLIC_API_URL.');
   }
   const res = await fetch(`${API_URL}/api/scan`, {
     method: 'POST',

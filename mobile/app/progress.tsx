@@ -8,8 +8,10 @@ import { Logo } from '@/components/Logo';
 import { BottomNav } from '@/components/BottomNav';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { WeightChart } from '@/components/WeightChart';
+import { MiniBarChart } from '@/components/MiniBarChart';
 import { PromptModal } from '@/components/PromptModal';
 import { useStore } from '@/lib/store';
+import { daysAgoKey, sumCalories, weeklyInsights } from '@/lib/days';
 import type { ChartRange } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
@@ -17,8 +19,9 @@ const kgToLb = (kg: number) => kg * 2.20462;
 
 export default function ProgressPage() {
   const insets = useSafeAreaInsets();
-  const { state, setChartRange, logWeight, activity, theme: t } = useStore();
+  const { state, setChartRange, logWeight, setTargetWeight, activity, streak, theme: t } = useStore();
   const [showLogModal, setShowLogModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
   const hasActivity = state.healthConnected && activity != null;
 
   const isLb = state.unit === 'lb';
@@ -47,10 +50,34 @@ export default function ProgressPage() {
   const bmiCat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
   const bmiMarker = Math.min(96, Math.max(4, ((bmi - 15) / (40 - 15)) * 100));
 
-  // Only "today" is tracked, so days-logged is 0 or 1 until per-day history exists.
-  const daysLogged = state.todayEntries.length > 0 ? 1 : 0;
+  const daysLogged = useMemo(() => {
+    let n = state.todayEntries.length > 0 ? 1 : 0;
+    for (let i = 1; i < 30; i++) {
+      if ((state.history[daysAgoKey(i)]?.entries.length ?? 0) > 0) n++;
+    }
+    return n;
+  }, [state.todayEntries, state.history]);
   const daysLoggedFrac = daysLogged / 30;
   const circ = 2 * Math.PI * 29;
+
+  const insights = useMemo(() => weeklyInsights(state), [state]);
+
+  // Last-7-days calorie bars (Mon-style short labels, today last).
+  const calorieTrend = useMemo(() => {
+    const values: number[] = [];
+    const labels: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const entries = i === 0 ? state.todayEntries : (state.history[daysAgoKey(i)]?.entries ?? []);
+      values.push(sumCalories(entries));
+      labels.push(d.toLocaleDateString('en-US', { weekday: 'narrow' }));
+    }
+    return { values, labels, hasData: values.some((v) => v > 0) };
+  }, [state.todayEntries, state.history]);
+
+  const goalKg = state.targetWeightKg;
+  const toGo = latest && goalKg != null ? conv(latest.kg) - conv(goalKg) : null;
 
   const avgHealth =
     state.todayEntries.length > 0
@@ -136,6 +163,36 @@ export default function ProgressPage() {
                 </View>
               </View>
 
+              <Pressable
+                onPress={() => setShowGoalModal(true)}
+                accessibilityRole="button"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  alignSelf: 'flex-start',
+                  backgroundColor: t.surface2,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  borderRadius: 99,
+                  paddingVertical: 6,
+                  paddingHorizontal: 12,
+                  marginTop: -8,
+                  marginBottom: 14,
+                }}
+              >
+                <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+                  <Circle cx={12} cy={12} r={9} />
+                  <Circle cx={12} cy={12} r={4.5} />
+                  <Circle cx={12} cy={12} r={0.8} fill={t.green} />
+                </Svg>
+                <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.muted }}>
+                  {goalKg != null && toGo != null
+                    ? `Goal ${fmt(goalKg)} ${state.unit} · ${Math.abs(toGo).toFixed(1)} ${state.unit} to go`
+                    : 'Set a weight goal'}
+                </Text>
+              </Pressable>
+
               <View style={{ marginBottom: 16 }}>
                 <SegmentedControl
                   value={state.chartRange}
@@ -148,7 +205,7 @@ export default function ProgressPage() {
                 />
               </View>
 
-              <WeightChart values={chartValues} />
+              <WeightChart values={chartValues} goal={goalKg != null ? conv(goalKg) : undefined} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
                 {rangeLabels.map((lab, i) => (
                   <Text key={i} style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2 }}>{lab}</Text>
@@ -264,13 +321,43 @@ export default function ProgressPage() {
           </View>
         )}
 
-        {/* Calories eaten — needs day-over-day history */}
+        {/* Calories eaten — last 7 days */}
         <View style={card}>
           <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Calories eaten</Text>
-          <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 3 }}>
-            Keep logging meals — your daily calorie trend will appear here.
-          </Text>
+          {calorieTrend.hasData ? (
+            <View style={{ marginTop: 10 }}>
+              <MiniBarChart
+                values={calorieTrend.values}
+                labels={calorieTrend.labels}
+                color={t.green}
+                avg={insights.avgCalories}
+              />
+            </View>
+          ) : (
+            <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 3 }}>
+              Keep logging meals — your daily calorie trend will appear here.
+            </Text>
+          )}
         </View>
+
+        {/* Weekly insights */}
+        {insights.daysLogged > 0 && (
+          <View style={card}>
+            <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink, marginBottom: 12 }}>This week</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <StatBlock value={insights.avgCalories.toLocaleString('en-US')} label="avg kcal / day" color={t.green} />
+              <StatBlock value={`${insights.avgProtein}g`} label="avg protein / day" />
+              <StatBlock
+                value={
+                  insights.prevAvgCalories > 0
+                    ? `${insights.avgCalories - insights.prevAvgCalories >= 0 ? '+' : ''}${(insights.avgCalories - insights.prevAvgCalories).toLocaleString('en-US')}`
+                    : '—'
+                }
+                label="vs last week"
+              />
+            </View>
+          </View>
+        )}
 
         {/* Days logged */}
         <View style={{ ...card, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
@@ -311,10 +398,10 @@ export default function ProgressPage() {
           </View>
           <View style={{ flex: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 22, paddingVertical: 16, paddingHorizontal: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Svg width={16} height={16} viewBox="0 0 24 24" fill={state.streak > 0 ? t.green : t.muted2}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill={streak > 0 ? t.green : t.muted2}>
                 <Path d="M12 2c1 4 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 1-3-1 5 3 5 3 2 0-3-1-5 0-8Z" />
               </Svg>
-              <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>{state.streak}</Text>
+              <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>{streak}</Text>
             </View>
             <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted, marginTop: 3 }}>Day streak</Text>
           </View>
@@ -336,6 +423,21 @@ export default function ProgressPage() {
           placeholder={`Weight in ${state.unit}`}
           onClose={() => setShowLogModal(false)}
           onSubmit={submitWeight}
+        />
+      )}
+      {showGoalModal && (
+        <PromptModal
+          title="Weight goal"
+          placeholder={`Target weight in ${state.unit}`}
+          initial={goalKg != null ? conv(goalKg).toFixed(1) : ''}
+          onClose={() => setShowGoalModal(false)}
+          onSubmit={(raw) => {
+            const val = parseFloat(raw);
+            if (Number.isFinite(val) && val > 0) {
+              setTargetWeight(isLb ? val / 2.20462 : val);
+            }
+            setShowGoalModal(false);
+          }}
         />
       )}
 

@@ -6,9 +6,11 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/Screen';
 import { useStore } from '@/lib/store';
-import { scanMeal } from '@/lib/api';
+import { lookupBarcode, scanMeal } from '@/lib/api';
 import type { ScanResult } from '@/lib/types';
 import { F } from '@/lib/fonts';
+
+const BARCODE_TYPES = ['ean13', 'ean8', 'upc_a', 'upc_e', 'code128'] as const;
 
 function mealForNow(): 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack' {
   const h = new Date().getHours();
@@ -28,6 +30,8 @@ export default function ScannerPage() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [mode, setMode] = useState<'food' | 'barcode'>('food');
+  const scanningBarcode = useRef(false);
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
@@ -45,6 +49,10 @@ export default function ScannerPage() {
   };
 
   const capture = async () => {
+    if (mode === 'barcode') {
+      showToast('Point the camera at a barcode — it scans automatically');
+      return;
+    }
     if (loading) return;
     setLoading(true);
     setScanError(null);
@@ -58,6 +66,25 @@ export default function ScannerPage() {
       setScanError(err instanceof Error ? err.message : 'Scan failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onBarcode = async (code: string) => {
+    if (scanningBarcode.current || loading || result) return;
+    scanningBarcode.current = true;
+    setLoading(true);
+    setScanError(null);
+    try {
+      const data = await lookupBarcode(code);
+      setResult(data);
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'Lookup failed');
+    } finally {
+      setLoading(false);
+      // Let the next scan run once the current result/error is dismissed.
+      setTimeout(() => {
+        scanningBarcode.current = false;
+      }, 1500);
     }
   };
 
@@ -93,7 +120,13 @@ export default function ScannerPage() {
     <Screen bg="#121614" inset={false}>
       <View style={{ flex: 1, backgroundColor: '#121614', overflow: 'hidden' }}>
         {permission?.granted && (
-          <CameraView ref={cameraRef} facing="back" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+          <CameraView
+            ref={cameraRef}
+            facing="back"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            barcodeScannerSettings={mode === 'barcode' ? { barcodeTypes: [...BARCODE_TYPES] } : undefined}
+            onBarcodeScanned={mode === 'barcode' ? ({ data }) => onBarcode(data) : undefined}
+          />
         )}
         {/* scrim over the live preview */}
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(18,22,20,.35)' }} />
@@ -130,7 +163,7 @@ export default function ScannerPage() {
             <View style={{ position: 'absolute', bottom: 0, left: 0, width: 38, height: 38, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: t.greenGrad1, borderBottomLeftRadius: 16 }} />
             <View style={{ position: 'absolute', bottom: 0, right: 0, width: 38, height: 38, borderBottomWidth: 3, borderRightWidth: 3, borderColor: t.greenGrad1, borderBottomRightRadius: 16 }} />
             <Text style={{ position: 'absolute', bottom: -32, left: 0, right: 0, textAlign: 'center', fontFamily: F.b500, fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
-              {cameraError ?? 'Center your plate in the frame'}
+              {cameraError ?? (mode === 'barcode' ? 'Center the barcode — it scans automatically' : 'Center your plate in the frame')}
             </Text>
           </View>
         )}
@@ -244,33 +277,30 @@ export default function ScannerPage() {
         {!result && (
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingBottom: insets.bottom + 32, zIndex: 30 }}>
             <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  backgroundColor: '#fff',
-                  paddingVertical: 9,
-                  paddingHorizontal: 15,
-                  borderRadius: 99,
-                  shadowColor: '#000',
-                  shadowOpacity: 0.18,
-                  shadowRadius: 10,
-                  shadowOffset: { width: 0, height: 2 },
-                  elevation: 4,
-                }}
-              >
-                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              {mode === 'food' ? (
+                <ActiveChip label="Food">
                   <Path d="M6 2v6a2 2 0 0 0 4 0V2" />
                   <Path d="M8 8v14" />
                   <Path d="M17 2c-1.6 0-2.6 2-2.6 5s1 5 2.6 5 2.6-1.6 2.6-5S18.6 2 17 2Z" />
                   <Path d="M17 12v10" />
-                </Svg>
-                <Text style={{ fontFamily: F.b700, fontSize: 12, color: '#26331a' }}>Food</Text>
-              </View>
-              <ModeChip label="Barcode" onPress={() => showToast('Barcode scanning coming soon')}>
-                <Path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" />
-              </ModeChip>
+                </ActiveChip>
+              ) : (
+                <ModeChip label="Food" onPress={() => setMode('food')}>
+                  <Path d="M6 2v6a2 2 0 0 0 4 0V2" />
+                  <Path d="M8 8v14" />
+                  <Path d="M17 2c-1.6 0-2.6 2-2.6 5s1 5 2.6 5 2.6-1.6 2.6-5S18.6 2 17 2Z" />
+                  <Path d="M17 12v10" />
+                </ModeChip>
+              )}
+              {mode === 'barcode' ? (
+                <ActiveChip label="Barcode">
+                  <Path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" />
+                </ActiveChip>
+              ) : (
+                <ModeChip label="Barcode" onPress={() => setMode('barcode')}>
+                  <Path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" />
+                </ModeChip>
+              )}
               <ModeChip label="Label" onPress={() => showToast('Label scanning coming soon')}>
                 <Rect x={4} y={3} width={16} height={18} rx={2.5} />
                 <Path d="M8 8h8M8 12h8M8 16h5" />
@@ -331,6 +361,33 @@ export default function ScannerPage() {
         )}
       </View>
     </Screen>
+  );
+}
+
+function ActiveChip({ label, children }: { label: string; children: React.ReactNode }) {
+  const { theme: t } = useStore();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: '#fff',
+        paddingVertical: 9,
+        paddingHorizontal: 15,
+        borderRadius: 99,
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 4,
+      }}
+    >
+      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        {children}
+      </Svg>
+      <Text style={{ fontFamily: F.b700, fontSize: 12, color: '#26331a' }}>{label}</Text>
+    </View>
   );
 }
 

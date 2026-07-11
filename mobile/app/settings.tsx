@@ -12,12 +12,13 @@ import { PromptModal } from '@/components/PromptModal';
 import { HeightModal } from '@/components/HeightModal';
 import { useStore } from '@/lib/store';
 import { formatHeight } from '@/lib/goals';
+import { supabaseConfigured } from '@/lib/supabase';
 import { F } from '@/lib/fonts';
 
 export default function SettingsPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, setHeightUnit, connectHealth, disconnectHealth, theme: t } = useStore();
+  const { state, session, signOut, toggleLogReminder, setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm, setHeightUnit, connectHealth, disconnectHealth, theme: t } = useStore();
   const [editGoal, setEditGoal] = useState(false);
   const [editHeight, setEditHeight] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -136,7 +137,45 @@ export default function SettingsPage() {
             <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Height</Text>
             <ChevronValue>{formatHeight(state.heightCm, state.heightUnit)}</ChevronValue>
           </Row>
+          <Row border>
+            <View style={{ gap: 1 }}>
+              <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Meal log reminder</Text>
+              <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Daily at 8:00 PM</Text>
+            </View>
+            <ToggleSwitch on={state.logReminderOn} onChange={toggleLogReminder} />
+          </Row>
         </View>
+
+        {supabaseConfigured && (
+          <>
+            <SectionLabel>Account</SectionLabel>
+            <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 22, overflow: 'hidden', marginBottom: 20 }}>
+              {session ? (
+                <>
+                  <Row>
+                    <View style={{ gap: 1, flex: 1 }}>
+                      <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }} numberOfLines={1}>
+                        {session.user.email}
+                      </Text>
+                      <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.green }}>Synced to cloud</Text>
+                    </View>
+                  </Row>
+                  <Row border onPress={() => signOut()}>
+                    <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.protein }}>Sign out</Text>
+                  </Row>
+                </>
+              ) : (
+                <Row onPress={() => router.push('/auth')}>
+                  <View style={{ gap: 1 }}>
+                    <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Sign in</Text>
+                    <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Back up & sync your data</Text>
+                  </View>
+                  <ChevronValue>{''}</ChevronValue>
+                </Row>
+              )}
+            </View>
+          </>
+        )}
 
         <SectionLabel>Connected apps</SectionLabel>
         <View style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 22, overflow: 'hidden' }}>

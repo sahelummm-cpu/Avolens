@@ -114,7 +114,7 @@ export function BottomNav({ active }: { active: 'home' | 'progress' | 'settings'
         </Svg>
       </Pressable>
 
-      <NavIcon label="Coach (coming soon)" onPress={() => {}}>
+      <NavIcon label="AI Coach" onPress={() => router.push('/coach')}>
         <Svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke={t.navIcon} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
           <Path d="M12 3c.35 3.7 2.3 5.65 6 6-3.7.35-5.65 2.3-6 6-.35-3.7-2.3-5.65-6-6 3.7-.35 5.65-2.3 6-6Z" />
           <Path d="M18.5 14.5c.16 1.5 1 2.34 2.5 2.5-1.5.16-2.34 1-2.5 2.5-.16-1.5-1-2.34-2.5-2.5 1.5-.16 2.34-1 2.5-2.5Z" />

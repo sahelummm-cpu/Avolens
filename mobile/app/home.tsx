@@ -19,7 +19,7 @@ const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', mon
 export default function HomePage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { state, theme: t, activity } = useStore();
+  const { state, theme: t, activity, streak } = useStore();
   const liveTotals = useDailyTotals();
   const totals = selectedDayTotals(state, liveTotals);
 
@@ -65,7 +65,7 @@ export default function HomePage() {
               </Svg>
             </LinearGradient>
             <View>
-              <Text style={{ fontFamily: F.d700, fontSize: 14, color: '#fff', lineHeight: 15 }}>{state.streak}</Text>
+              <Text style={{ fontFamily: F.d700, fontSize: 14, color: '#fff', lineHeight: 15 }}>{streak}</Text>
               <Text style={{ fontFamily: F.b600, fontSize: 8, color: t.navIcon, letterSpacing: 0.48, textTransform: 'uppercase', lineHeight: 9 }}>
                 day streak
               </Text>
@@ -215,7 +215,14 @@ export default function HomePage() {
               </View>
             </View>
           ) : (
-            state.todayEntries.map((entry, i) => <FoodLogCard key={entry.id} entry={entry} delay={0.45 + i * 0.13} />)
+            state.todayEntries.map((entry, i) => (
+              <FoodLogCard
+                key={entry.id}
+                entry={entry}
+                delay={0.45 + i * 0.13}
+                onPress={() => router.push({ pathname: '/manual-entry', params: { edit: entry.id } })}
+              />
+            ))
           )}
         </View>
       </ScrollView>
