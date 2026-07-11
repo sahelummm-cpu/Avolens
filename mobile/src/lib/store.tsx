@@ -17,6 +17,7 @@ import type {
   FoodEntry,
   HeightUnit,
   InjectionSite,
+  MedFrequency,
   OnboardingProfile,
   ThemeMode,
   WeightUnit,
@@ -24,7 +25,7 @@ import type {
 import { defaultState } from './constants';
 import { computeGoal } from './goals';
 import { computeStreak, dayKey, rolledOver } from './days';
-import { getMedication, nextDoseAt, takenThisCycle } from './meds';
+import { nextDoseAt, resolveMedication, takenThisCycle } from './meds';
 import { darkTheme, lightTheme, type Theme } from './theme';
 import { armMissedDoseCheck, syncLogReminder, syncMedReminder } from './notifications';
 import { getTodayActivity, requestHealthPermissions } from './health';
@@ -45,6 +46,7 @@ interface StoreValue {
   removeGlass: () => void;
   setDose: (i: number) => void;
   setMedication: (key: string) => void;
+  setCustomMed: (name: string, frequency: MedFrequency, dose: string) => void;
   setMedSchedule: (day: number, hour: number, minute: number) => void;
   setMedEnabled: (on: boolean) => void;
   markShot: (site: InjectionSite) => void;
@@ -156,7 +158,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Keep the dose reminder + missed-dose follow-up in sync with the schedule.
   useEffect(() => {
     if (!hydrated.current) return;
-    const med = getMedication(state.medKey);
+    const med = resolveMedication(state);
     const on = state.medEnabled && state.reminderOn;
     syncMedReminder({
       on,
@@ -166,19 +168,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       hour: state.medHour,
       minute: state.medMinute,
     });
-    const sched = {
-      medKey: state.medKey,
-      medDay: state.medDay,
-      medHour: state.medHour,
-      medMinute: state.medMinute,
-      shots: state.shots,
-    };
     const missedAt =
-      on && !takenThisCycle(sched)
-        ? new Date(nextDoseAt(sched).getTime() + 14 * 60 * 60 * 1000)
+      on && !takenThisCycle(state)
+        ? new Date(nextDoseAt(state).getTime() + 14 * 60 * 60 * 1000)
         : null;
     armMissedDoseCheck(missedAt, med.name);
-  }, [state.medEnabled, state.reminderOn, state.medKey, state.medDay, state.medHour, state.medMinute, state.shots]);
+  }, [
+    state.medEnabled,
+    state.reminderOn,
+    state.medKey,
+    state.medDay,
+    state.medHour,
+    state.medMinute,
+    state.shots,
+    state.medCustomName,
+    state.medCustomFrequency,
+    state.medCustomDose,
+  ]);
 
   // Pull today's activity from Apple Health / Health Connect while connected.
   useEffect(() => {
@@ -260,7 +266,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setState((s) => ({
           ...s,
           medKey: key,
-          dose: Math.min(s.dose, getMedication(key).doses.length - 1),
+          dose: Math.min(s.dose, resolveMedication({ ...s, medKey: key }).doses.length - 1),
+        })),
+      setCustomMed: (name, frequency, dose) =>
+        setState((s) => ({
+          ...s,
+          medKey: 'custom',
+          medCustomName: name,
+          medCustomFrequency: frequency,
+          medCustomDose: dose,
+          dose: 0,
         })),
       setMedSchedule: (day, hour, minute) =>
         setState((s) => ({ ...s, medDay: day, medHour: hour, medMinute: minute })),
@@ -273,7 +288,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             {
               date: dayKey(new Date()),
               time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-              doseMg: getMedication(s.medKey).doses[s.dose] ?? '',
+              doseMg: resolveMedication(s).doses[s.dose] ?? '',
               site,
             },
           ],

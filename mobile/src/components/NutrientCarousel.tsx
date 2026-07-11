@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useStore, useDailyTotals, frac } from '@/lib/store';
-import { countdownLabel, formatDoseSlot, getMedication, suggestedSite, takenThisCycle } from '@/lib/meds';
+import { CUSTOM_MED_KEY, countdownLabel, formatDoseSlot, resolveMedication, suggestedSite, takenThisCycle } from '@/lib/meds';
 import { F } from '@/lib/fonts';
 import { ProgressBar } from './ProgressBar';
 import { MedScheduleModal } from './MedScheduleModal';
@@ -92,13 +92,17 @@ export function NutrientCarousel() {
   const waterCur = (state.glasses * 0.5).toFixed(1);
   const waterTarget = (state.goal.water * 0.5).toFixed(1);
 
-  const med = getMedication(state.medKey);
+  const med = resolveMedication(state);
+  const isCustom = state.medKey === CUSTOM_MED_KEY;
   const sched = {
     medKey: state.medKey,
     medDay: state.medDay,
     medHour: state.medHour,
     medMinute: state.medMinute,
     shots: state.shots,
+    medCustomName: state.medCustomName,
+    medCustomFrequency: state.medCustomFrequency,
+    medCustomDose: state.medCustomDose,
   };
   const taken = takenThisCycle(sched);
   const pages = state.medEnabled ? [0, 1, 2] : [0, 1];
@@ -186,14 +190,26 @@ export function NutrientCarousel() {
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
-                    Current dose <Text style={{ color: t.muted }}>· {med.doses[state.dose]} mg</Text>
+                    Current dose <Text style={{ color: t.muted }}>· {med.doses[state.dose]}{med.unit ? ` ${med.unit}` : ''}</Text>
                   </Text>
-                  <RoundBtn label="Decrease dose" onPress={() => setDose(Math.max(0, state.dose - 1))} bg={t.surface} border={t.purpleBorder}>
-                    <MinusIcon stroke={t.purple} />
-                  </RoundBtn>
-                  <RoundBtn label="Increase dose" onPress={() => setDose(Math.min(med.doses.length - 1, state.dose + 1))} bg={t.purple}>
-                    <PlusIcon stroke="#fff" />
-                  </RoundBtn>
+                  {isCustom ? (
+                    <Pressable
+                      onPress={() => setScheduleOpen(true)}
+                      accessibilityRole="button"
+                      style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.purpleBorder, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 }}
+                    >
+                      <Text style={{ fontFamily: F.d700, fontSize: 11, color: t.purple }}>Edit dose</Text>
+                    </Pressable>
+                  ) : (
+                    <>
+                      <RoundBtn label="Decrease dose" onPress={() => setDose(Math.max(0, state.dose - 1))} bg={t.surface} border={t.purpleBorder}>
+                        <MinusIcon stroke={t.purple} />
+                      </RoundBtn>
+                      <RoundBtn label="Increase dose" onPress={() => setDose(Math.min(med.doses.length - 1, state.dose + 1))} bg={t.purple}>
+                        <PlusIcon stroke="#fff" />
+                      </RoundBtn>
+                    </>
+                  )}
                 </View>
                 {taken ? (
                   <View

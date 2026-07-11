@@ -1,7 +1,7 @@
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useStore, useTheme } from '@/lib/store';
-import { MEDICATIONS, getMedication } from '@/lib/meds';
+import { CUSTOM_MED_KEY, MEDICATIONS, resolveMedication } from '@/lib/meds';
 import { F } from '@/lib/fonts';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -9,8 +9,9 @@ const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 /** Pick the medication and its dose day/time; changes apply immediately. */
 export function MedScheduleModal({ onClose }: { onClose: () => void }) {
   const t = useTheme();
-  const { state, setMedication, setMedSchedule } = useStore();
-  const med = getMedication(state.medKey);
+  const { state, setMedication, setCustomMed, setMedSchedule } = useStore();
+  const med = resolveMedication(state);
+  const isCustom = state.medKey === CUSTOM_MED_KEY;
 
   const shiftHour = (d: number) => {
     const h = (state.medHour + d + 24) % 24;
@@ -27,6 +28,7 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable
           onPress={() => {}}
           style={{
@@ -39,16 +41,22 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
             maxHeight: '82%',
           }}
         >
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink, marginBottom: 14 }}>Medication</Text>
 
             <View style={{ gap: 9, marginBottom: 20 }}>
               {MEDICATIONS.map((m) => {
                 const selected = m.key === state.medKey;
+                const doseRange =
+                  m.doses.length > 1 ? `${m.doses[0]}–${m.doses[m.doses.length - 1]} ${m.unit}` : `${m.doses[0]} ${m.unit}`;
+                const subtitle =
+                  m.key === CUSTOM_MED_KEY
+                    ? m.brands
+                    : `${m.brands} · ${m.frequency === 'weekly' ? 'Weekly' : 'Daily'} · ${doseRange}`;
                 return (
                   <Pressable
                     key={m.key}
-                    onPress={() => setMedication(m.key)}
+                    onPress={() => (m.key === CUSTOM_MED_KEY ? setCustomMed(state.medCustomName, state.medCustomFrequency, state.medCustomDose) : setMedication(m.key))}
                     accessibilityRole="button"
                     style={{
                       flexDirection: 'row',
@@ -64,9 +72,7 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink }}>{m.name}</Text>
-                      <Text style={{ fontFamily: F.b500, fontSize: 11.5, color: t.muted, marginTop: 1 }}>
-                        {m.brands} · {m.frequency === 'weekly' ? 'Weekly' : 'Daily'} · {m.doses[0]}–{m.doses[m.doses.length - 1]} mg
-                      </Text>
+                      <Text style={{ fontFamily: F.b500, fontSize: 11.5, color: t.muted, marginTop: 1 }}>{subtitle}</Text>
                     </View>
                     {selected && (
                       <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.purple} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
@@ -77,6 +83,55 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
                 );
               })}
             </View>
+
+            {isCustom && (
+              <View style={{ marginBottom: 20, gap: 12 }}>
+                <View>
+                  <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 8 }}>
+                    Medication name
+                  </Text>
+                  <TextInput
+                    value={state.medCustomName}
+                    onChangeText={(v) => setCustomMed(v, state.medCustomFrequency, state.medCustomDose)}
+                    placeholder="e.g. Compounded semaglutide"
+                    placeholderTextColor={t.muted2}
+                    style={{ backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, fontFamily: F.b600, fontSize: 15, color: t.ink }}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 8 }}>
+                      Dose
+                    </Text>
+                    <TextInput
+                      value={state.medCustomDose}
+                      onChangeText={(v) => setCustomMed(state.medCustomName, state.medCustomFrequency, v)}
+                      placeholder="e.g. 0.5 mg"
+                      placeholderTextColor={t.muted2}
+                      style={{ backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, fontFamily: F.b600, fontSize: 15, color: t.ink }}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 8 }}>
+                      Frequency
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 3, backgroundColor: t.surface3, borderRadius: 12, padding: 3 }}>
+                      {(['weekly', 'daily'] as const).map((f) => (
+                        <Pressable
+                          key={f}
+                          onPress={() => setCustomMed(state.medCustomName, f, state.medCustomDose)}
+                          style={{ flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center', backgroundColor: state.medCustomFrequency === f ? t.purple : 'transparent' }}
+                        >
+                          <Text style={{ fontFamily: F.d700, fontSize: 12, color: state.medCustomFrequency === f ? '#fff' : t.muted }}>
+                            {f === 'weekly' ? 'Weekly' : 'Daily'}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
 
             {med.frequency === 'weekly' && (
               <>
@@ -154,6 +209,7 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
             </Pressable>
           </ScrollView>
         </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   );

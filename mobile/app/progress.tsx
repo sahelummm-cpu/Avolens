@@ -12,7 +12,7 @@ import { MiniBarChart } from '@/components/MiniBarChart';
 import { PromptModal } from '@/components/PromptModal';
 import { useStore } from '@/lib/store';
 import { daysAgoKey, sumCalories, weeklyInsights } from '@/lib/days';
-import { getMedication, recentCycles, shotStreak } from '@/lib/meds';
+import { recentCycles, resolveMedication, shotStreak } from '@/lib/meds';
 import type { ChartRange } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
@@ -81,8 +81,17 @@ export default function ProgressPage() {
   const toGo = latest && goalKg != null ? conv(latest.kg) - conv(goalKg) : null;
 
   // GLP-1 adherence + shot markers on the weight chart (matched by display date).
-  const med = getMedication(state.medKey);
-  const medSched = { medKey: state.medKey, medDay: state.medDay, medHour: state.medHour, medMinute: state.medMinute, shots: state.shots };
+  const med = resolveMedication(state);
+  const medSched = {
+    medKey: state.medKey,
+    medDay: state.medDay,
+    medHour: state.medHour,
+    medMinute: state.medMinute,
+    shots: state.shots,
+    medCustomName: state.medCustomName,
+    medCustomFrequency: state.medCustomFrequency,
+    medCustomDose: state.medCustomDose,
+  };
   const shotDisplayDates = useMemo(
     () =>
       new Set(

@@ -58,6 +58,9 @@ export function defaultState(): AvoLensState {
     medDay: 3, // Wednesday
     medHour: 9,
     medMinute: 0,
+    medCustomName: '',
+    medCustomFrequency: 'weekly',
+    medCustomDose: '',
     shots: [],
     reminderOn: false,
     logReminderOn: false,

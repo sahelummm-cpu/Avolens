@@ -1,7 +1,9 @@
 import { dayKey } from './days';
 import type { AvoLensState, InjectionSite, Medication, ShotRecord } from './types';
 
-/** GLP-1 medication catalog with each drug's dose ladder and cadence. */
+export const CUSTOM_MED_KEY = 'custom';
+
+/** GLP-1 / incretin medication catalog with each drug's dose ladder and cadence. */
 export const MEDICATIONS: Medication[] = [
   {
     key: 'semaglutide',
@@ -9,6 +11,7 @@ export const MEDICATIONS: Medication[] = [
     brands: 'Ozempic · Wegovy',
     frequency: 'weekly',
     doses: ['0.25', '0.5', '1.0', '1.7', '2.4'],
+    unit: 'mg',
   },
   {
     key: 'tirzepatide',
@@ -16,6 +19,15 @@ export const MEDICATIONS: Medication[] = [
     brands: 'Mounjaro · Zepbound',
     frequency: 'weekly',
     doses: ['2.5', '5', '7.5', '10', '12.5', '15'],
+    unit: 'mg',
+  },
+  {
+    key: 'semaglutide-oral',
+    name: 'Semaglutide (oral)',
+    brands: 'Rybelsus',
+    frequency: 'daily',
+    doses: ['3', '7', '14'],
+    unit: 'mg',
   },
   {
     key: 'liraglutide',
@@ -23,6 +35,7 @@ export const MEDICATIONS: Medication[] = [
     brands: 'Saxenda · Victoza',
     frequency: 'daily',
     doses: ['0.6', '1.2', '1.8', '2.4', '3.0'],
+    unit: 'mg',
   },
   {
     key: 'dulaglutide',
@@ -30,11 +43,61 @@ export const MEDICATIONS: Medication[] = [
     brands: 'Trulicity',
     frequency: 'weekly',
     doses: ['0.75', '1.5', '3.0', '4.5'],
+    unit: 'mg',
+  },
+  {
+    key: 'exenatide-er',
+    name: 'Exenatide ER',
+    brands: 'Bydureon BCise',
+    frequency: 'weekly',
+    doses: ['2'],
+    unit: 'mg',
+  },
+  {
+    key: 'exenatide',
+    name: 'Exenatide',
+    brands: 'Byetta',
+    frequency: 'daily',
+    doses: ['5', '10'],
+    unit: 'mcg',
+  },
+  {
+    key: 'lixisenatide',
+    name: 'Lixisenatide',
+    brands: 'Adlyxin · Lyxumia',
+    frequency: 'daily',
+    doses: ['10', '20'],
+    unit: 'mcg',
+  },
+  {
+    key: CUSTOM_MED_KEY,
+    name: 'Custom / other',
+    brands: 'Compounded, telehealth, etc.',
+    frequency: 'weekly',
+    doses: [''],
+    unit: '',
   },
 ];
 
 export function getMedication(key: string): Medication {
   return MEDICATIONS.find((m) => m.key === key) ?? MEDICATIONS[0];
+}
+
+type MedFields = Pick<AvoLensState, 'medKey' | 'medCustomName' | 'medCustomFrequency' | 'medCustomDose'>;
+
+/** The active medication — a catalog entry, or the user's custom details. */
+export function resolveMedication(s: MedFields): Medication {
+  if (s.medKey === CUSTOM_MED_KEY) {
+    return {
+      key: CUSTOM_MED_KEY,
+      name: s.medCustomName.trim() || 'Custom medication',
+      brands: 'Custom',
+      frequency: s.medCustomFrequency,
+      doses: [s.medCustomDose.trim() || '—'],
+      unit: '',
+    };
+  }
+  return getMedication(s.medKey);
 }
 
 /** Rotation order for injection sites; the app suggests the next one. */
@@ -47,13 +110,16 @@ export function suggestedSite(shots: ShotRecord[]): InjectionSite {
   return SITES[(i + 1) % SITES.length];
 }
 
-type MedSchedule = Pick<AvoLensState, 'medKey' | 'medDay' | 'medHour' | 'medMinute' | 'shots'>;
+type MedSchedule = Pick<
+  AvoLensState,
+  'medKey' | 'medDay' | 'medHour' | 'medMinute' | 'shots' | 'medCustomName' | 'medCustomFrequency' | 'medCustomDose'
+>;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Was a dose taken in the current cycle (today for daily, last 6 days for weekly)? */
 export function takenThisCycle(s: MedSchedule, now = new Date()): ShotRecord | undefined {
-  const med = getMedication(s.medKey);
+  const med = resolveMedication(s);
   const windowDays = med.frequency === 'daily' ? 0 : 6;
   for (let i = s.shots.length - 1; i >= 0; i--) {
     const shot = s.shots[i];
@@ -68,7 +134,7 @@ export function takenThisCycle(s: MedSchedule, now = new Date()): ShotRecord | u
 
 /** The next scheduled dose time (skips the current cycle once it's taken). */
 export function nextDoseAt(s: MedSchedule, now = new Date()): Date {
-  const med = getMedication(s.medKey);
+  const med = resolveMedication(s);
   const d = new Date(now);
   d.setHours(s.medHour, s.medMinute, 0, 0);
 
@@ -93,7 +159,7 @@ export function nextDoseAt(s: MedSchedule, now = new Date()): Date {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function formatDoseSlot(s: MedSchedule): string {
-  const med = getMedication(s.medKey);
+  const med = resolveMedication(s);
   const h12 = ((s.medHour + 11) % 12) + 1;
   const ampm = s.medHour < 12 ? 'AM' : 'PM';
   const time = `${h12}:${String(s.medMinute).padStart(2, '0')} ${ampm}`;
@@ -114,7 +180,7 @@ export function countdownLabel(s: MedSchedule, now = new Date()): string {
  * only once its shot is logged.
  */
 export function shotStreak(s: MedSchedule, now = new Date()): number {
-  const med = getMedication(s.medKey);
+  const med = resolveMedication(s);
   const period = med.frequency === 'daily' ? 1 : 7;
   const taken = new Set(s.shots.map((x) => x.date));
   const hasShotInPeriod = (offset: number): boolean => {
@@ -140,7 +206,7 @@ export function shotStreak(s: MedSchedule, now = new Date()): number {
 
 /** Last 8 cycles (oldest → newest incl. current) — true where a shot exists. */
 export function recentCycles(s: MedSchedule, now = new Date()): boolean[] {
-  const med = getMedication(s.medKey);
+  const med = resolveMedication(s);
   const period = med.frequency === 'daily' ? 1 : 7;
   const taken = new Set(s.shots.map((x) => x.date));
   const out: boolean[] = [];

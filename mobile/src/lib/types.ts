@@ -56,7 +56,8 @@ export interface Medication {
   name: string;
   brands: string;
   frequency: MedFrequency;
-  doses: string[]; // mg ladder, low → high
+  doses: string[]; // dose ladder, low → high
+  unit: string; // 'mg' | 'mcg' | '' (empty for custom / unit baked into the dose text)
 }
 
 export type InjectionSite = 'Belly L' | 'Belly R' | 'Thigh L' | 'Thigh R' | 'Arm L' | 'Arm R';
@@ -131,6 +132,10 @@ export interface AvoLensState {
   medDay: number; // 0=Sun … 6=Sat (weekly meds)
   medHour: number;
   medMinute: number;
+  /** Used only when medKey === 'custom'. */
+  medCustomName: string;
+  medCustomFrequency: MedFrequency;
+  medCustomDose: string;
   shots: ShotRecord[];
   reminderOn: boolean;
   logReminderOn: boolean;
