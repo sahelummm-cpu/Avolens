@@ -1,26 +1,24 @@
-'use client';
+import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
+import { useTheme } from '@/lib/store';
+import { F } from '@/lib/fonts';
 
 /**
- * Single-series magnitude bar chart for the Progress trends.
- * Follows the dataviz mark spec: thin marks, 4px rounded tops anchored to the
- * baseline, a 2px surface gap between bars, a recessive dashed average line,
- * per-bar hover tooltip, and no legend (one series — the card title names it).
+ * Single-series magnitude bar chart for the Progress trends — same mark spec
+ * as the web version: thin marks with rounded tops, muted non-final bars, and
+ * a recessive dashed average line with an "avg" chip.
  */
 export function MiniBarChart({
   values,
   labels,
   color,
   avg,
-  unit = '',
-  format = (n: number) => String(Math.round(n)),
 }: {
   values: number[];
   labels: string[];
   color: string;
   avg: number;
-  unit?: string;
-  format?: (n: number) => string;
 }) {
+  const t = useTheme();
   const W = 300;
   const H = 132;
   const padTop = 12;
@@ -34,9 +32,9 @@ export function MiniBarChart({
   const avgY = y(avg);
 
   return (
-    <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Bar chart, average ${format(avg)}${unit}`}>
+    <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
       {/* recessive baseline */}
-      <line x1={0} y1={baseline} x2={W} y2={baseline} stroke="var(--av-border)" strokeWidth={1} />
+      <Line x1={0} y1={baseline} x2={W} y2={baseline} stroke={t.border} strokeWidth={1} />
 
       {values.map((v, i) => {
         const cx = i * slot + slot / 2;
@@ -44,42 +42,39 @@ export function MiniBarChart({
         const x = cx - barW / 2;
         const isLast = i === n - 1;
         return (
-          <g key={i}>
-            <rect
-              x={x}
-              y={baseline - barH}
-              width={barW}
-              height={barH}
-              rx={4}
-              fill={color}
-              opacity={isLast ? 1 : 0.42}
-            >
-              <title>{`${labels[i]}: ${format(v)}${unit}`}</title>
-            </rect>
-          </g>
+          <Rect
+            key={i}
+            x={x}
+            y={baseline - barH}
+            width={barW}
+            height={barH}
+            rx={4}
+            fill={color}
+            opacity={isLast ? 1 : 0.42}
+          />
         );
       })}
 
       {/* average reference line — recessive, dashed, labeled */}
-      <line x1={0} y1={avgY} x2={W} y2={avgY} stroke="var(--av-muted-2)" strokeWidth={1.5} strokeDasharray="4 4" />
-      <rect x={W - 54} y={avgY - 18} width={50} height={15} rx={7} fill="var(--av-nav-bg)" />
-      <text x={W - 29} y={avgY - 7} fontSize="9" fontWeight={700} fontFamily="var(--font-display)" fill="#fff" textAnchor="middle">
+      <Line x1={0} y1={avgY} x2={W} y2={avgY} stroke={t.muted2} strokeWidth={1.5} strokeDasharray="4 4" />
+      <Rect x={W - 54} y={avgY - 18} width={50} height={15} rx={7} fill={t.navBg} />
+      <SvgText x={W - 29} y={avgY - 7} fontSize={9} fontFamily={F.d700} fill="#fff" textAnchor="middle">
         avg
-      </text>
+      </SvgText>
 
       {labels.map((lab, i) => (
-        <text
+        <SvgText
           key={i}
           x={i * slot + slot / 2}
           y={H - 4}
-          fontSize="10"
-          fontFamily="var(--font-body)"
-          fill="var(--av-muted-2)"
+          fontSize={10}
+          fontFamily={F.b400}
+          fill={t.muted2}
           textAnchor="middle"
         >
           {lab}
-        </text>
+        </SvgText>
       ))}
-    </svg>
+    </Svg>
   );
 }

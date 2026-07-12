@@ -1,72 +1,77 @@
-'use client';
-
+import { Pressable, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { useStore, useDailyTotals } from '@/lib/store';
 import { buildWeek } from '@/lib/dayStrip';
+import { F } from '@/lib/fonts';
 
 const CIRC = 2 * Math.PI * 12.5;
 
 export function DayStrip() {
-  const { state, selectDay } = useStore();
+  const { state, selectDay, theme: t } = useStore();
   const totals = useDailyTotals();
   const days = buildWeek(state, totals.calories);
 
   return (
-    <div style={{ display: 'flex', gap: 6, marginBottom: 22 }}>
+    <View style={{ flexDirection: 'row', gap: 6, marginBottom: 22 }}>
       {days.map((d) => {
         const sel = d.selected;
+        const ringColor = d.ringColor === 'transparent' ? 'transparent' : t[d.ringColor];
         return (
-          <div
+          <Pressable
             key={d.index}
-            onClick={() => selectDay(d.index)}
+            onPress={() => selectDay(d.index)}
             style={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               gap: 5,
-              padding: '8px 0',
+              paddingVertical: 8,
               borderRadius: 14,
-              background: sel ? 'var(--av-nav-bg)' : 'transparent',
-              cursor: 'pointer',
+              backgroundColor: sel ? t.navBg : 'transparent',
             }}
           >
-            <span
+            <Text
               style={{
-                font: '600 11px var(--font-body)',
-                color: sel ? 'rgba(255,255,255,.6)' : 'var(--av-muted-2)',
+                fontFamily: F.b600,
+                fontSize: 11,
+                color: sel ? 'rgba(255,255,255,.6)' : t.muted2,
               }}
             >
               {d.label}
-            </span>
-            <div style={{ position: 'relative', width: 29, height: 29, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width={29} height={29} viewBox="0 0 29 29" style={{ position: 'absolute', transform: 'rotate(-90deg)' }}>
-                <circle
+            </Text>
+            <View style={{ width: 29, height: 29, alignItems: 'center', justifyContent: 'center' }}>
+              <Svg
+                width={29}
+                height={29}
+                viewBox="0 0 29 29"
+                style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}
+              >
+                <Circle
                   cx={14.5}
                   cy={14.5}
                   r={12.5}
                   fill="none"
-                  stroke={sel ? 'rgba(255,255,255,.18)' : d.ringColor === 'transparent' ? 'transparent' : 'var(--av-green-track)'}
+                  stroke={sel ? 'rgba(255,255,255,.18)' : ringColor === 'transparent' ? 'transparent' : t.greenTrack}
                   strokeWidth={2.4}
                 />
-                <circle
+                <Circle
                   cx={14.5}
                   cy={14.5}
                   r={12.5}
                   fill="none"
-                  stroke={d.ringColor === 'transparent' ? 'transparent' : sel ? '#fff' : d.ringColor}
+                  stroke={ringColor === 'transparent' ? 'transparent' : sel ? '#fff' : ringColor}
                   strokeWidth={2.4}
                   strokeLinecap="round"
-                  strokeDasharray={CIRC}
+                  strokeDasharray={`${CIRC}`}
                   strokeDashoffset={CIRC * (1 - d.fraction)}
                 />
-              </svg>
-              <span style={{ font: '600 13px var(--font-display)', color: sel ? '#fff' : 'var(--av-muted)', zIndex: 1 }}>
+              </Svg>
+              <Text style={{ fontFamily: F.d600, fontSize: 13, color: sel ? '#fff' : t.muted, zIndex: 1 }}>
                 {d.date}
-              </span>
-            </div>
-          </div>
+              </Text>
+            </View>
+          </Pressable>
         );
       })}
-    </div>
+    </View>
   );
 }

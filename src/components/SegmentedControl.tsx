@@ -1,4 +1,6 @@
-'use client';
+import { Pressable, Text, View } from 'react-native';
+import { useTheme } from '@/lib/store';
+import { F } from '@/lib/fonts';
 
 export function SegmentedControl<T extends string>({
   value,
@@ -9,12 +11,13 @@ export function SegmentedControl<T extends string>({
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
 }) {
+  const t = useTheme();
   return (
-    <div
+    <View
       style={{
-        display: 'flex',
+        flexDirection: 'row',
         gap: 3,
-        background: 'var(--av-surface-3)',
+        backgroundColor: t.surface3,
         borderRadius: 12,
         padding: 3,
       }}
@@ -22,25 +25,23 @@ export function SegmentedControl<T extends string>({
       {options.map((opt) => {
         const active = opt.value === value;
         return (
-          <div
+          <Pressable
             key={opt.value}
-            onClick={() => onChange(opt.value)}
+            onPress={() => onChange(opt.value)}
             style={{
               flex: 1,
-              textAlign: 'center',
-              padding: '7px 0',
+              alignItems: 'center',
+              paddingVertical: 7,
               borderRadius: 9,
-              background: active ? 'var(--av-surface)' : 'transparent',
-              color: active ? 'var(--av-ink)' : 'var(--av-muted)',
-              font: '700 12px var(--font-display)',
-              cursor: 'pointer',
-              userSelect: 'none',
+              backgroundColor: active ? t.surface : 'transparent',
             }}
           >
-            {opt.label}
-          </div>
+            <Text style={{ color: active ? t.ink : t.muted, fontFamily: F.d700, fontSize: 12 }}>
+              {opt.label}
+            </Text>
+          </Pressable>
         );
       })}
-    </div>
+    </View>
   );
 }

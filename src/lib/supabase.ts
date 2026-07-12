@@ -4,7 +4,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Supabase backend (accounts + cloud sync + edge functions).
- * Configure in mobile/.env:
+ * Configure in .env:
  *   EXPO_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
  *   EXPO_PUBLIC_SUPABASE_ANON_KEY=<publishable/anon key>
  * Without these the app runs fully offline (local-only state, no sign-in).

@@ -1,5 +1,7 @@
-import { DAY_LABELS, DEMO_WEEK, mondayIndex } from './constants';
+import { DAY_LABELS, mondayIndex } from './constants';
+import { entriesFor, sumCalories, weekDayKey } from './days';
 import type { AvoLensState } from './types';
+import type { Theme } from './theme';
 
 export interface SelectedDayTotals {
   left: number;
@@ -15,8 +17,22 @@ export function selectedDayTotals(
 ): SelectedDayTotals {
   const todayIdx = mondayIndex(new Date());
   if (state.selectedDay === todayIdx) return liveTotals;
-  const d = DEMO_WEEK[state.selectedDay];
-  return { left: d.kcalLeft, protein: d.protein, carbs: d.carbs, fat: d.fat };
+  const entries = entriesFor(state, weekDayKey(state.selectedDay, todayIdx));
+  const totals = entries.reduce(
+    (acc, e) => ({
+      calories: acc.calories + e.calories,
+      protein: acc.protein + e.protein,
+      carbs: acc.carbs + e.carbs,
+      fat: acc.fat + e.fat,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  );
+  return {
+    left: Math.max(0, state.goal.calories - totals.calories),
+    protein: totals.protein,
+    carbs: totals.carbs,
+    fat: totals.fat,
+  };
 }
 
 export interface DayCell {
@@ -25,16 +41,16 @@ export interface DayCell {
   date: number;
   selected: boolean;
   isToday: boolean;
-  ringColor: string; // 'transparent' | color
+  ringColor: keyof Theme | 'transparent';
   fraction: number; // 0-1 of the daily limit eaten
 }
 
 /** Classify a day's ring color from calories eaten vs. the daily target. */
-function ringColorFor(eaten: number, target: number): string {
+function ringColorFor(eaten: number, target: number): keyof Theme | 'transparent' {
   if (eaten <= 0) return 'transparent';
-  if (eaten > target) return 'var(--av-protein)'; // over the limit
-  if (eaten >= target * 0.34) return 'var(--av-green)'; // reasonable / within limit
-  return 'var(--av-ink)'; // logged very little
+  if (eaten > target) return 'protein'; // over the limit
+  if (eaten >= target * 0.34) return 'green'; // reasonable / within limit
+  return 'ink'; // logged very little
 }
 
 export function buildWeek(state: AvoLensState, todayCalories: number): DayCell[] {
@@ -46,8 +62,9 @@ export function buildWeek(state: AvoLensState, todayCalories: number): DayCell[]
 
   return DAY_LABELS.map((label, i) => {
     const isToday = i === todayIdx;
-    const eaten = isToday ? todayCalories : target - DEMO_WEEK[i].kcalLeft;
-    const logged = isToday ? state.todayEntries.length > 0 : eaten > 0;
+    const entries = isToday ? state.todayEntries : entriesFor(state, weekDayKey(i, todayIdx));
+    const eaten = isToday ? todayCalories : sumCalories(entries);
+    const logged = entries.length > 0;
     const d = new Date(mondayDate);
     d.setDate(mondayDate.getDate() + i);
     return {

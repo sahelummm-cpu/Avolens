@@ -5,7 +5,7 @@ import { supabase } from './supabase';
  * The AI scan runs on the web app's server route (/api/scan) so the Anthropic
  * key never ships inside the mobile binary. Point EXPO_PUBLIC_API_URL at your
  * deployed AvoLens web app (e.g. https://avolens.vercel.app) — or a local
- * `npm run dev` server — in mobile/.env.
+ * `npm run dev` server — in .env.
  */
 const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? '').replace(/\/$/, '');
 

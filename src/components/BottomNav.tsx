@@ -1,46 +1,70 @@
-'use client';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { useRouter } from 'expo-router';
+import Svg, { Circle, Path } from 'react-native-svg';
+import { useTheme } from '@/lib/store';
+import { F } from '@/lib/fonts';
 
-import { useRouter } from 'next/navigation';
-
-const iconStroke = 'var(--av-nav-icon)';
-
-function NavIcon({ children, onClick, label }: { children: React.ReactNode; onClick: () => void; label: string }) {
+function HomeIcon({ stroke, size = 21 }: { stroke: string; size?: number }) {
   return (
-    <div
-      onClick={onClick}
-      aria-label={label}
-      role="button"
-      style={{ width: 44, height: 44, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M3 10.5 12 4l9 6.5" />
+      <Path d="M5 9.5V20h14V9.5" />
+    </Svg>
+  );
+}
+
+function TrendsIcon({ stroke, size = 21 }: { stroke: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M4 19V5" />
+      <Path d="M4 19h16" />
+      <Path d="m7 14 3-4 3 2 4-6" />
+    </Svg>
+  );
+}
+
+function NavIcon({ children, onPress, label }: { children: React.ReactNode; onPress: () => void; label: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      style={{ width: 44, height: 44, borderRadius: 999, alignItems: 'center', justifyContent: 'center' }}
     >
       {children}
-    </div>
+    </Pressable>
   );
 }
 
 export function BottomNav({ active }: { active: 'home' | 'progress' | 'settings' }) {
   const router = useRouter();
+  const t = useTheme();
+  const { width } = useWindowDimensions();
 
   const pill = (label: string, icon: React.ReactNode) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--av-green)', borderRadius: 999, padding: '11px 18px' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.green, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 18 }}>
       {icon}
-      <span style={{ font: '700 13px var(--font-display)', color: '#fff' }}>{label}</span>
-    </div>
+      <Text style={{ fontFamily: F.d700, fontSize: 13, color: '#fff' }}>{label}</Text>
+    </View>
   );
 
   return (
-    <div
+    <View
       style={{
-        position: 'fixed',
-        left: '50%',
-        transform: 'translateX(-50%)',
+        position: 'absolute',
+        left: (width - Math.min(width - 40, 390)) / 2,
         bottom: 18,
-        width: 'calc(100% - 40px)',
-        maxWidth: 390,
-        background: 'var(--av-nav-bg)',
+        width: Math.min(width - 40, 390),
+        backgroundColor: t.navBg,
         borderRadius: 999,
-        boxShadow: '0 12px 30px -10px rgba(22,40,31,.4)',
-        padding: '10px 12px',
-        display: 'flex',
+        shadowColor: 'rgba(22,40,31,1)',
+        shadowOpacity: 0.4,
+        shadowRadius: 30,
+        shadowOffset: { width: 0, height: 12 },
+        elevation: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 6,
@@ -48,77 +72,61 @@ export function BottomNav({ active }: { active: 'home' | 'progress' | 'settings'
       }}
     >
       {active === 'home' ? (
-        pill(
-          'Home',
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 10.5 12 4l9 6.5" />
-            <path d="M5 9.5V20h14V9.5" />
-          </svg>,
-        )
+        pill('Home', <HomeIcon stroke="#fff" size={20} />)
       ) : (
-        <NavIcon label="Home" onClick={() => router.push('/home')}>
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 10.5 12 4l9 6.5" />
-            <path d="M5 9.5V20h14V9.5" />
-          </svg>
+        <NavIcon label="Home" onPress={() => router.push('/home')}>
+          <HomeIcon stroke={t.navIcon} />
         </NavIcon>
       )}
 
       {active === 'progress' ? (
-        pill(
-          'Trends',
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 19V5" />
-            <path d="M4 19h16" />
-            <path d="m7 14 3-4 3 2 4-6" />
-          </svg>,
-        )
+        pill('Trends', <TrendsIcon stroke="#fff" size={20} />)
       ) : (
-        <NavIcon label="Trends" onClick={() => router.push('/progress')}>
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 19V5" />
-            <path d="M4 19h16" />
-            <path d="m7 14 3-4 3 2 4-6" />
-          </svg>
+        <NavIcon label="Trends" onPress={() => router.push('/progress')}>
+          <TrendsIcon stroke={t.navIcon} />
         </NavIcon>
       )}
 
-      <div
-        onClick={() => router.push('/scanner')}
-        role="button"
-        aria-label="Scan food"
+      <Pressable
+        onPress={() => router.push('/scanner')}
+        accessibilityLabel="Scan food"
+        accessibilityRole="button"
         style={{
-          width: 56,
-          height: 56,
+          width: 56 + 10,
+          height: 56 + 10,
           borderRadius: 999,
-          background: 'var(--av-green)',
-          display: 'flex',
+          backgroundColor: t.green,
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '-18px 0',
-          boxShadow: '0 8px 18px -6px rgba(47,158,110,.6),0 0 0 5px var(--av-bg)',
-          cursor: 'pointer',
+          marginVertical: -23,
+          borderWidth: 5,
+          borderColor: t.bg,
+          shadowColor: 'rgba(47,158,110,1)',
+          shadowOpacity: 0.6,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 10,
         }}
       >
-        <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L18 6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
-          <circle cx="12" cy="13" r="3.5" />
-        </svg>
-      </div>
+        <Svg width={25} height={25} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L18 6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+          <Circle cx={12} cy={13} r={3.5} />
+        </Svg>
+      </Pressable>
 
-      <NavIcon label="Coach (coming soon)" onClick={() => {}}>
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 3c.35 3.7 2.3 5.65 6 6-3.7.35-5.65 2.3-6 6-.35-3.7-2.3-5.65-6-6 3.7-.35 5.65-2.3 6-6Z" />
-          <path d="M18.5 14.5c.16 1.5 1 2.34 2.5 2.5-1.5.16-2.34 1-2.5 2.5-.16-1.5-1-2.34-2.5-2.5 1.5-.16 2.34-1 2.5-2.5Z" />
-        </svg>
+      <NavIcon label="AI Coach" onPress={() => router.push('/coach')}>
+        <Svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke={t.navIcon} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="M12 3c.35 3.7 2.3 5.65 6 6-3.7.35-5.65 2.3-6 6-.35-3.7-2.3-5.65-6-6 3.7-.35 5.65-2.3 6-6Z" />
+          <Path d="M18.5 14.5c.16 1.5 1 2.34 2.5 2.5-1.5.16-2.34 1-2.5 2.5-.16-1.5-1-2.34-2.5-2.5 1.5-.16 2.34-1 2.5-2.5Z" />
+        </Svg>
       </NavIcon>
 
-      <NavIcon label="Settings" onClick={() => router.push('/settings')}>
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M5 21a7 7 0 0 1 14 0" />
-        </svg>
+      <NavIcon label="Settings" onPress={() => router.push('/settings')}>
+        <Svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke={t.navIcon} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+          <Circle cx={12} cy={8} r={4} />
+          <Path d="M5 21a7 7 0 0 1 14 0" />
+        </Svg>
       </NavIcon>
-    </div>
+    </View>
   );
 }

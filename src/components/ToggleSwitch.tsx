@@ -1,36 +1,34 @@
-'use client';
+import { Pressable, View } from 'react-native';
+import { useTheme } from '@/lib/store';
 
 export function ToggleSwitch({
   on,
   onChange,
-  activeColor = 'var(--av-green)',
+  activeColor,
 }: {
   on: boolean;
   onChange: () => void;
   activeColor?: string;
 }) {
+  const t = useTheme();
   return (
-    <div
-      role="switch"
-      aria-checked={on}
-      tabIndex={0}
-      onClick={onChange}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onChange()}
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked: on }}
+      onPress={onChange}
       style={{
         width: 44,
         height: 26,
         borderRadius: 999,
-        background: on ? activeColor : 'var(--av-border)',
-        display: 'flex',
+        backgroundColor: on ? (activeColor ?? t.green) : t.border,
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: on ? 'flex-end' : 'flex-start',
         padding: 3,
-        cursor: 'pointer',
-        transition: 'background .2s',
         flexShrink: 0,
       }}
     >
-      <div style={{ width: 20, height: 20, borderRadius: 999, background: '#fff' }} />
-    </div>
+      <View style={{ width: 20, height: 20, borderRadius: 999, backgroundColor: '#fff' }} />
+    </Pressable>
   );
 }
