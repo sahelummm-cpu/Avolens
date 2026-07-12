@@ -12,7 +12,9 @@ import { ToggleSwitch } from '@/components/ToggleSwitch';
 import { PromptModal } from '@/components/PromptModal';
 import { HeightModal } from '@/components/HeightModal';
 import { MacroGoalModal, ProfileModal, ReminderTimeModal, WaterGoalModal } from '@/components/SettingsModals';
+import { MedScheduleModal } from '@/components/MedScheduleModal';
 import { useStore } from '@/lib/store';
+import { resolveMedication } from '@/lib/meds';
 import { formatHeight } from '@/lib/goals';
 import { exportCsv } from '@/lib/export';
 import { supabaseConfigured } from '@/lib/supabase';
@@ -44,6 +46,8 @@ export default function SettingsPage() {
     setHeightUnit, recalcGoals, clearLoggedData, connectHealth, disconnectHealth, theme: t,
   } = useStore();
   const [modal, setModal] = useState<ModalKind>(null);
+  const [medModalOpen, setMedModalOpen] = useState(false);
+  const medName = resolveMedication(state).name;
   const [connecting, setConnecting] = useState(false);
 
   const isLb = state.unit === 'lb';
@@ -218,6 +222,12 @@ export default function SettingsPage() {
             </View>
             <ToggleSwitch on={state.medEnabled} onChange={() => setMedEnabled(!state.medEnabled)} />
           </Row>
+          {state.medEnabled && (
+            <Row border onPress={() => setMedModalOpen(true)}>
+              <Text style={rowLabel(t)}>Medication</Text>
+              <ChevronValue>{medName}</ChevronValue>
+            </Row>
+          )}
         </Card>
 
         {/* Account */}
@@ -316,6 +326,7 @@ export default function SettingsPage() {
       )}
       {modal === 'macros' && <MacroGoalModal onClose={() => setModal(null)} />}
       {modal === 'water' && <WaterGoalModal onClose={() => setModal(null)} />}
+      {medModalOpen && <MedScheduleModal onClose={() => setMedModalOpen(false)} />}
       {modal === 'height' && (
         <HeightModal heightCm={state.heightCm} heightUnit={state.heightUnit} onClose={() => setModal(null)} onSubmit={(cm, unit) => { setHeightCm(cm); setHeightUnit(unit); setModal(null); }} />
       )}

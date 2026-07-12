@@ -44,7 +44,7 @@ interface StoreValue {
   activity: ActivitySummary | null;
   streak: number;
   session: Session | null;
-  selectDay: (i: number) => void;
+  selectDay: (dateKey: string) => void;
   addGlass: () => void;
   removeGlass: () => void;
   setDose: (i: number) => void;
@@ -62,8 +62,9 @@ interface StoreValue {
   addEntry: (e: Omit<FoodEntry, 'id'>) => void;
   /** Log to a specific 'YYYY-MM-DD' (today or a past day). */
   addEntryToDay: (dateKey: string, e: Omit<FoodEntry, 'id'>) => void;
-  updateEntry: (id: string, patch: Partial<Omit<FoodEntry, 'id'>>) => void;
-  removeEntry: (id: string) => void;
+  /** Edit an entry; pass the 'YYYY-MM-DD' it lives on for past days. */
+  updateEntry: (id: string, patch: Partial<Omit<FoodEntry, 'id'>>, dateKey?: string) => void;
+  removeEntry: (id: string, dateKey?: string) => void;
   toggleFavorite: (f: Omit<FavoriteFood, 'id'>) => void;
   copyDayToToday: (fromKey: string) => void;
   logWeight: (kg: number) => void;
@@ -270,7 +271,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       activity,
       streak,
       session,
-      selectDay: (i) => setState((s) => ({ ...s, selectedDay: i })),
+      selectDay: (dateKey) =>
+        setState((s) => {
+          const r = rolledOver(s);
+          // Never select the future; the strip disables those cells anyway.
+          return dateKey > r.todayKey ? r : { ...r, selectedDate: dateKey };
+        }),
       addGlass: () =>
         setState((s) => {
           const r = rolledOver(s);
@@ -349,13 +355,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           const prev = r.history[dateKey] ?? { entries: [], glasses: 0 };
           return { ...r, history: { ...r.history, [dateKey]: { ...prev, entries: [entry, ...prev.entries] } } };
         }),
-      updateEntry: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          todayEntries: s.todayEntries.map((e) => (e.id === id ? { ...e, ...patch, id } : e)),
-        })),
-      removeEntry: (id) =>
-        setState((s) => ({ ...s, todayEntries: s.todayEntries.filter((e) => e.id !== id) })),
+      updateEntry: (id, patch, dateKey) =>
+        setState((s) => {
+          if (dateKey && dateKey !== s.todayKey) {
+            const rec = s.history[dateKey];
+            if (!rec) return s;
+            return {
+              ...s,
+              history: {
+                ...s.history,
+                [dateKey]: { ...rec, entries: rec.entries.map((e) => (e.id === id ? { ...e, ...patch, id } : e)) },
+              },
+            };
+          }
+          return {
+            ...s,
+            todayEntries: s.todayEntries.map((e) => (e.id === id ? { ...e, ...patch, id } : e)),
+          };
+        }),
+      removeEntry: (id, dateKey) =>
+        setState((s) => {
+          if (dateKey && dateKey !== s.todayKey) {
+            const rec = s.history[dateKey];
+            if (!rec) return s;
+            return {
+              ...s,
+              history: { ...s.history, [dateKey]: { ...rec, entries: rec.entries.filter((e) => e.id !== id) } },
+            };
+          }
+          return { ...s, todayEntries: s.todayEntries.filter((e) => e.id !== id) };
+        }),
       toggleFavorite: (f) =>
         setState((s) => {
           const key = (x: { name: string; brands?: string }) => `${x.name.toLowerCase()}|${x.brands ?? ''}`;

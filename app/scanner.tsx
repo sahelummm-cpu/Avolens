@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/Screen';
 import { useStore } from '@/lib/store';
-import { scanMeal } from '@/lib/api';
+import { parseSpokenMeal, scanMeal } from '@/lib/api';
 import { barcodeBasis, scaleBasis, type FoodBasis } from '@/lib/foods';
 import type { ScanResult } from '@/lib/types';
 import { F } from '@/lib/fonts';
@@ -48,10 +49,70 @@ export default function ScannerPage() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [mode, setMode] = useState<'food' | 'barcode'>('food');
+  const [mode, setMode] = useState<'food' | 'barcode' | 'label' | 'voice'>('food');
   const [basis, setBasis] = useState<FoodBasis | null>(null);
   const [grams, setGrams] = useState(100);
   const scanningBarcode = useRef(false);
+
+  // Voice mode: on-device speech recognition → AI parse of the transcript.
+  const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  useSpeechRecognitionEvent('result', (e) => {
+    const text = e.results?.[0]?.transcript ?? '';
+    if (text) setTranscript(text);
+  });
+  useSpeechRecognitionEvent('end', () => setListening(false));
+  useSpeechRecognitionEvent('error', (e) => {
+    setListening(false);
+    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      setScanError('Voice recognition failed — you can type less and speak clearly, or add manually.');
+    }
+  });
+
+  const toggleListening = async () => {
+    if (listening) {
+      try {
+        ExpoSpeechRecognitionModule.stop();
+      } catch {
+        setListening(false);
+      }
+      return;
+    }
+    try {
+      const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!perm.granted) {
+        setScanError('Microphone permission is needed for voice logging.');
+        return;
+      }
+      setTranscript('');
+      setScanError(null);
+      ExpoSpeechRecognitionModule.start({ lang: 'en-US', interimResults: true, continuous: true });
+      setListening(true);
+    } catch {
+      setScanError('Voice recognition is not available on this device.');
+    }
+  };
+
+  const analyzeTranscript = async () => {
+    const text = transcript.trim();
+    if (!text || loading) return;
+    if (listening) {
+      try {
+        ExpoSpeechRecognitionModule.stop();
+      } catch {
+        // ignore
+      }
+    }
+    setLoading(true);
+    setScanError(null);
+    try {
+      setResult(await parseSpokenMeal(text));
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : 'Could not parse that description.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
@@ -73,6 +134,10 @@ export default function ScannerPage() {
       showToast('Point the camera at a barcode — it scans automatically');
       return;
     }
+    if (mode === 'voice') {
+      toggleListening();
+      return;
+    }
     if (loading) return;
     setLoading(true);
     setScanError(null);
@@ -81,7 +146,7 @@ export default function ScannerPage() {
     try {
       const photo = await cameraRef.current?.takePictureAsync({ base64: true, quality: 0.85 });
       if (!photo?.base64) throw new Error('Could not capture a photo.');
-      const data = await scanMeal(photo.base64, 'image/jpeg');
+      const data = await scanMeal(photo.base64, 'image/jpeg', mode === 'label' ? 'label' : 'meal');
       setResult(data);
     } catch (err) {
       setScanError(err instanceof Error ? err.message : 'Scan failed');
@@ -194,7 +259,14 @@ export default function ScannerPage() {
             <View style={{ position: 'absolute', bottom: 0, left: 0, width: 38, height: 38, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: t.greenGrad1, borderBottomLeftRadius: 16 }} />
             <View style={{ position: 'absolute', bottom: 0, right: 0, width: 38, height: 38, borderBottomWidth: 3, borderRightWidth: 3, borderColor: t.greenGrad1, borderBottomRightRadius: 16 }} />
             <Text style={{ position: 'absolute', bottom: -32, left: 0, right: 0, textAlign: 'center', fontFamily: F.b500, fontSize: 12, color: 'rgba(255,255,255,.55)' }}>
-              {cameraError ?? (mode === 'barcode' ? 'Center the barcode — it scans automatically' : 'Center your plate in the frame')}
+              {cameraError ??
+                (mode === 'barcode'
+                  ? 'Center the barcode — it scans automatically'
+                  : mode === 'label'
+                    ? 'Center the nutrition facts label in the frame'
+                    : mode === 'voice'
+                      ? 'Tap the button and say what you ate'
+                      : 'Center your plate in the frame')}
             </Text>
           </View>
         )}
@@ -202,7 +274,9 @@ export default function ScannerPage() {
         {loading && (
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', zIndex: 35, gap: 14 }}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text style={{ fontFamily: F.b600, fontSize: 13, color: '#fff' }}>Analyzing your meal…</Text>
+            <Text style={{ fontFamily: F.b600, fontSize: 13, color: '#fff' }}>
+              {mode === 'label' ? 'Reading the label…' : mode === 'voice' ? 'Working out the nutrition…' : 'Analyzing your meal…'}
+            </Text>
           </View>
         )}
 
@@ -320,6 +394,30 @@ export default function ScannerPage() {
           </ScrollView>
         )}
 
+        {/* Voice transcript panel */}
+        {mode === 'voice' && !result && !loading && (
+          <View style={{ position: 'absolute', left: 18, right: 18, bottom: 250, backgroundColor: t.surface, borderRadius: 20, padding: 16, zIndex: 30, gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 9, backgroundColor: listening ? t.protein : t.muted2 }} />
+              <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.muted }}>
+                {listening ? 'Listening… tap the button to stop' : transcript ? 'Heard:' : 'e.g. "two eggs, toast with butter and an orange juice"'}
+              </Text>
+            </View>
+            {!!transcript && (
+              <Text style={{ fontFamily: F.b600, fontSize: 14.5, color: t.ink }}>{transcript}</Text>
+            )}
+            {!!transcript && !listening && (
+              <Pressable
+                onPress={analyzeTranscript}
+                accessibilityRole="button"
+                style={{ height: 44, borderRadius: 14, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 14 }}>Get nutrition</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
         {!result && (
           <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingBottom: insets.bottom + 32, zIndex: 30 }}>
             <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
@@ -347,18 +445,32 @@ export default function ScannerPage() {
                   <Path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" />
                 </ModeChip>
               )}
-              <ModeChip label="Label" onPress={() => showToast('Label scanning coming soon')}>
-                <Rect x={4} y={3} width={16} height={18} rx={2.5} />
-                <Path d="M8 8h8M8 12h8M8 16h5" />
-              </ModeChip>
+              {mode === 'label' ? (
+                <ActiveChip label="Label">
+                  <Rect x={4} y={3} width={16} height={18} rx={2.5} />
+                  <Path d="M8 8h8M8 12h8M8 16h5" />
+                </ActiveChip>
+              ) : (
+                <ModeChip label="Label" onPress={() => setMode('label')}>
+                  <Rect x={4} y={3} width={16} height={18} rx={2.5} />
+                  <Path d="M8 8h8M8 12h8M8 16h5" />
+                </ModeChip>
+              )}
               <ModeChip label="Manual" onPress={() => router.push('/manual-entry')}>
                 <Path d="M12 20h9" />
                 <Path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
               </ModeChip>
-              <ModeChip label="Voice" onPress={() => showToast('Voice logging coming soon')}>
-                <Rect x={9} y={3} width={6} height={12} rx={3} />
-                <Path d="M6 11a6 6 0 0 0 12 0M12 17v4" />
-              </ModeChip>
+              {mode === 'voice' ? (
+                <ActiveChip label="Voice">
+                  <Rect x={9} y={3} width={6} height={12} rx={3} />
+                  <Path d="M6 11a6 6 0 0 0 12 0M12 17v4" />
+                </ActiveChip>
+              ) : (
+                <ModeChip label="Voice" onPress={() => setMode('voice')}>
+                  <Rect x={9} y={3} width={6} height={12} rx={3} />
+                  <Path d="M6 11a6 6 0 0 0 12 0M12 17v4" />
+                </ModeChip>
+              )}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 28 }}>
               <Pressable
@@ -374,10 +486,17 @@ export default function ScannerPage() {
               <Pressable
                 onPress={capture}
                 accessibilityRole="button"
-                accessibilityLabel="Capture"
+                accessibilityLabel={mode === 'voice' ? (listening ? 'Stop listening' : 'Start listening') : 'Capture'}
                 style={{ width: 72, height: 72, borderRadius: 36, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' }}
               >
-                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#fff' }} />
+                <View
+                  style={{
+                    width: listening ? 30 : 56,
+                    height: listening ? 30 : 56,
+                    borderRadius: listening ? 8 : 28,
+                    backgroundColor: mode === 'voice' ? t.protein : '#fff',
+                  }}
+                />
               </Pressable>
               <View style={{ width: 44, height: 44, borderRadius: 99, backgroundColor: 'rgba(255,255,255,.1)', alignItems: 'center', justifyContent: 'center' }}>
                 <Svg width={21} height={21} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

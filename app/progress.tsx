@@ -21,11 +21,22 @@ import { F } from '@/lib/fonts';
 
 const kgToLb = (kg: number) => kg * 2.20462;
 
+type Category = 'weight' | 'calories' | 'protein' | 'exercise' | 'body' | 'awards';
+const CATEGORIES: { key: Category; label: string }[] = [
+  { key: 'weight', label: 'Weight' },
+  { key: 'calories', label: 'Calories' },
+  { key: 'protein', label: 'Protein' },
+  { key: 'exercise', label: 'Exercise' },
+  { key: 'body', label: 'Body' },
+  { key: 'awards', label: 'Awards' },
+];
+
 export default function ProgressPage() {
   const insets = useSafeAreaInsets();
   const { state, setChartRange, logWeight, setTargetWeight, activity, streak, theme: t } = useStore();
   const [showLogModal, setShowLogModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [cat, setCat] = useState<Category>('weight');
   const hasActivity = state.healthConnected && activity != null;
 
   const isLb = state.unit === 'lb';
@@ -141,8 +152,39 @@ export default function ProgressPage() {
           <Logo size={28} />
           <Text style={{ fontFamily: F.d700, fontSize: 24, color: t.ink }}>Progress</Text>
         </View>
-        <Text style={{ fontFamily: F.b500, fontSize: 13, color: t.muted, marginBottom: 22 }}>Last 30 days</Text>
+        <Text style={{ fontFamily: F.b500, fontSize: 13, color: t.muted, marginBottom: 16 }}>Last 30 days</Text>
 
+        {/* Category picker — each tab shows just that topic's charts + stats */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -24, marginBottom: 18, flexGrow: 0 }}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 24 }}
+        >
+          {CATEGORIES.map((c) => {
+            const active = cat === c.key;
+            return (
+              <Pressable
+                key={c.key}
+                onPress={() => setCat(c.key)}
+                accessibilityRole="button"
+                style={{
+                  paddingVertical: 9,
+                  paddingHorizontal: 16,
+                  borderRadius: 99,
+                  backgroundColor: active ? t.navBg : t.surface,
+                  borderWidth: 1,
+                  borderColor: active ? t.navBg : t.border,
+                }}
+              >
+                <Text style={{ fontFamily: F.d700, fontSize: 13, color: active ? '#fff' : t.muted }}>{c.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        {cat === 'weight' && (
+          <>
         {/* Weight */}
         <View style={{ ...card, borderRadius: 26, padding: 22 }}>
           {hasWeight && latest ? (
@@ -295,6 +337,11 @@ export default function ProgressPage() {
           </View>
         )}
 
+          </>
+        )}
+
+        {cat === 'exercise' && (
+          <>
         {/* Exercise — real synced stats when connected, else an empty state */}
         {hasActivity && activity ? (
           <View style={card}>
@@ -343,6 +390,11 @@ export default function ProgressPage() {
           </View>
         )}
 
+          </>
+        )}
+
+        {cat === 'calories' && (
+          <>
         {/* Net calories / deficit (needs health sync) */}
         <NetCaloriesCard />
 
@@ -365,6 +417,11 @@ export default function ProgressPage() {
           )}
         </View>
 
+          </>
+        )}
+
+        {cat === 'awards' && (
+          <>
         {/* GLP-1 adherence */}
         {state.medEnabled && (
           <View style={card}>
@@ -415,11 +472,14 @@ export default function ProgressPage() {
           </View>
         )}
 
+          </>
+        )}
+
         {/* Protein trend + goal adherence */}
-        <AdherenceCard />
+        {cat === 'protein' && <AdherenceCard />}
 
         {/* Weekly insights */}
-        {insights.daysLogged > 0 && (
+        {cat === 'calories' && insights.daysLogged > 0 && (
           <View style={card}>
             <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink, marginBottom: 12 }}>This week</Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -438,19 +498,26 @@ export default function ProgressPage() {
         )}
 
         {/* Body measurements + progress photos */}
-        <MeasurementsCard />
-        <PhotosCard />
+        {cat === 'body' && (
+          <>
+            <MeasurementsCard />
+            <PhotosCard />
+          </>
+        )}
 
-        {/* Logging heatmap */}
-        <HeatmapCard />
-
-        {/* Achievements */}
-        <AchievementsCard />
+        {/* Logging heatmap + achievements */}
+        {cat === 'awards' && (
+          <>
+            <HeatmapCard />
+            <AchievementsCard />
+          </>
+        )}
 
         {/* Export + share */}
         <ExportCard />
 
         {/* Summary tiles */}
+        {cat === 'weight' && (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 22, paddingVertical: 16, paddingHorizontal: 14 }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
@@ -478,6 +545,7 @@ export default function ProgressPage() {
             <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted, marginTop: 3 }}>Health score</Text>
           </View>
         </View>
+        )}
       </ScrollView>
 
       {showLogModal && (

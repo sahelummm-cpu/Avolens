@@ -70,6 +70,36 @@ function toBasis(p: any): FoodBasis | null {
 }
 
 const FIELDS = 'product_name,brands,nutriments,nutriscore_grade,serving_quantity';
+const UA = { 'User-Agent': 'AvoLens/1.0 (mobile; support@avolens.app)' };
+
+/**
+ * fetch with a per-attempt timeout and one automatic retry — OpenFoodFacts
+ * can be slow or drop the first request, which the UI used to surface as
+ * "Search failed. Check your connection."
+ */
+async function fetchResilient(url: string, signal?: AbortSignal, attempts = 2, timeoutMs = 8000): Promise<Response> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (signal?.aborted) throw new Error('aborted');
+    const ctrl = new AbortController();
+    const onAbort = () => ctrl.abort();
+    signal?.addEventListener('abort', onAbort);
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { headers: UA, signal: ctrl.signal });
+      if (res.ok) return res;
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      if (signal?.aborted) throw e;
+      lastErr = e;
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+    }
+    if (attempt < attempts - 1) await new Promise((r) => setTimeout(r, 600));
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('Network request failed');
+}
 
 /** Free-text search of the OpenFoodFacts database. Returns per-100g bases. */
 export async function searchFoods(query: string, signal?: AbortSignal): Promise<FoodBasis[]> {
@@ -78,8 +108,7 @@ export async function searchFoods(query: string, signal?: AbortSignal): Promise<
   const url =
     `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}` +
     `&search_simple=1&action=process&json=1&page_size=25&fields=${FIELDS}`;
-  const res = await fetch(url, { headers: { 'User-Agent': 'AvoLens/1.0 (mobile)' }, signal });
-  if (!res.ok) throw new Error('Search failed. Check your connection.');
+  const res = await fetchResilient(url, signal);
   const data = await res.json();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const products: any[] = Array.isArray(data.products) ? data.products : [];
@@ -99,11 +128,9 @@ export async function searchFoods(query: string, signal?: AbortSignal): Promise<
 
 /** Barcode → per-100g basis (used by the scanner's portion adjust). */
 export async function barcodeBasis(code: string): Promise<FoodBasis> {
-  const res = await fetch(
+  const res = await fetchResilient(
     `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${FIELDS}`,
-    { headers: { 'User-Agent': 'AvoLens/1.0 (mobile)' } },
   );
-  if (!res.ok) throw new Error('Barcode lookup failed. Check your connection.');
   const data = await res.json();
   const basis = data.status === 1 ? toBasis(data.product) : null;
   if (!basis) throw new Error('Product not found in the food database.');

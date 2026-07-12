@@ -73,6 +73,9 @@ show a "Connect Apple Health or Google Fit" state (see below).
   (`state.history`), rolling over automatically at midnight (water resets
   too). The day strip, streak counter, Progress trends, and weekly insights
   all read from real history. (`src/lib/days.ts`)
+- **Scrollable date strip** — the Home strip scrolls through the past four
+  weeks (tap any day to see its ring and log, edit or delete its meals, or
+  add to it) and previews the next 7 dates, dimmed and not loggable.
 - **Edit / delete meals** — tap any card in Today's Log to edit it
   (prefilled manual-entry) or delete it (trash icon).
 - **Food database search** — manual entry searches the free OpenFoodFacts
@@ -88,6 +91,11 @@ show a "Connect Apple Health or Google Fit" state (see below).
 - **Barcode scanning** — the Barcode chip on the Scanner reads
   EAN/UPC/Code-128 via `expo-camera`, looks the product up in
   OpenFoodFacts, and lets you adjust the portion before logging.
+- **Label scanning** — the Label chip photographs a printed nutrition-facts
+  label and the AI backend transcribes its exact values (per serving).
+- **Voice logging** — the Voice chip listens (on-device speech recognition
+  via `expo-speech-recognition`), shows the transcript, and the AI backend
+  turns "two eggs and toast" into a loggable entry.
 - **Favorites + recents** — star any food to pin it as a one-tap chip;
   recently logged meals also appear automatically (brand-new users get a
   short "Suggested" starter list instead).

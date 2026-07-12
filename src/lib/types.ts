@@ -192,7 +192,8 @@ export interface AvoLensState {
   logReminderMinute: number;
   healthConnected: boolean;
   chartRange: ChartRange;
-  selectedDay: number;
+  /** The 'YYYY-MM-DD' day shown in the Home ring/log (today or a past day). */
+  selectedDate: string;
   /** The 'YYYY-MM-DD' key todayEntries/glasses belong to; rolls over at midnight. */
   todayKey: string;
   todayEntries: FoodEntry[];

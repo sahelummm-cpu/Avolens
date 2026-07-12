@@ -40,11 +40,18 @@ export default function ManualEntryPage() {
   const router = useRouter();
   const { state, addEntryToDay, updateEntry, removeEntry, toggleFavorite, theme: t } = useStore();
   const insets = useSafeAreaInsets();
-  const { edit, day } = useLocalSearchParams<{ edit?: string; day?: string }>();
+  const { edit, day, editDay } = useLocalSearchParams<{ edit?: string; day?: string; editDay?: string }>();
   const editing = useMemo(
-    () => (edit ? state.todayEntries.find((e) => e.id === edit) : undefined),
+    () => {
+      if (!edit) return undefined;
+      const pool =
+        editDay && editDay !== state.todayKey
+          ? (state.history[editDay]?.entries ?? [])
+          : state.todayEntries;
+      return pool.find((e) => e.id === edit);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [edit],
+    [edit, editDay],
   );
 
   const days = useMemo(recentDays, []);
@@ -54,6 +61,7 @@ export default function ManualEntryPage() {
   const [results, setResults] = useState<FoodBasis[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchErr, setSearchErr] = useState<string | null>(null);
+  const [searchAttempt, setSearchAttempt] = useState(0);
 
   // A selected database/recent food (per-100g basis) → log by weight.
   const [basis, setBasis] = useState<FoodBasis | null>(null);
@@ -98,14 +106,16 @@ export default function ManualEntryPage() {
         const found = await searchFoods(q, ctrl.signal);
         setResults(found);
         setSearchErr(found.length === 0 ? 'No matches — enter it manually below.' : null);
-      } catch (e) {
-        if (!ctrl.signal.aborted) setSearchErr(e instanceof Error ? e.message : 'Search failed');
+      } catch {
+        if (!ctrl.signal.aborted) {
+          setSearchErr("Couldn't reach the food database — you can still add the food manually below.");
+        }
       } finally {
         if (!ctrl.signal.aborted) setSearching(false);
       }
     }, 350);
     return () => clearTimeout(timer);
-  }, [search, editing]);
+  }, [search, editing, searchAttempt]);
 
   const gramsNum = Math.max(0, Number(grams) || 0);
   const scaled = basis ? scaleBasis(basis, gramsNum) : null;
@@ -115,6 +125,10 @@ export default function ManualEntryPage() {
     if (scaled) return scaled.calories;
     return Math.round((protein * 4 + carbs * 4 + fat * 9) * servings);
   }, [quick, quickKcal, scaled, protein, carbs, fat, servings]);
+
+  // Typing a value here overrides the computed calories (empty = auto).
+  const [kcalOverride, setKcalOverride] = useState(editing ? String(editing.calories) : '');
+  const kcalFinal = kcalOverride.trim() !== '' ? Math.max(0, Number(kcalOverride) || 0) : calories;
 
   const pickBasis = (b: FoodBasis) => {
     setBasis(b);
@@ -133,15 +147,15 @@ export default function ManualEntryPage() {
       return { name: name.trim() || 'Quick add', meal, time, calories, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium: 0, sugar: 0, healthScore: 6, icon: 'generic', unit: 'kcal' };
     }
     if (basis && scaled) {
-      return { name, meal, time, calories: scaled.calories, protein: scaled.protein, carbs: scaled.carbs, fat: scaled.fat, fiber: scaled.fiber, sodium: scaled.sodium, sugar: scaled.sugar, healthScore: basis.healthScore, icon: 'generic', amount: gramsNum, unit: 'g' };
+      return { name, meal, time, calories: kcalFinal, protein: scaled.protein, carbs: scaled.carbs, fat: scaled.fat, fiber: scaled.fiber, sodium: scaled.sodium, sugar: scaled.sugar, healthScore: basis.healthScore, icon: 'generic', amount: gramsNum, unit: 'g' };
     }
-    return { name, meal, time, calories, protein: protein * servings, carbs: carbs * servings, fat: fat * servings, fiber: fiber * servings, sodium: sodium * servings, sugar: sugar * servings, healthScore: 7, icon: 'generic', amount: servings, unit: 'serving' };
+    return { name, meal, time, calories: kcalFinal, protein: protein * servings, carbs: carbs * servings, fat: fat * servings, fiber: fiber * servings, sodium: sodium * servings, sugar: sugar * servings, healthScore: 7, icon: 'generic', amount: servings, unit: 'serving' };
   };
 
   const save = () => {
     if (editing) {
       const e = buildEntry();
-      updateEntry(editing.id, { name: e.name, meal: e.meal, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, fiber: e.fiber, sodium: e.sodium, sugar: e.sugar, amount: e.amount, unit: e.unit });
+      updateEntry(editing.id, { name: e.name, meal: e.meal, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, fiber: e.fiber, sodium: e.sodium, sugar: e.sugar, amount: e.amount, unit: e.unit }, editDay);
       router.push('/home');
       return;
     }
@@ -151,7 +165,7 @@ export default function ManualEntryPage() {
 
   const deleteEntry = () => {
     if (!editing) return;
-    removeEntry(editing.id);
+    removeEntry(editing.id, editDay);
     router.push('/home');
   };
 
@@ -257,7 +271,20 @@ export default function ManualEntryPage() {
                       <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
                     </Pressable>
                   ))}
-                  {searchErr && <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, paddingHorizontal: 4 }}>{searchErr}</Text>}
+                  {searchErr && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 4 }}>
+                      <Text style={{ flex: 1, fontFamily: F.b500, fontSize: 12, color: t.muted }}>{searchErr}</Text>
+                      {searchErr.startsWith("Couldn't reach") && (
+                        <Pressable
+                          onPress={() => setSearchAttempt((n) => n + 1)}
+                          accessibilityRole="button"
+                          style={{ backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 }}
+                        >
+                          <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Retry</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -405,7 +432,13 @@ export default function ManualEntryPage() {
             <View>
               <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink }}>Calories</Text>
               <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: 2 }}>
-                {quick ? 'Enter total calories' : basis ? `${basis.calories} kcal / 100g` : 'Auto-calculated from macros'}
+                {quick
+                  ? 'Enter total calories'
+                  : kcalOverride.trim() !== ''
+                    ? 'Custom — clear to auto-calculate'
+                    : basis
+                      ? `${basis.calories} kcal / 100g · tap to edit`
+                      : 'Auto from macros · tap to edit'}
               </Text>
             </View>
             {quick ? (
@@ -415,7 +448,14 @@ export default function ManualEntryPage() {
               </View>
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-                <Text style={{ fontFamily: F.d800, fontSize: 28, color: t.ink, letterSpacing: -0.56 }}>{calories}</Text>
+                <TextInput
+                  keyboardType="number-pad"
+                  value={kcalOverride}
+                  onChangeText={(v) => setKcalOverride(v.replace(/[^0-9]/g, ''))}
+                  placeholder={String(calories)}
+                  placeholderTextColor={t.ink}
+                  style={{ fontFamily: F.d800, fontSize: 28, color: t.ink, letterSpacing: -0.56, textAlign: 'right', minWidth: 70, padding: 0 }}
+                />
                 <Text style={{ fontFamily: F.d600, fontSize: 13, color: t.muted2 }}>kcal</Text>
               </View>
             )}
@@ -469,7 +509,7 @@ export default function ManualEntryPage() {
         </LinearGradient>
       </View>
 
-      <Modal transparent animationType="fade" visible={mealPickerOpen} onRequestClose={() => setMealPickerOpen(false)}>
+      <Modal transparent statusBarTranslucent navigationBarTranslucent animationType="fade" visible={mealPickerOpen} onRequestClose={() => setMealPickerOpen(false)}>
         <Pressable onPress={() => setMealPickerOpen(false)} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: t.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 32 }}>
             <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink, marginBottom: 12 }}>Meal</Text>

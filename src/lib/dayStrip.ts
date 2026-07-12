@@ -1,7 +1,11 @@
 import { DAY_LABELS, mondayIndex } from './constants';
-import { entriesFor, sumCalories, weekDayKey } from './days';
+import { dayKey, entriesFor, sumCalories } from './days';
 import type { AvoLensState } from './types';
 import type { Theme } from './theme';
+
+/** How far back the Home date strip reaches (4 weeks) and how far ahead. */
+export const STRIP_PAST_DAYS = 27;
+export const STRIP_FUTURE_DAYS = 7;
 
 export interface SelectedDayTotals {
   left: number;
@@ -10,14 +14,13 @@ export interface SelectedDayTotals {
   fat: number;
 }
 
-/** Values shown in the hero calorie ring for whichever day is tapped in the strip. */
+/** Values shown in the hero calorie ring for whichever date is tapped in the strip. */
 export function selectedDayTotals(
   state: AvoLensState,
   liveTotals: { left: number; protein: number; carbs: number; fat: number },
 ): SelectedDayTotals {
-  const todayIdx = mondayIndex(new Date());
-  if (state.selectedDay === todayIdx) return liveTotals;
-  const entries = entriesFor(state, weekDayKey(state.selectedDay, todayIdx));
+  if (state.selectedDate === state.todayKey) return liveTotals;
+  const entries = entriesFor(state, state.selectedDate);
   const totals = entries.reduce(
     (acc, e) => ({
       calories: acc.calories + e.calories,
@@ -36,11 +39,15 @@ export function selectedDayTotals(
 }
 
 export interface DayCell {
-  index: number;
-  label: string;
-  date: number;
+  key: string; // 'YYYY-MM-DD'
+  label: string; // M T W …
+  date: number; // day of month
+  /** Short month marker shown on the 1st of a month and the first cell. */
+  month: string | null;
   selected: boolean;
   isToday: boolean;
+  /** Future dates render but can't be selected or logged. */
+  isFuture: boolean;
   ringColor: keyof Theme | 'transparent';
   fraction: number; // 0-1 of the daily limit eaten
 }
@@ -53,28 +60,39 @@ function ringColorFor(eaten: number, target: number): keyof Theme | 'transparent
   return 'ink'; // logged very little
 }
 
-export function buildWeek(state: AvoLensState, todayCalories: number): DayCell[] {
+/**
+ * The scrollable Home date strip: the past 4 weeks through today, plus the
+ * next 7 dates (visible but not loggable).
+ */
+export function buildStrip(state: AvoLensState, todayCalories: number): DayCell[] {
   const now = new Date();
-  const todayIdx = mondayIndex(now);
+  const todayK = dayKey(now);
   const target = state.goal.calories;
-  const mondayDate = new Date(now);
-  mondayDate.setDate(now.getDate() - todayIdx);
+  const cells: DayCell[] = [];
 
-  return DAY_LABELS.map((label, i) => {
-    const isToday = i === todayIdx;
-    const entries = isToday ? state.todayEntries : entriesFor(state, weekDayKey(i, todayIdx));
+  for (let offset = -STRIP_PAST_DAYS; offset <= STRIP_FUTURE_DAYS; offset++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + offset);
+    const key = dayKey(d);
+    const isToday = key === todayK;
+    const isFuture = key > todayK;
+    const entries = isFuture ? [] : entriesFor(state, key);
     const eaten = isToday ? todayCalories : sumCalories(entries);
     const logged = entries.length > 0;
-    const d = new Date(mondayDate);
-    d.setDate(mondayDate.getDate() + i);
-    return {
-      index: i,
-      label,
+    cells.push({
+      key,
+      label: DAY_LABELS[mondayIndex(d)],
       date: d.getDate(),
-      selected: i === state.selectedDay,
+      month:
+        d.getDate() === 1 || offset === -STRIP_PAST_DAYS
+          ? d.toLocaleDateString('en-US', { month: 'short' })
+          : null,
+      selected: key === state.selectedDate,
       isToday,
+      isFuture,
       ringColor: logged ? ringColorFor(eaten, target) : 'transparent',
       fraction: logged ? Math.min(1, eaten / target) : 0,
-    };
-  });
+    });
+  }
+  return cells;
 }

@@ -20,7 +20,7 @@ export function ShotModal({
   const [site, setSite] = useState<InjectionSite>(suggested);
 
   return (
-    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+    <Modal transparent statusBarTranslucent navigationBarTranslucent animationType="slide" visible onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
         <Pressable
           onPress={() => {}}

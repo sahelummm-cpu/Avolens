@@ -49,13 +49,11 @@ export async function lookupBarcode(code: string): Promise<ScanResult> {
   };
 }
 
-export async function scanMeal(imageBase64: string, mediaType = 'image/jpeg'): Promise<ScanResult> {
+async function invokeScan(body: Record<string, unknown>): Promise<ScanResult> {
   // Prefer the Supabase 'scan' edge function when the backend is configured;
   // fall back to the web app's /api/scan route.
   if (supabase) {
-    const { data, error } = await supabase.functions.invoke('scan', {
-      body: { imageBase64, mediaType },
-    });
+    const { data, error } = await supabase.functions.invoke('scan', { body });
     if (error) {
       throw new Error('Scan failed. Is the "scan" edge function deployed with ANTHROPIC_API_KEY set?');
     }
@@ -68,9 +66,23 @@ export async function scanMeal(imageBase64: string, mediaType = 'image/jpeg'): P
   const res = await fetch(`${API_URL}/api/scan`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ imageBase64, mediaType }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Scan failed');
   return data as ScanResult;
+}
+
+/** AI nutrition estimate from a meal photo ('meal') or an exact read of a printed nutrition label ('label'). */
+export async function scanMeal(
+  imageBase64: string,
+  mediaType = 'image/jpeg',
+  mode: 'meal' | 'label' = 'meal',
+): Promise<ScanResult> {
+  return invokeScan({ imageBase64, mediaType, mode });
+}
+
+/** AI nutrition estimate parsed from a spoken description of what was eaten. */
+export async function parseSpokenMeal(text: string): Promise<ScanResult> {
+  return invokeScan({ mode: 'voice', text });
 }

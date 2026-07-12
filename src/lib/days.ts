@@ -102,7 +102,13 @@ export function weeklyInsights(state: AvoLensState): WeekInsights {
 /** Move a stale "today" into history and reset the daily counters. */
 export function rolledOver(state: AvoLensState): AvoLensState {
   const today = dayKey(new Date());
-  if (state.todayKey === today) return state;
+  if (state.todayKey === today) {
+    // Guard against a stale/missing selection (old persisted states, futures).
+    if (!state.selectedDate || state.selectedDate > today) {
+      return { ...state, selectedDate: today };
+    }
+    return state;
+  }
   const history: Record<string, DayRecord> = { ...state.history };
   if (state.todayKey && (state.todayEntries.length > 0 || state.glasses > 0)) {
     history[state.todayKey] = { entries: state.todayEntries, glasses: state.glasses };
@@ -113,5 +119,6 @@ export function rolledOver(state: AvoLensState): AvoLensState {
     todayKey: today,
     todayEntries: [],
     glasses: 0,
+    selectedDate: today,
   };
 }

@@ -26,7 +26,9 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
   const ampm = state.medHour < 12 ? 'AM' : 'PM';
 
   return (
-    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+    // statusBarTranslucent + navigationBarTranslucent: with Android edge-to-edge
+    // the sheet otherwise stops above the gesture bar and floats mid-screen.
+    <Modal transparent animationType="slide" visible onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable

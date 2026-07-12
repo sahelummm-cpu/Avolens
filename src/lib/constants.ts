@@ -69,7 +69,7 @@ export function defaultState(): AvoLensState {
     logReminderMinute: 0,
     healthConnected: false,
     chartRange: 'M',
-    selectedDay: mondayIndex(new Date()),
+    selectedDate: dayKey(new Date()),
     todayKey: dayKey(new Date()),
     todayEntries: [],
     history: {},

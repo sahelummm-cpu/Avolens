@@ -55,12 +55,20 @@ export function MiniBarChart({
         );
       })}
 
-      {/* average reference line — recessive, dashed, labeled */}
+      {/* average reference line — recessive, dashed, labeled. The chip sits
+          above the line but flips below it near the top so it never clips. */}
       <Line x1={0} y1={avgY} x2={W} y2={avgY} stroke={t.muted2} strokeWidth={1.5} strokeDasharray="4 4" />
-      <Rect x={W - 54} y={avgY - 18} width={50} height={15} rx={7} fill={t.navBg} />
-      <SvgText x={W - 29} y={avgY - 7} fontSize={9} fontFamily={F.d700} fill="#fff" textAnchor="middle">
-        avg
-      </SvgText>
+      {(() => {
+        const chipY = avgY - 18 < 2 ? avgY + 4 : avgY - 18;
+        return (
+          <>
+            <Rect x={W - 44} y={chipY} width={40} height={15} rx={7} fill={t.navBg} />
+            <SvgText x={W - 24} y={chipY + 11} fontSize={9} fontFamily={F.d700} fill="#fff" textAnchor="middle">
+              avg
+            </SvgText>
+          </>
+        );
+      })()}
 
       {labels.map((lab, i) => (
         <SvgText

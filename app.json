@@ -12,7 +12,9 @@
       "bundleIdentifier": "app.avolens.mobile",
       "usesAppleSignIn": true,
       "entitlements": {
-        "com.apple.security.application-groups": ["group.app.avolens.mobile"]
+        "com.apple.security.application-groups": [
+          "group.app.avolens.mobile"
+        ]
       },
       "infoPlist": {
         "NSCameraUsageDescription": "AvoLens uses the camera to scan your meals and estimate their nutrition."
@@ -88,6 +90,13 @@
       "./plugins/withHealthConnectDelegate.js",
       "expo-apple-authentication",
       "expo-web-browser",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "AvoLens uses the microphone so you can log meals by voice.",
+          "speechRecognitionPermission": "AvoLens uses speech recognition so you can log meals by voice."
+        }
+      ],
       "@bacons/apple-targets",
       [
         "react-native-android-widget",

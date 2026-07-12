@@ -1,32 +1,58 @@
-import { Pressable, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useStore, useDailyTotals } from '@/lib/store';
-import { buildWeek } from '@/lib/dayStrip';
+import { buildStrip, STRIP_PAST_DAYS } from '@/lib/dayStrip';
 import { F } from '@/lib/fonts';
 
 const CIRC = 2 * Math.PI * 12.5;
+const CELL_W = 46;
+const CELL_GAP = 4;
 
+/**
+ * Scrollable date strip: past 4 weeks through today plus the next 7 dates
+ * (shown dimmed, not selectable). Auto-scrolls so today is in view.
+ */
 export function DayStrip() {
   const { state, selectDay, theme: t } = useStore();
   const totals = useDailyTotals();
-  const days = buildWeek(state, totals.calories);
+  const days = buildStrip(state, totals.calories);
+  const scrollRef = useRef<ScrollView>(null);
+  const didAutoScroll = useRef(false);
+
+  // Land with today (cell index STRIP_PAST_DAYS) near the right edge so the
+  // recent past is visible and the disabled future peeks in from the right.
+  const initialX = Math.max(0, (STRIP_PAST_DAYS - 4) * (CELL_W + CELL_GAP));
 
   return (
-    <View style={{ flexDirection: 'row', gap: 6, marginBottom: 22 }}>
+    <ScrollView
+      ref={scrollRef}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ marginBottom: 22, marginHorizontal: -24 }}
+      contentContainerStyle={{ gap: CELL_GAP, paddingHorizontal: 24 }}
+      onContentSizeChange={() => {
+        if (didAutoScroll.current) return;
+        didAutoScroll.current = true;
+        scrollRef.current?.scrollTo({ x: initialX, animated: false });
+      }}
+    >
       {days.map((d) => {
         const sel = d.selected;
         const ringColor = d.ringColor === 'transparent' ? 'transparent' : t[d.ringColor];
         return (
           <Pressable
-            key={d.index}
-            onPress={() => selectDay(d.index)}
+            key={d.key}
+            onPress={d.isFuture ? undefined : () => selectDay(d.key)}
+            disabled={d.isFuture}
             style={{
-              flex: 1,
+              width: CELL_W,
               alignItems: 'center',
               gap: 5,
               paddingVertical: 8,
               borderRadius: 14,
               backgroundColor: sel ? t.navBg : 'transparent',
+              opacity: d.isFuture ? 0.35 : 1,
             }}
           >
             <Text
@@ -36,7 +62,7 @@ export function DayStrip() {
                 color: sel ? 'rgba(255,255,255,.6)' : t.muted2,
               }}
             >
-              {d.label}
+              {d.month ?? d.label}
             </Text>
             <View style={{ width: 29, height: 29, alignItems: 'center', justifyContent: 'center' }}>
               <Svg
@@ -50,7 +76,15 @@ export function DayStrip() {
                   cy={14.5}
                   r={12.5}
                   fill="none"
-                  stroke={sel ? 'rgba(255,255,255,.18)' : ringColor === 'transparent' ? 'transparent' : t.greenTrack}
+                  stroke={
+                    d.isToday && !sel
+                      ? t.border
+                      : sel
+                        ? 'rgba(255,255,255,.18)'
+                        : ringColor === 'transparent'
+                          ? 'transparent'
+                          : t.greenTrack
+                  }
                   strokeWidth={2.4}
                 />
                 <Circle
@@ -65,13 +99,20 @@ export function DayStrip() {
                   strokeDashoffset={CIRC * (1 - d.fraction)}
                 />
               </Svg>
-              <Text style={{ fontFamily: F.d600, fontSize: 13, color: sel ? '#fff' : t.muted, zIndex: 1 }}>
+              <Text
+                style={{
+                  fontFamily: F.d600,
+                  fontSize: 13,
+                  color: sel ? '#fff' : d.isToday ? t.ink : t.muted,
+                  zIndex: 1,
+                }}
+              >
                 {d.date}
               </Text>
             </View>
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }

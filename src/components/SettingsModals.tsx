@@ -8,7 +8,7 @@ import { F } from '@/lib/fonts';
 function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   const t = useTheme();
   return (
-    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+    <Modal transparent statusBarTranslucent navigationBarTranslucent animationType="slide" visible onRequestClose={onClose}>
       <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <Pressable onPress={() => {}} style={{ backgroundColor: t.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 32, maxHeight: '86%' }}>

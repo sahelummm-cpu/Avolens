@@ -26,11 +26,22 @@ export default function HomePage() {
   const { state, theme: t, activity, streak, copyDayToToday } = useStore();
   const liveTotals = useDailyTotals();
   const yesterdayEntries = state.history[daysAgoKey(1)]?.entries ?? [];
+  const viewingToday = state.selectedDate === state.todayKey;
+  const dayEntries = viewingToday
+    ? state.todayEntries
+    : (state.history[state.selectedDate]?.entries ?? []);
   const mealGroups = MEAL_ORDER.map((m) => ({
     meal: m,
-    entries: state.todayEntries.filter((e) => e.meal === m),
+    entries: dayEntries.filter((e) => e.meal === m),
   })).filter((g) => g.entries.length > 0);
   const totals = selectedDayTotals(state, liveTotals);
+  const selectedLabel = viewingToday
+    ? "Today's Log"
+    : new Date(`${state.selectedDate}T12:00:00`).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      });
 
   const fractions = {
     calories: state.goal.calories > 0 ? Math.min(1, (state.goal.calories - totals.left) / state.goal.calories) : 0,
@@ -188,7 +199,7 @@ export default function HomePage() {
         </View>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>Today's Log</Text>
+          <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>{selectedLabel}</Text>
           <Pressable
             onPress={() => router.push('/scanner')}
             accessibilityRole="button"
@@ -200,28 +211,38 @@ export default function HomePage() {
             <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Add meal</Text>
           </Pressable>
         </View>
-        {state.todayEntries.length === 0 ? (
+        {dayEntries.length === 0 ? (
           <View style={{ alignItems: 'center', gap: 14, paddingVertical: 24 }}>
             <Text style={{ textAlign: 'center', fontFamily: F.b500, fontSize: 13, color: t.muted }}>
-              Nothing logged yet — scan or add a meal.
+              {viewingToday ? 'Nothing logged yet — scan or add a meal.' : 'Nothing was logged on this day.'}
             </Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
+              {viewingToday && (
+                <Pressable
+                  onPress={() => router.push('/scanner')}
+                  accessibilityRole="button"
+                  style={{ backgroundColor: t.green, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
+                >
+                  <Text style={{ fontFamily: F.d700, fontSize: 13, color: '#fff' }}>Scan a meal</Text>
+                </Pressable>
+              )}
               <Pressable
-                onPress={() => router.push('/scanner')}
-                accessibilityRole="button"
-                style={{ backgroundColor: t.green, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
-              >
-                <Text style={{ fontFamily: F.d700, fontSize: 13, color: '#fff' }}>Scan a meal</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => router.push('/manual-entry')}
+                onPress={() =>
+                  router.push(
+                    viewingToday
+                      ? '/manual-entry'
+                      : { pathname: '/manual-entry', params: { day: state.selectedDate } },
+                  )
+                }
                 accessibilityRole="button"
                 style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
               >
-                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>Add manually</Text>
+                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>
+                  {viewingToday ? 'Add manually' : 'Add to this day'}
+                </Text>
               </Pressable>
             </View>
-            {yesterdayEntries.length > 0 && (
+            {viewingToday && yesterdayEntries.length > 0 && (
               <Pressable onPress={() => copyDayToToday(daysAgoKey(1))} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
                 <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M8 4h9a2 2 0 0 1 2 2v11M6 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" />
@@ -245,7 +266,12 @@ export default function HomePage() {
                       key={entry.id}
                       entry={entry}
                       delay={0.4 + (gi + i) * 0.1}
-                      onPress={() => router.push({ pathname: '/manual-entry', params: { edit: entry.id } })}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/manual-entry',
+                          params: viewingToday ? { edit: entry.id } : { edit: entry.id, editDay: state.selectedDate },
+                        })
+                      }
                     />
                   ))}
                 </View>
