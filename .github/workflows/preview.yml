@@ -58,18 +58,22 @@ jobs:
       - name: Make Gradle Executable
         run: chmod +x android/gradlew
 
-      # Debug build: signed with the auto-generated debug keystore, so it
-      # installs straight on an emulator/device with no signing secrets to
-      # configure. (assembleRelease would need a release keystore set up
-      # via gradle.properties/secrets to produce an installable APK.)
-      - name: Compile Debug APK
+      # Release build: unlike assembleDebug, this embeds the JS bundle
+      # directly into the APK, so it runs standalone on a phone with no
+      # Metro dev server reachable. (assembleDebug expects to fetch the JS
+      # bundle live from Metro — installed alone on a device it just hangs
+      # on the splash screen forever, since the bundle never arrives.)
+      # Expo's template signs the release build with the same
+      # auto-generated debug keystore when no production keystore is
+      # configured, so this still installs with zero signing setup.
+      - name: Compile Release APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Avolens-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
