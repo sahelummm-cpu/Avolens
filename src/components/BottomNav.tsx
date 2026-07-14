@@ -113,12 +113,22 @@ export function BottomNav({ active }: { active: 'home' | 'progress' | 'settings'
         </svg>
       </NavIcon>
 
-      <NavIcon label="Settings" onClick={() => router.push('/settings')}>
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M5 21a7 7 0 0 1 14 0" />
-        </svg>
-      </NavIcon>
+      {active === 'settings' ? (
+        pill(
+          'Settings',
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M5 21a7 7 0 0 1 14 0" />
+          </svg>,
+        )
+      ) : (
+        <NavIcon label="Settings" onClick={() => router.push('/settings')}>
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M5 21a7 7 0 0 1 14 0" />
+          </svg>
+        </NavIcon>
+      )}
     </div>
   );
 }

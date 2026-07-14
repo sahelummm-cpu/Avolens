@@ -21,11 +21,14 @@ export function CalorieRing({ size = 156, fractions }: { size?: number; fraction
   const values = [fractions.calories, fractions.protein, fractions.carbs, fractions.fat];
 
   useEffect(() => {
+    let raf2: number;
     const raf1 = requestAnimationFrame(() => {
-      const raf2 = requestAnimationFrame(() => setAnimateIn(true));
-      return () => cancelAnimationFrame(raf2);
+      raf2 = requestAnimationFrame(() => setAnimateIn(true));
     });
-    return () => cancelAnimationFrame(raf1);
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
   }, []);
 
   const cx = size / 2;

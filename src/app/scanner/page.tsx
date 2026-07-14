@@ -138,14 +138,14 @@ export default function ScannerPage() {
         )}
 
         {scanError && !loading && (
-          <div style={{ position: 'absolute', left: 18, right: 18, bottom: 190, background: 'var(--av-surface)', borderRadius: 20, padding: 16, zIndex: 30, textAlign: 'center' }}>
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--av-surface)', borderRadius: '28px 28px 0 0', padding: '24px 22px 34px', zIndex: 30, textAlign: 'center', border: '1px solid var(--av-border)', borderBottom: 'none' }}>
             <div style={{ font: '600 13px var(--font-body)', color: 'var(--av-protein)', marginBottom: 10 }}>{scanError}</div>
             <div onClick={() => setScanError(null)} role="button" style={{ font: '700 13px var(--font-display)', color: 'var(--av-green)', cursor: 'pointer' }}>Try again</div>
           </div>
         )}
 
         {result && !loading && (
-          <div style={{ position: 'absolute', left: 18, right: 18, bottom: 184, background: 'var(--av-surface)', borderRadius: 26, padding: 18, zIndex: 30, maxHeight: '62dvh', overflowY: 'auto' }}>
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--av-surface)', borderRadius: '28px 28px 0 0', padding: '18px 22px 34px', zIndex: 30, maxHeight: '70dvh', overflowY: 'auto', border: '1px solid var(--av-border)', borderBottom: 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: 'var(--av-green-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="26" height="26" viewBox="0 0 32 32" fill="none" stroke="var(--av-green)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 14h22a11 11 0 0 1-11 11A11 11 0 0 1 5 14Z" /><path d="M9 14a7 7 0 0 1 14 0" /></svg>

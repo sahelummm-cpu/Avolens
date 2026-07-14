@@ -22,9 +22,9 @@ export default function ProgressPage() {
   const conv = (kg: number) => (isLb ? kgToLb(kg) : kg);
   const fmt = (kg: number) => conv(kg).toFixed(1);
 
-  const latest = state.weightLog[state.weightLog.length - 1];
+  const latest = state.weightLog[state.weightLog.length - 1] ?? { kg: 0, date: '' };
   const prev = state.weightLog[state.weightLog.length - 2];
-  const delta = prev ? conv(latest.kg) - conv(prev.kg) : 0;
+  const delta = (latest.kg > 0 && prev) ? conv(latest.kg) - conv(prev.kg) : 0;
 
   const chartValues = state.weightLog.map((w) => conv(w.kg));
 
@@ -38,9 +38,9 @@ export default function ProgressPage() {
   }, [state.weightLog, state.chartRange]);
 
   const heightM = state.heightCm / 100;
-  const bmi = latest.kg / (heightM * heightM);
-  const bmiCat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
-  const bmiMarker = Math.min(96, Math.max(4, ((bmi - 15) / (40 - 15)) * 100));
+  const bmi = latest.kg > 0 ? latest.kg / (heightM * heightM) : 0;
+  const bmiCat = bmi === 0 ? 'No logs' : bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
+  const bmiMarker = bmi === 0 ? 0 : Math.min(96, Math.max(4, ((bmi - 15) / (40 - 15)) * 100));
 
   const daysLoggedFrac = 24 / 30;
   const circ = 2 * Math.PI * 29;

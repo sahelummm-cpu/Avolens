@@ -6,17 +6,28 @@ export interface SelectedDayTotals {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
+  sodium: number;
+  sugar: number;
 }
 
 /** Values shown in the hero calorie ring for whichever day is tapped in the strip. */
 export function selectedDayTotals(
   state: AvoLensState,
-  liveTotals: { left: number; protein: number; carbs: number; fat: number },
+  liveTotals: { left: number; protein: number; carbs: number; fat: number; fiber: number; sodium: number; sugar: number },
 ): SelectedDayTotals {
   const todayIdx = mondayIndex(new Date());
   if (state.selectedDay === todayIdx) return liveTotals;
   const d = DEMO_WEEK[state.selectedDay];
-  return { left: d.kcalLeft, protein: d.protein, carbs: d.carbs, fat: d.fat };
+  return {
+    left: d.kcalLeft,
+    protein: d.protein,
+    carbs: d.carbs,
+    fat: d.fat,
+    fiber: d.fiber,
+    sodium: d.sodium,
+    sugar: d.sugar,
+  };
 }
 
 export interface DayCell {

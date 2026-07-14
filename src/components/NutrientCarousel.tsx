@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { useStore, useDailyTotals, pct } from '@/lib/store';
+import { useStore, pct } from '@/lib/store';
 import { DOSE_OPTIONS } from '@/lib/constants';
 
 function ProgressRow({ label, value, target, color }: { label: string; value: number; target: number; color: string }) {
@@ -21,9 +21,8 @@ function ProgressRow({ label, value, target, color }: { label: string; value: nu
   );
 }
 
-export function NutrientCarousel() {
+export function NutrientCarousel({ totals }: { totals: { fiber: number; sodium: number; sugar: number } }) {
   const { state, addGlass, removeGlass, setDose, toggleReminder } = useStore();
-  const totals = useDailyTotals();
   const [page, setPage] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
 

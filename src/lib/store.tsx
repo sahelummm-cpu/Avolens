@@ -53,7 +53,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const saved = JSON.parse(raw) as Partial<AvoLensState>;
         // localStorage is only readable client-side, so hydrating state here (post-mount) is unavoidable.
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState((s) => ({ ...s, ...saved }));
+        setState((s) => ({
+          ...s,
+          ...saved,
+          goal: saved.goal ? { ...s.goal, ...saved.goal } : s.goal,
+        }));
       }
     } catch {
       // ignore corrupt storage

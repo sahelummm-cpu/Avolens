@@ -67,7 +67,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <NutrientCarousel />
+        <NutrientCarousel totals={totals} />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--av-surface)', border: '1px solid var(--av-border)', borderRadius: 22, padding: '14px 16px', marginBottom: 12 }}>
           <div style={{ width: 46, height: 46, borderRadius: 14, background: 'var(--av-fat-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
