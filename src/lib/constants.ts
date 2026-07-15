@@ -4,6 +4,23 @@ import { dayKey } from './days';
 
 export const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+export const STATE_VERSION = 1;
+
+/**
+ * Bring a persisted / cloud-synced partial state (possibly written by an
+ * older app version) up to the current shape before it's merged into state.
+ * Add a `if (v < N)` block here for every future STATE_VERSION bump.
+ */
+export function migrateState(saved: Partial<AvoLensState>): Partial<AvoLensState> {
+  const v = saved.stateVersion ?? 0;
+  const out: Partial<AvoLensState> = { ...saved };
+  if (v < 1) {
+    // v0 → v1: no structural changes — the version field itself is new.
+  }
+  out.stateVersion = STATE_VERSION;
+  return out;
+}
+
 export const DEFAULT_GOAL = {
   calories: 2050,
   protein: 124,
@@ -41,6 +58,7 @@ export const SUGGESTED_FOODS: { name: string; color: keyof Theme; calories: numb
  */
 export function defaultState(): AvoLensState {
   return {
+    stateVersion: STATE_VERSION,
     goal: DEFAULT_GOAL,
     heightCm: 174,
     heightUnit: 'cm',

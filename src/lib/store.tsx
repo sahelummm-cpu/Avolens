@@ -25,9 +25,10 @@ import type {
   ThemeMode,
   WeightUnit,
 } from './types';
-import { defaultState } from './constants';
+import { defaultState, migrateState } from './constants';
 import { computeGoal } from './goals';
 import { computeStreak, dayKey, rolledOver } from './days';
+import { deleteProgressPhoto } from './photos';
 import { nextDoseAt, resolveMedication, takenThisCycle } from './meds';
 import { darkTheme, lightTheme, type Theme } from './theme';
 import { armMissedDoseCheck, syncLogReminder, syncMedReminder } from './notifications';
@@ -71,6 +72,8 @@ interface StoreValue {
   addMeasurement: (m: Omit<MeasurementEntry, 'date' | 'ts'>) => void;
   addPhoto: (photo: ProgressPhoto) => void;
   removePhoto: (id: string) => void;
+  /** Replace a photo's display uri (e.g. after refreshing an expired signed URL). */
+  setPhotoUri: (id: string, uri: string) => void;
   markAchievementsSeen: (ids: string[]) => void;
   setGoalCalories: (kcal: number) => void;
   setGoal: (patch: Partial<AvoLensState['goal']>) => void;
@@ -99,6 +102,17 @@ function getSystemDark(): boolean {
   return Appearance.getColorScheme() === 'dark';
 }
 
+/** +1/-1 a water glass on whichever day is selected (today or a past day). */
+function adjustGlasses(r: AvoLensState, delta: number): AvoLensState {
+  if (r.selectedDate === r.todayKey) {
+    return { ...r, glasses: Math.max(0, r.glasses + delta) };
+  }
+  const rec = r.history[r.selectedDate] ?? { entries: [], glasses: 0 };
+  const glasses = Math.max(0, rec.glasses + delta);
+  if (glasses === rec.glasses) return r;
+  return { ...r, history: { ...r.history, [r.selectedDate]: { ...rec, glasses } } };
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AvoLensState>(() => defaultState());
   const [systemDark, setSystemDark] = useState(() => getSystemDark());
@@ -106,6 +120,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const hydrated = useRef(false);
   const skipNextPush = useRef(false);
+  // Pushes are held until the signed-in user's remote copy has been fetched,
+  // so a slow pull can't be raced by an upsert of fresh local/default state.
+  // State (not a ref) so completing the pull re-runs the push effect.
+  const [pulledFor, setPulledFor] = useState<string | null>(null);
 
   // Load persisted state after mount; re-check the date on foreground.
   useEffect(() => {
@@ -114,7 +132,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const saved = JSON.parse(raw) as Partial<AvoLensState>;
-          setState((s) => rolledOver({ ...s, ...saved }));
+          setState((s) => rolledOver({ ...s, ...migrateState(saved) }));
         }
       } catch {
         // ignore corrupt storage
@@ -235,11 +253,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const pullRemote = useCallback(async (userId: string) => {
     if (!supabase) return;
-    const { data } = await supabase.from('profiles').select('state').eq('id', userId).maybeSingle();
+    const { data, error } = await supabase.from('profiles').select('state').eq('id', userId).maybeSingle();
+    if (error) return; // keep pushes held; we never saw the remote copy
     if (data?.state) {
       skipNextPush.current = true;
-      setState((s) => rolledOver({ ...s, ...(data.state as Partial<AvoLensState>) }));
+      setState((s) => rolledOver({ ...s, ...migrateState(data.state as Partial<AvoLensState>) }));
     }
+    setPulledFor(userId);
   }, []);
 
   useEffect(() => {
@@ -249,6 +269,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const client = supabase;
     if (!client || !session?.user?.id || !hydrated.current) return;
+    if (pulledFor !== session.user.id) return;
     if (skipNextPush.current) {
       skipNextPush.current = false;
       return;
@@ -261,7 +282,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .then(() => {});
     }, 1500);
     return () => clearTimeout(timer);
-  }, [state, session?.user?.id]);
+  }, [state, session?.user?.id, pulledFor]);
 
   const value = useMemo<StoreValue>(
     () => ({
@@ -277,16 +298,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           // Never select the future; the strip disables those cells anyway.
           return dateKey > r.todayKey ? r : { ...r, selectedDate: dateKey };
         }),
-      addGlass: () =>
-        setState((s) => {
-          const r = rolledOver(s);
-          return { ...r, glasses: Math.min(r.goal.water, r.glasses + 1) };
-        }),
-      removeGlass: () =>
-        setState((s) => {
-          const r = rolledOver(s);
-          return { ...r, glasses: Math.max(0, r.glasses - 1) };
-        }),
+      addGlass: () => setState((s) => adjustGlasses(rolledOver(s), +1)),
+      removeGlass: () => setState((s) => adjustGlasses(rolledOver(s), -1)),
       setDose: (i) => setState((s) => ({ ...s, dose: i })),
       setMedication: (key) =>
         setState((s) => ({
@@ -426,6 +439,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })),
       addPhoto: (photo) => setState((s) => ({ ...s, photos: [{ ...photo }, ...s.photos] })),
       removePhoto: (id) => setState((s) => ({ ...s, photos: s.photos.filter((p) => p.id !== id) })),
+      setPhotoUri: (id, uri) =>
+        setState((s) => ({ ...s, photos: s.photos.map((p) => (p.id === id ? { ...p, uri } : p)) })),
       markAchievementsSeen: (ids) =>
         setState((s) => ({ ...s, achievementsSeen: Array.from(new Set([...s.achievementsSeen, ...ids])) })),
       setGoalCalories: (kcal) => setState((s) => ({ ...s, goal: { ...s.goal, calories: kcal } })),
@@ -462,7 +477,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           if (s.logReminderOn) syncLogReminder(true, hour, minute);
           return { ...s, logReminderHour: hour, logReminderMinute: minute };
         }),
-      clearLoggedData: () =>
+      clearLoggedData: () => {
+        // Also delete uploaded progress photos from storage — the settings
+        // dialog promises photos are deleted, not just unlisted.
+        for (const p of state.photos) {
+          if (p.path) void deleteProgressPhoto(p);
+        }
         setState((s) => ({
           ...s,
           todayEntries: [],
@@ -474,7 +494,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           favorites: [],
           glasses: 0,
           achievementsSeen: [],
-        })),
+        }));
+      },
       finishOnboarding: () => setState((s) => ({ ...s, hasOnboarded: true })),
       completeOnboarding: (p) =>
         setState((s) => ({
@@ -492,7 +513,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           displayName: p.name?.trim() ? p.name.trim() : s.displayName,
           weightLog: [
             ...s.weightLog,
-            { date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), kg: p.weightKg },
+            {
+              date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              kg: p.weightKg,
+              ts: Date.now(),
+            },
           ],
           hasOnboarded: true,
         })),
@@ -525,6 +550,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
       signOut: async () => {
         await supabase?.auth.signOut();
+        // Reset to a fresh install so the next account on this device can't
+        // inherit (or accidentally upload) this user's data.
+        AsyncStorage.removeItem('avolens.coach.v1').catch(() => {}); // coach chat history
+        setState(() => ({ ...defaultState(), hasOnboarded: true }));
       },
       deleteAccount: async () => {
         try {
@@ -537,6 +566,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           return 'Could not delete your account. Please try again.';
         }
         // Wipe local data back to a fresh install.
+        AsyncStorage.removeItem('avolens.coach.v1').catch(() => {}); // coach chat history
         setState(() => ({ ...defaultState(), hasOnboarded: true }));
         return null;
       },

@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,9 @@ const SUGGESTIONS = [
   'Why does protein matter?',
 ];
 
+const CHAT_KEY = 'avolens.coach.v1';
+const MAX_SAVED = 40;
+
 export default function CoachPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -30,6 +34,31 @@ export default function CoachPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Persist the conversation locally so it survives leaving the screen.
+  const chatLoaded = useRef(false);
+  useEffect(() => {
+    AsyncStorage.getItem(CHAT_KEY)
+      .then((raw) => {
+        if (raw) {
+          try {
+            const saved = JSON.parse(raw) as ChatMessage[];
+            if (Array.isArray(saved)) setMessages(saved);
+          } catch {
+            // corrupt saved chat — start fresh
+          }
+        }
+      })
+      .finally(() => {
+        chatLoaded.current = true;
+      });
+  }, []);
+  useEffect(() => {
+    if (!chatLoaded.current) return;
+    AsyncStorage.setItem(CHAT_KEY, JSON.stringify(messages.slice(-MAX_SAVED))).catch(() => {});
+  }, [messages]);
+
+  const clearChat = () => setMessages([]);
 
   const send = async (text: string) => {
     const content = text.trim();
@@ -76,11 +105,15 @@ export default function CoachPage() {
       const reply = (data as { reply?: string })?.reply;
       if (!reply) throw new Error('Empty reply');
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages((m) => [
-        ...m,
-        { role: 'assistant', content: "Sorry — I couldn't reach the coach right now. Make sure the 'coach' edge function is deployed and ANTHROPIC_API_KEY is set, then try again." },
-      ]);
+    } catch (err) {
+      const status = (err as { context?: { status?: number } })?.context?.status;
+      const fallback =
+        status === 401
+          ? 'Please sign in (Settings → Account) to chat with the coach.'
+          : status === 429
+            ? "You've reached today's coach limit — come back tomorrow!"
+            : "Sorry — I couldn't reach the coach right now. Please try again in a moment.";
+      setMessages((m) => [...m, { role: 'assistant', content: fallback }]);
     } finally {
       setBusy(false);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
@@ -114,10 +147,22 @@ export default function CoachPage() {
             </Svg>
           </Pressable>
           <Logo size={26} />
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>AI Coach</Text>
             <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.green }}>Knows today's log & goals</Text>
           </View>
+          {messages.length > 0 && (
+            <Pressable
+              onPress={clearChat}
+              accessibilityRole="button"
+              accessibilityLabel="Clear chat"
+              style={{ width: 36, height: 36, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                <Path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+              </Svg>
+            </Pressable>
+          )}
         </View>
 
         <ScrollView

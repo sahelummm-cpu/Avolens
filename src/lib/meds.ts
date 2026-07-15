@@ -117,6 +117,13 @@ type MedSchedule = Pick<
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Local-calendar key for `n` days before `now` — setDate() arithmetic, so DST transitions can't skip or repeat a day. */
+function dayKeyAgo(n: number, now: Date): string {
+  const d = new Date(now);
+  d.setDate(d.getDate() - n);
+  return dayKey(d);
+}
+
 /** Was a dose taken in the current cycle (today for daily, last 6 days for weekly)? */
 export function takenThisCycle(s: MedSchedule, now = new Date()): ShotRecord | undefined {
   const med = resolveMedication(s);
@@ -124,7 +131,7 @@ export function takenThisCycle(s: MedSchedule, now = new Date()): ShotRecord | u
   for (let i = s.shots.length - 1; i >= 0; i--) {
     const shot = s.shots[i];
     for (let n = 0; n <= windowDays; n++) {
-      if (shot.date === dayKey(new Date(now.getTime() - n * DAY_MS))) return shot;
+      if (shot.date === dayKeyAgo(n, now)) return shot;
     }
     // Shots are appended chronologically; once older than the window, stop.
     break;
@@ -151,7 +158,9 @@ export function nextDoseAt(s: MedSchedule, now = new Date()): Date {
   if (takenThisCycle(s, now) && d.getTime() - now.getTime() < 7 * DAY_MS) {
     // Already injected this week and the next slot is still inside it.
     const taken = takenThisCycle(s, now)!;
-    if (taken.date >= dayKey(new Date(d.getTime() - 7 * DAY_MS))) d.setDate(d.getDate() + 7);
+    const weekBefore = new Date(d);
+    weekBefore.setDate(weekBefore.getDate() - 7);
+    if (taken.date >= dayKey(weekBefore)) d.setDate(d.getDate() + 7);
   }
   return d;
 }
@@ -185,7 +194,7 @@ export function shotStreak(s: MedSchedule, now = new Date()): number {
   const taken = new Set(s.shots.map((x) => x.date));
   const hasShotInPeriod = (offset: number): boolean => {
     for (let n = 0; n < period; n++) {
-      if (taken.has(dayKey(new Date(now.getTime() - (offset * period + n) * DAY_MS)))) return true;
+      if (taken.has(dayKeyAgo(offset * period + n, now))) return true;
     }
     return false;
   };
@@ -213,7 +222,7 @@ export function recentCycles(s: MedSchedule, now = new Date()): boolean[] {
   for (let offset = 7; offset >= 0; offset--) {
     let hit = false;
     for (let n = 0; n < period; n++) {
-      if (taken.has(dayKey(new Date(now.getTime() - (offset * period + n) * DAY_MS)))) hit = true;
+      if (taken.has(dayKeyAgo(offset * period + n, now))) hit = true;
     }
     out.push(hit);
   }

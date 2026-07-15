@@ -55,7 +55,17 @@ async function invokeScan(body: Record<string, unknown>): Promise<ScanResult> {
   if (supabase) {
     const { data, error } = await supabase.functions.invoke('scan', { body });
     if (error) {
-      throw new Error('Scan failed. Is the "scan" edge function deployed with ANTHROPIC_API_KEY set?');
+      // FunctionsHttpError carries the server Response — surface its message.
+      const ctx = (error as { context?: Response }).context;
+      if (ctx?.status === 401) throw new Error('Sign in (Settings → Account) to use AI scanning.');
+      if (ctx?.status === 429) throw new Error("You've reached today's AI scan limit — try again tomorrow.");
+      let serverMsg: string | null = null;
+      try {
+        serverMsg = ((await ctx?.json()) as { error?: string })?.error ?? null;
+      } catch {
+        // body unavailable / not JSON
+      }
+      throw new Error(serverMsg ?? 'Scan failed. Please check your connection and try again.');
     }
     if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
     return data as ScanResult;

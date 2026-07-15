@@ -14,12 +14,14 @@ import { AchievementsCard, AdherenceCard, ExportCard, HeatmapCard, NetCaloriesCa
 import { MeasurementsCard, PhotosCard } from '@/components/BodyProgress';
 import { useStore } from '@/lib/store';
 import { daysAgoKey, sumCalories, weeklyInsights } from '@/lib/days';
-import { weightTrend } from '@/lib/progress';
+import { weightTrend, weightTs } from '@/lib/progress';
 import { recentCycles, resolveMedication, shotStreak } from '@/lib/meds';
 import type { ChartRange } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
 const kgToLb = (kg: number) => kg * 2.20462;
+
+const RANGE_DAYS: Record<ChartRange, number> = { W: 7, M: 30, Y: 365 };
 
 type Category = 'weight' | 'calories' | 'protein' | 'exercise' | 'body' | 'awards';
 const CATEGORIES: { key: Category; label: string }[] = [
@@ -48,17 +50,24 @@ export default function ProgressPage() {
   const prev = state.weightLog.length > 1 ? state.weightLog[state.weightLog.length - 2] : undefined;
   const delta = latest && prev ? conv(latest.kg) - conv(prev.kg) : 0;
 
-  const chartValues = state.weightLog.map((w) => conv(w.kg));
+  // Weigh-ins inside the selected Week/Month/Year window (min. 2 points so
+  // the chart never goes blank when the window is empty).
+  const rangedLog = useMemo(() => {
+    const log = state.weightLog;
+    const cutoff = Date.now() - RANGE_DAYS[state.chartRange] * 24 * 60 * 60 * 1000;
+    const filtered = log.filter((_, i) => weightTs(log, i) >= cutoff);
+    return filtered.length >= 2 ? filtered : log.slice(-2);
+  }, [state.weightLog, state.chartRange]);
+
+  const chartValues = rangedLog.map((w) => conv(w.kg));
 
   const rangeLabels = useMemo(() => {
-    const dates = state.weightLog.map((w) => w.date);
+    const dates = rangedLog.map((w) => w.date);
     if (dates.length === 0) return ['', '', ''];
-    if (state.chartRange === 'Y') return ['Jan', 'Apr', dates[dates.length - 1] ?? ''];
     if (dates.length < 3) return [dates[0] ?? '', '', dates[dates.length - 1] ?? ''];
-    if (state.chartRange === 'W') return dates.slice(-3);
     const mid = dates[Math.floor(dates.length / 2)];
     return [dates[0], mid, dates[dates.length - 1]];
-  }, [state.weightLog, state.chartRange]);
+  }, [rangedLog]);
 
   const heightM = state.heightCm / 100;
   const bmi = latest ? latest.kg / (heightM * heightM) : 0;
@@ -106,7 +115,7 @@ export default function ProgressPage() {
       ),
     [state.shots],
   );
-  const chartMarkers = state.weightLog.map((w) => shotDisplayDates.has(w.date));
+  const chartMarkers = rangedLog.map((w) => shotDisplayDates.has(w.date));
   const lastShot = state.shots[state.shots.length - 1];
 
   const avgHealth =

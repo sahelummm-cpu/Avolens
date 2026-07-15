@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Svg, { Path } from 'react-native-svg';
 import { useStore } from '@/lib/store';
-import { uploadProgressPhoto, deleteProgressPhoto } from '@/lib/photos';
+import { uploadProgressPhoto, deleteProgressPhoto, refreshPhotoUrl } from '@/lib/photos';
 import type { MeasurementEntry } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
@@ -125,9 +125,28 @@ function MeasurementModal({ onClose, onSave, initial }: { onClose: () => void; o
 }
 
 export function PhotosCard() {
-  const { state, addPhoto, removePhoto, theme: t } = useStore();
+  const { state, addPhoto, removePhoto, setPhotoUri, theme: t } = useStore();
   const [busy, setBusy] = useState(false);
   const [viewer, setViewer] = useState<string | null>(null);
+
+  // Signed URLs expire after 7 days (and local uris don't exist on other
+  // devices) — re-sign every uploaded photo when the card mounts.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      for (const p of state.photos) {
+        if (!p.path) continue;
+        const uri = await refreshPhotoUrl(p);
+        if (cancelled) return;
+        if (uri && uri !== p.uri) setPhotoUri(p.id, uri);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Once per mount is enough; new uploads already carry a fresh URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const add = async (fromCamera: boolean) => {
     try {

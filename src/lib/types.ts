@@ -153,6 +153,8 @@ export interface WidgetSnapshot {
 }
 
 export interface AvoLensState {
+  /** Schema version of this persisted state; bump with migrateState() steps. */
+  stateVersion: number;
   goal: {
     calories: number;
     protein: number;

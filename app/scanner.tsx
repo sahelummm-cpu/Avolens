@@ -65,7 +65,7 @@ export default function ScannerPage() {
   useSpeechRecognitionEvent('error', (e) => {
     setListening(false);
     if (e.error !== 'no-speech' && e.error !== 'aborted') {
-      setScanError('Voice recognition failed — you can type less and speak clearly, or add manually.');
+      setScanError('Voice recognition failed — try again speaking clearly, or add the food manually.');
     }
   });
 
@@ -175,6 +175,12 @@ export default function ScannerPage() {
         scanningBarcode.current = false;
       }, 1500);
     }
+  };
+
+  const discardResult = () => {
+    setResult(null);
+    setBasis(null);
+    setTranscript('');
   };
 
   const removeIngredient = (i: number) => {
@@ -390,6 +396,16 @@ export default function ScannerPage() {
                 <Path d="M12 5v14M5 12h14" />
               </Svg>
               <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.muted }}>Add food manually</Text>
+            </Pressable>
+            <Pressable
+              onPress={discardResult}
+              accessibilityRole="button"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10 }}
+            >
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth={2.2} strokeLinecap="round">
+                <Path d="M6 6l12 12M18 6 6 18" />
+              </Svg>
+              <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.muted }}>Discard & rescan</Text>
             </Pressable>
           </ScrollView>
         )}

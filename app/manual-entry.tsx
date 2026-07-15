@@ -71,16 +71,16 @@ export default function ManualEntryPage() {
   const [quick, setQuick] = useState(false);
   const [quickKcal, setQuickKcal] = useState('');
 
-  const [name, setName] = useState(editing?.name ?? 'Avocado toast');
+  const [name, setName] = useState(editing?.name ?? '');
   const [meal, setMeal] = useState<FoodEntry['meal']>(editing?.meal ?? mealForNow());
   const [mealPickerOpen, setMealPickerOpen] = useState(false);
   const [servings, setServings] = useState(1);
-  const [protein, setProtein] = useState(editing?.protein ?? 12);
-  const [carbs, setCarbs] = useState(editing?.carbs ?? 34);
-  const [fat, setFat] = useState(editing?.fat ?? 16);
-  const [fiber, setFiber] = useState(editing?.fiber ?? 8);
-  const [sodium, setSodium] = useState(editing?.sodium ?? 380);
-  const [sugar, setSugar] = useState(editing?.sugar ?? 4);
+  const [protein, setProtein] = useState(editing?.protein ?? 0);
+  const [carbs, setCarbs] = useState(editing?.carbs ?? 0);
+  const [fat, setFat] = useState(editing?.fat ?? 0);
+  const [fiber, setFiber] = useState(editing?.fiber ?? 0);
+  const [sodium, setSodium] = useState(editing?.sodium ?? 0);
+  const [sugar, setSugar] = useState(editing?.sugar ?? 0);
   const [showMoreNutrients, setShowMoreNutrients] = useState(false);
 
   const recents = useMemo(() => recentMeals(state), [state]);
@@ -152,7 +152,12 @@ export default function ManualEntryPage() {
     return { name, meal, time, calories: kcalFinal, protein: protein * servings, carbs: carbs * servings, fat: fat * servings, fiber: fiber * servings, sodium: sodium * servings, sugar: sugar * servings, healthScore: 7, icon: 'generic', amount: servings, unit: 'serving' };
   };
 
+  // Don't allow logging a nameless (or, for quick-add, zero-calorie) entry —
+  // an accidental tap used to log a placeholder meal.
+  const canSave = quick ? Number(quickKcal) > 0 : name.trim().length > 0;
+
   const save = () => {
+    if (!canSave) return;
     if (editing) {
       const e = buildEntry();
       updateEntry(editing.id, { name: e.name, meal: e.meal, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, fiber: e.fiber, sodium: e.sodium, sugar: e.sugar, amount: e.amount, unit: e.unit }, editDay);
@@ -227,8 +232,8 @@ export default function ManualEntryPage() {
               </Svg>
             </Pressable>
           )}
-          <Pressable onPress={save} accessibilityRole="button">
-            <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.green }}>Save</Text>
+          <Pressable onPress={save} disabled={!canSave} accessibilityRole="button">
+            <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.green, opacity: canSave ? 1 : 0.4 }}>Save</Text>
           </Pressable>
         </View>
       </View>
@@ -381,7 +386,13 @@ export default function ManualEntryPage() {
 
           {/* Name */}
           <FieldLabel>Food name</FieldLabel>
-          <TextInput value={name} onChangeText={setName} style={{ ...inputStyle, marginBottom: 14 }} />
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="e.g. Avocado toast"
+            placeholderTextColor={t.muted2}
+            style={{ ...inputStyle, marginBottom: 14 }}
+          />
 
           {/* Meal + portion controls */}
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
@@ -503,7 +514,7 @@ export default function ManualEntryPage() {
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <LinearGradient colors={['rgba(0,0,0,0)', t.bg]} locations={[0, 0.28]} style={{ paddingTop: 14, paddingHorizontal: 22, paddingBottom: Math.max(26, insets.bottom + 10) }}>
-          <Pressable onPress={save} style={{ width: '100%', height: 54, borderRadius: 18, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center', shadowColor: 'rgba(47,158,110,1)', shadowOpacity: 0.6, shadowRadius: 26, shadowOffset: { width: 0, height: 12 }, elevation: 8 }}>
+          <Pressable onPress={save} disabled={!canSave} style={{ width: '100%', height: 54, borderRadius: 18, backgroundColor: t.green, opacity: canSave ? 1 : 0.45, alignItems: 'center', justifyContent: 'center', shadowColor: 'rgba(47,158,110,1)', shadowOpacity: canSave ? 0.6 : 0, shadowRadius: 26, shadowOffset: { width: 0, height: 12 }, elevation: canSave ? 8 : 0 }}>
             <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 16 }}>{editing ? 'Save changes' : 'Add to Log'}</Text>
           </Pressable>
         </LinearGradient>
@@ -541,17 +552,33 @@ function Stepper({ onPress, bg, iconColor, icon }: { onPress: () => void; bg: st
   );
 }
 
-function numericOnChange(onChange: (n: number) => void) {
-  return (text: string) => onChange(Number(text.replace(/[^0-9.]/g, '')) || 0);
+/**
+ * Numeric field that owns its text while typing so intermediate values like
+ * "12." aren't eaten by a round-trip through Number() (decimals were
+ * impossible to type before). Resyncs when the parent sets a new value.
+ */
+function useNumericField(value: number, onChange: (n: number) => void) {
+  const [text, setText] = useState(value ? String(value) : '');
+  useEffect(() => {
+    if ((Number(text) || 0) !== value) setText(value ? String(value) : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const onChangeText = (v: string) => {
+    const cleaned = v.replace(/[^0-9.]/g, '');
+    setText(cleaned);
+    onChange(Number(cleaned) || 0);
+  };
+  return { text, onChangeText };
 }
 
 function MacroInput({ label, color, value, onChange }: { label: string; color: string; value: number; onChange: (n: number) => void }) {
   const { theme: t } = useStore();
+  const field = useNumericField(value, onChange);
   return (
     <View style={{ flex: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 10, alignItems: 'center', gap: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <View style={{ width: 8, height: 8, borderRadius: 9, backgroundColor: color }} />
-        <TextInput keyboardType="number-pad" value={String(value)} onChangeText={numericOnChange(onChange)} style={{ width: 40, fontFamily: F.d800, fontSize: 20, color: t.ink, textAlign: 'center', padding: 0 }} />
+        <TextInput keyboardType="decimal-pad" value={field.text} onChangeText={field.onChangeText} placeholder="0" placeholderTextColor={t.muted2} style={{ width: 40, fontFamily: F.d800, fontSize: 20, color: t.ink, textAlign: 'center', padding: 0 }} />
       </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted }}>{label}</Text>
     </View>
@@ -573,10 +600,11 @@ function ReadMacro({ label, color, value }: { label: string; color: string; valu
 
 function NutrientInput({ label, suffix, value, onChange }: { label: string; suffix: string; value: number; onChange: (n: number) => void }) {
   const { theme: t } = useStore();
+  const field = useNumericField(value, onChange);
   return (
     <View style={{ flex: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 12, alignItems: 'center', gap: 3 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-        <TextInput keyboardType="number-pad" value={String(value)} onChangeText={numericOnChange(onChange)} style={{ minWidth: 24, fontFamily: F.d700, fontSize: 16, color: t.ink, textAlign: 'center', padding: 0 }} />
+        <TextInput keyboardType="decimal-pad" value={field.text} onChangeText={field.onChangeText} placeholder="0" placeholderTextColor={t.muted2} style={{ minWidth: 24, fontFamily: F.d700, fontSize: 16, color: t.ink, textAlign: 'center', padding: 0 }} />
         <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{suffix}</Text>
       </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted }}>{label}</Text>

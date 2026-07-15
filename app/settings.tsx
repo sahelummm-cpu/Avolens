@@ -24,8 +24,11 @@ import { F } from '@/lib/fonts';
 const PRIVACY_URL = 'https://avolens.app/privacy';
 const TERMS_URL = 'https://avolens.app/terms';
 const SUPPORT_EMAIL = 'support@avolens.app';
+// TODO: swap the iOS URL for the real App Store link once the app is published
+// (https://apps.apple.com/app/id<APP_ID>). Until then, fall back to the site
+// so the "Rate" row never opens a dead page.
 const APP_STORE_URL = Platform.select({
-  ios: 'https://apps.apple.com/app/idYOUR_APP_ID',
+  ios: 'https://avolens.app',
   android: 'https://play.google.com/store/apps/details?id=app.avolens.mobile',
   default: 'https://avolens.app',
 })!;
@@ -264,27 +267,22 @@ export default function SettingsPage() {
         {/* Connected apps */}
         <SectionLabel>Connected apps</SectionLabel>
         <Card>
-          {Platform.OS !== 'android' && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, paddingHorizontal: 18 }}>
+          {/* One provider per platform — HealthKit on iOS, Health Connect on Android. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, paddingHorizontal: 18 }}>
+            {Platform.OS === 'android' ? (
+              <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.fatTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Svg width={18} height={18} viewBox="0 0 24 24" fill={t.fat}><Circle cx={12} cy={12} r={8} /></Svg>
+              </View>
+            ) : (
               <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.proteinTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Svg width={18} height={18} viewBox="0 0 24 24" fill={t.protein}><Path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z" /></Svg>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={rowLabel(t)}>Apple Health</Text>
-                {connecting && <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.green, marginTop: 1 }}>Connecting…</Text>}
-              </View>
-              <ToggleSwitch on={state.healthConnected} onChange={toggleHealth} />
-            </View>
-          )}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, paddingHorizontal: 18, borderTopWidth: Platform.OS !== 'android' ? 1 : 0, borderTopColor: t.border2 }}>
-            <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.fatTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Svg width={18} height={18} viewBox="0 0 24 24" fill={t.fat}><Circle cx={12} cy={12} r={8} /></Svg>
-            </View>
+            )}
             <View style={{ flex: 1 }}>
-              <Text style={rowLabel(t)}>{Platform.OS === 'android' ? 'Health Connect' : 'Google Fit'}</Text>
-              {connecting && Platform.OS === 'android' && <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.green, marginTop: 1 }}>Connecting…</Text>}
+              <Text style={rowLabel(t)}>{Platform.OS === 'android' ? 'Health Connect' : 'Apple Health'}</Text>
+              {connecting && <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.green, marginTop: 1 }}>Connecting…</Text>}
             </View>
-            <ToggleSwitch on={Platform.OS === 'android' ? state.healthConnected : false} onChange={Platform.OS === 'android' ? toggleHealth : () => {}} />
+            <ToggleSwitch on={state.healthConnected} onChange={toggleHealth} />
           </View>
         </Card>
 

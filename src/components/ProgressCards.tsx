@@ -83,6 +83,7 @@ export function NetCaloriesCard() {
   const n = netCalories(state, activity);
   const deficit = n.deficitToday;
   const losing = deficit > 0;
+  const weeklyRate = state.unit === 'lb' ? n.weeklyRateKg * 2.20462 : n.weeklyRateKg;
 
   return (
     <View style={card}>
@@ -99,10 +100,10 @@ export function NetCaloriesCard() {
           <Text style={{ fontFamily: F.d800, fontSize: 19, color: losing ? t.green : t.protein }}>
             {Math.abs(Math.round(deficit)).toLocaleString('en-US')} kcal {losing ? 'deficit' : 'surplus'}
           </Text>
-          <Text style={{ fontFamily: F.b500, fontSize: 11.5, color: t.muted, marginTop: 2 }}>vs your {state.goal.calories.toLocaleString('en-US')} kcal target</Text>
+          <Text style={{ fontFamily: F.b500, fontSize: 11.5, color: t.muted, marginTop: 2 }}>vs ≈{n.maintenance.toLocaleString('en-US')} kcal maintenance</Text>
         </View>
         <Text style={{ fontFamily: F.d700, fontSize: 12.5, color: losing ? t.green : t.protein }}>
-          ≈ {n.weeklyRateKg <= 0 ? '' : '+'}{n.weeklyRateKg.toFixed(2).replace('0.00', '0')} {state.unit}/wk
+          ≈ {weeklyRate <= 0 ? '' : '+'}{weeklyRate.toFixed(2).replace('0.00', '0')} {state.unit}/wk
         </Text>
       </View>
     </View>

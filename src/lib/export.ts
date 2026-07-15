@@ -27,9 +27,31 @@ function buildCsv(state: AvoLensState): string {
     }
   }
   lines.push('');
+  lines.push('# Water (500 ml glasses)');
+  lines.push(['date', 'glasses'].join(','));
+  const waterDays: [string, number][] = [
+    [state.todayKey, state.glasses],
+    ...Object.entries(state.history)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([k, v]) => [k, v.glasses] as [string, number]),
+  ];
+  for (const [date, glasses] of waterDays) {
+    if (glasses > 0) lines.push([date, glasses].join(','));
+  }
+
+  lines.push('');
   lines.push('# Weight');
   lines.push(['date', 'kg'].join(','));
   for (const w of state.weightLog) lines.push([w.ts ? dayKey(new Date(w.ts)) : w.date, w.kg].join(','));
+
+  if (state.shots.length > 0) {
+    lines.push('');
+    lines.push('# Injections');
+    lines.push(['date', 'time', 'dose', 'site'].join(','));
+    for (const s of state.shots) {
+      lines.push([s.date, csvCell(s.time), csvCell(s.doseMg), csvCell(s.site)].join(','));
+    }
+  }
 
   if (state.measurements.length > 0) {
     lines.push('');

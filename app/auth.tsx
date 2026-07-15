@@ -7,7 +7,8 @@ import { Screen } from '@/components/Screen';
 import { Logo } from '@/components/Logo';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useStore } from '@/lib/store';
-import { appleAuthAvailable, signInWithApple, signInWithGoogle } from '@/lib/authProviders';
+import { appleAuthAvailable, signInWithApple, signInWithGoogle, type AuthOutcome } from '@/lib/authProviders';
+import { supabase } from '@/lib/supabase';
 import { F } from '@/lib/fonts';
 
 export default function AuthPage() {
@@ -47,15 +48,36 @@ export default function AuthPage() {
     router.replace('/home');
   };
 
-  const social = async (fn: () => Promise<string | null>) => {
+  const social = async (fn: () => Promise<AuthOutcome>) => {
     if (busy) return;
     setBusy(true);
     setError(null);
     setNotice(null);
-    const err = await fn();
+    const res = await fn();
     setBusy(false);
-    if (err) setError(err);
-    else router.replace('/home');
+    if (res.status === 'error') setError(res.message);
+    else if (res.status === 'success') router.replace('/home');
+    // 'cancelled' → the user backed out; stay on this screen.
+  };
+
+  const forgotPassword = async () => {
+    if (busy) return;
+    const em = email.trim();
+    if (!/.+@.+\..+/.test(em)) {
+      setError('Enter your email above first, then tap "Forgot password?" again.');
+      return;
+    }
+    if (!supabase) {
+      setError('Cloud sync is not configured.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(em);
+    setBusy(false);
+    if (err) setError(err.message);
+    else setNotice('Password reset email sent — check your inbox.');
   };
 
   const inputStyle = {
@@ -128,6 +150,14 @@ export default function AuthPage() {
           <PrimaryButton onPress={submit} disabled={!valid || busy} small>
             {busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Sign up'}
           </PrimaryButton>
+
+          {mode === 'signin' && (
+            <Pressable onPress={forgotPassword} accessibilityRole="button" style={{ marginTop: 12 }}>
+              <Text style={{ textAlign: 'center', fontFamily: F.b600, fontSize: 13, color: t.muted }}>
+                Forgot password?
+              </Text>
+            </Pressable>
+          )}
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 18 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: t.border }} />

@@ -1,10 +1,11 @@
 import { daysAgoKey, sumCalories } from './days';
+import { maintenanceCalories } from './goals';
 import type { ActivitySummary, AvoLensState, WeightEntry } from './types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Epoch ms for a weigh-in — real ts when present, else spaced one/day back. */
-function weightTs(log: WeightEntry[], i: number): number {
+export function weightTs(log: WeightEntry[], i: number): number {
   const e = log[i];
   if (e.ts) return e.ts;
   return Date.now() - (log.length - 1 - i) * DAY_MS;
@@ -76,24 +77,40 @@ export interface NetDay {
 }
 
 /**
- * Net-calorie + deficit summary vs. maintenance (goal calories are the
- * maintenance/target intake). Only meaningful when activity is available.
+ * Net-calorie + deficit summary vs. true maintenance (Mifflin-St Jeor TDEE
+ * when the profile is complete — goal.calories is already deficit-adjusted,
+ * so using it here would double-count the planned deficit). Only meaningful
+ * when activity is available.
  */
 export function netCalories(state: AvoLensState, activity: ActivitySummary | null): {
   eatenToday: number;
   burnedToday: number;
   netToday: number;
+  maintenance: number; // estimated TDEE the deficit is measured against
   deficitToday: number; // maintenance+burned − eaten ; positive = deficit
   weeklyRateKg: number; // est. kg/week from the deficit (7700 kcal/kg)
 } {
   const eatenToday = sumCalories(state.todayEntries);
   const burnedToday = activity?.activeCalories ?? 0;
-  const maintenance = state.goal.calories;
+  const lastKg = state.weightLog[state.weightLog.length - 1]?.kg;
+  const maintenance =
+    state.sex != null && state.age != null && state.activityLevel != null && lastKg != null
+      ? Math.round(
+          maintenanceCalories({
+            weightKg: lastKg,
+            heightCm: state.heightCm,
+            age: state.age,
+            sex: state.sex,
+            activityLevel: state.activityLevel,
+          }),
+        )
+      : state.goal.calories;
   const deficitToday = maintenance + burnedToday - eatenToday;
   return {
     eatenToday,
     burnedToday,
     netToday: eatenToday - burnedToday,
+    maintenance,
     deficitToday,
     weeklyRateKg: (deficitToday * 7) / 7700,
   };

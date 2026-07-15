@@ -89,7 +89,10 @@ export function NutrientCarousel() {
     setPage(i);
   };
 
-  const waterCur = (state.glasses * 0.5).toFixed(1);
+  // Water tracks whichever day is selected in the strip (today or a past day).
+  const viewingToday = state.selectedDate === state.todayKey;
+  const dayGlasses = viewingToday ? state.glasses : (state.history[state.selectedDate]?.glasses ?? 0);
+  const waterCur = (dayGlasses * 0.5).toFixed(1);
   const waterTarget = (state.goal.water * 0.5).toFixed(1);
 
   const med = resolveMedication(state);
@@ -260,20 +263,22 @@ export function NutrientCarousel() {
                   <Svg width={15} height={19} viewBox="0 0 20 26" fill={t.fat}>
                     <Path d="M10 1 C10 1 18 12 18 17.5 A8 8 0 0 1 2 17.5 C2 12 10 1 10 1 Z" />
                   </Svg>
-                  <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.ink }}>Water</Text>
+                  <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.ink }}>
+                    Water{viewingToday ? '' : ' · past day'}
+                  </Text>
                 </View>
                 <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.fat }}>
                   {waterCur}
                   <Text style={{ color: t.muted2, fontSize: 11 }}>/{waterTarget}L</Text>
                 </Text>
               </View>
-              <ProgressBar fraction={frac(state.glasses, state.goal.water)} color={t.fat} trackColor={t.fatTint3} height={8} />
+              <ProgressBar fraction={frac(dayGlasses, state.goal.water)} color={t.fat} trackColor={t.fatTint3} height={8} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <RoundBtn label="Remove glass" onPress={removeGlass} bg={t.surface}>
                   <MinusIcon stroke={t.fat} />
                 </RoundBtn>
                 <Text style={{ flex: 1, textAlign: 'center', fontFamily: F.b600, fontSize: 12, color: t.ink }}>
-                  {state.glasses} glasses <Text style={{ color: t.muted }}>· 500 ml</Text>
+                  {dayGlasses} glasses <Text style={{ color: t.muted }}>· 500 ml</Text>
                 </Text>
                 <RoundBtn label="Add glass" onPress={addGlass} bg={t.fat}>
                   <PlusIcon stroke="#fff" />

@@ -10,14 +10,24 @@ WebBrowser.maybeCompleteAuthSession();
 /** Native Apple sign-in is only available on iOS 13+. */
 export const appleAuthAvailable = Platform.OS === 'ios';
 
-async function completeFromUrl(url: string): Promise<string | null> {
-  if (!supabase) return 'Cloud sync is not configured.';
+/** Distinguishes "signed in" from "user backed out" from "something failed". */
+export type AuthOutcome =
+  | { status: 'success' }
+  | { status: 'cancelled' }
+  | { status: 'error'; message: string };
+
+const ok: AuthOutcome = { status: 'success' };
+const cancelled: AuthOutcome = { status: 'cancelled' };
+const fail = (message: string): AuthOutcome => ({ status: 'error', message });
+
+async function completeFromUrl(url: string): Promise<AuthOutcome> {
+  if (!supabase) return fail('Cloud sync is not configured.');
   try {
     const parsed = new URL(url);
     const code = parsed.searchParams.get('code');
     if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code);
-      return error ? error.message : null;
+      return error ? fail(error.message) : ok;
     }
     // Implicit fallback: tokens in the URL fragment.
     const hash = url.includes('#') ? url.slice(url.indexOf('#') + 1) : '';
@@ -26,38 +36,38 @@ async function completeFromUrl(url: string): Promise<string | null> {
     const refresh_token = hp.get('refresh_token');
     if (access_token && refresh_token) {
       const { error } = await supabase.auth.setSession({ access_token, refresh_token });
-      return error ? error.message : null;
+      return error ? fail(error.message) : ok;
     }
   } catch {
     // fall through
   }
-  return 'Sign-in did not complete.';
+  return fail('Sign-in did not complete.');
 }
 
-async function oauthViaBrowser(provider: 'google' | 'apple'): Promise<string | null> {
-  if (!supabase) return 'Cloud sync is not configured.';
+async function oauthViaBrowser(provider: 'google' | 'apple'): Promise<AuthOutcome> {
+  if (!supabase) return fail('Cloud sync is not configured.');
   const redirectTo = Linking.createURL('auth-callback');
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo, skipBrowserRedirect: true },
   });
-  if (error || !data?.url) return error?.message ?? `Could not start ${provider} sign-in.`;
+  if (error || !data?.url) return fail(error?.message ?? `Could not start ${provider} sign-in.`);
   const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-  if (res.type !== 'success') return null; // user cancelled
+  if (res.type !== 'success') return cancelled; // user closed the browser
   return completeFromUrl(res.url);
 }
 
 /** Sign in with Google via the Supabase OAuth flow (in-app browser). */
-export function signInWithGoogle(): Promise<string | null> {
+export function signInWithGoogle(): Promise<AuthOutcome> {
   return oauthViaBrowser('google');
 }
 
 /**
  * Sign in with Apple — native on iOS (id-token flow), OAuth browser
- * elsewhere. Returns an error message, or null on success / cancellation.
+ * elsewhere.
  */
-export async function signInWithApple(): Promise<string | null> {
-  if (!supabase) return 'Cloud sync is not configured.';
+export async function signInWithApple(): Promise<AuthOutcome> {
+  if (!supabase) return fail('Cloud sync is not configured.');
   if (Platform.OS === 'ios') {
     try {
       const cred = await AppleAuthentication.signInAsync({
@@ -66,12 +76,12 @@ export async function signInWithApple(): Promise<string | null> {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      if (!cred.identityToken) return 'No identity token returned by Apple.';
+      if (!cred.identityToken) return fail('No identity token returned by Apple.');
       const { error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: cred.identityToken });
-      return error ? error.message : null;
+      return error ? fail(error.message) : ok;
     } catch (e) {
-      if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return null;
-      return 'Apple sign-in failed.';
+      if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return cancelled;
+      return fail('Apple sign-in failed.');
     }
   }
   return oauthViaBrowser('apple');

@@ -18,12 +18,17 @@ import { F } from '@/lib/fonts';
 
 const MEAL_ORDER: FoodEntry['meal'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
-const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-
 export default function HomePage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state, theme: t, activity, streak, copyDayToToday } = useStore();
+  // Derived per render (keyed off todayKey) so the header can't go stale if
+  // the app stays open across midnight.
+  const todayLabel = new Date(`${state.todayKey}T12:00:00`).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
   const liveTotals = useDailyTotals();
   const yesterdayEntries = state.history[daysAgoKey(1)]?.entries ?? [];
   const viewingToday = state.selectedDate === state.todayKey;
