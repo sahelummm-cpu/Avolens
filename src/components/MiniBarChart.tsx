@@ -23,9 +23,9 @@ export function MiniBarChart({
   const H = 132;
   const padTop = 12;
   const baseline = 104; // y of the bar baseline; leaves room for x labels below
-  const n = values.length;
+  const n = values.length || 1; // avoid divide by zero
   const slot = W / n;
-  const barW = Math.min(26, slot - 8);
+  const barW = Math.max(2, Math.min(26, slot - 8)); // clamp minimum width
   const max = Math.max(...values, 1);
 
   const y = (v: number) => baseline - (baseline - padTop) * (v / max);
