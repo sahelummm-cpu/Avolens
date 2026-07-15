@@ -29,21 +29,21 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
     // statusBarTranslucent + navigationBarTranslucent: with Android edge-to-edge
     // the sheet otherwise stops above the gesture bar and floats mid-screen.
     <Modal transparent animationType="slide" visible onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
-      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable
-          onPress={() => {}}
-          style={{
-            backgroundColor: t.surface,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            paddingHorizontal: 22,
-            paddingTop: 24,
-            paddingBottom: 32,
-            maxHeight: '82%',
-          }}
-        >
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: t.surface,
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              paddingHorizontal: 22,
+              paddingTop: 24,
+              paddingBottom: 32,
+              maxHeight: '82%',
+            }}
+          >
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink, marginBottom: 14 }}>Medication</Text>
 
             <View style={{ gap: 9, marginBottom: 20 }}>
@@ -210,9 +210,9 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
               <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Done</Text>
             </Pressable>
           </ScrollView>
+          </Pressable>
         </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

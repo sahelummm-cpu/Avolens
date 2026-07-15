@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   Text,
   TextInput,
@@ -68,8 +69,8 @@ export function HeightModal({
 
   return (
     <Modal transparent statusBarTranslucent navigationBarTranslucent animationType="slide" visible onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
-        <KeyboardAvoidingView behavior="padding">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
           <Pressable
             onPress={() => {}}
             style={{
@@ -152,8 +153,8 @@ export function HeightModal({
               <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Save</Text>
             </Pressable>
           </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

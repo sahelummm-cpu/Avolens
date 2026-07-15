@@ -48,7 +48,7 @@ export function MiniBarChart({
             y={baseline - barH}
             width={barW}
             height={barH}
-            rx={4}
+            rx={Math.min(4, barH / 2)}
             fill={color}
             opacity={isLast ? 1 : 0.42}
           />

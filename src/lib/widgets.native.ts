@@ -1,21 +1,11 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WidgetSnapshot } from './types';
-import {
-  ANDROID_STREAK_WIDGET_NAME,
-  ANDROID_WATER_WIDGET_NAME,
-  ANDROID_WIDGET_NAME,
-  APP_GROUP,
-  WIDGET_STORAGE_KEY,
-} from './widgets';
-
-export {
-  APP_GROUP,
-  WIDGET_STORAGE_KEY,
-  ANDROID_WIDGET_NAME,
-  ANDROID_STREAK_WIDGET_NAME,
-  ANDROID_WATER_WIDGET_NAME,
-} from './widgets';
+export const APP_GROUP = 'group.app.avolens.mobile';
+export const WIDGET_STORAGE_KEY = 'avolens.widget.snapshot.v1';
+export const ANDROID_WIDGET_NAME = 'AvoLensSummary';
+export const ANDROID_STREAK_WIDGET_NAME = 'AvoLensStreak';
+export const ANDROID_WATER_WIDGET_NAME = 'AvoLensWater';
 
 /**
  * Push the daily summary to the platform widget. Everything is wrapped in

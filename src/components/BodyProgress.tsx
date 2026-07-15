@@ -91,8 +91,8 @@ function MeasurementModal({ onClose, onSave, initial }: { onClose: () => void; o
 
   return (
     <Modal transparent statusBarTranslucent navigationBarTranslucent animationType="slide" visible onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: t.scrim, justifyContent: 'flex-end' }}>
           <Pressable onPress={() => {}} style={{ backgroundColor: t.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 32 }}>
             <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink, marginBottom: 4 }}>Measurements (cm)</Text>
             <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginBottom: 16 }}>Fill in what you measured — leave the rest blank.</Text>
@@ -118,8 +118,8 @@ function MeasurementModal({ onClose, onSave, initial }: { onClose: () => void; o
               <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Save</Text>
             </Pressable>
           </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
