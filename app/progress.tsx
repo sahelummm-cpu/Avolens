@@ -10,7 +10,7 @@ import { SegmentedControl } from '@/components/SegmentedControl';
 import { WeightChart } from '@/components/WeightChart';
 import { MiniBarChart } from '@/components/MiniBarChart';
 import { PromptModal } from '@/components/PromptModal';
-import { AchievementsCard, AdherenceCard, ExportCard, HeatmapCard, HydrationCard, NetCaloriesCard, ProjectionCard } from '@/components/ProgressCards';
+import { AchievementsCard, AdherenceCard, ChartDayLink, ExportCard, HeatmapCard, HydrationCard, NetCaloriesCard, ProjectionCard } from '@/components/ProgressCards';
 import { MeasurementsCard, PhotosCard } from '@/components/BodyProgress';
 import { useStore } from '@/lib/store';
 import { daysAgoKey, sumCalories, weeklyInsights } from '@/lib/days';
@@ -40,6 +40,7 @@ export default function ProgressPage() {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [cat, setCat] = useState<Category>('weight');
+  const [selCalDay, setSelCalDay] = useState<number | null>(null);
   const hasActivity = state.healthConnected && activity != null;
 
   const isLb = state.unit === 'lb';
@@ -418,7 +419,15 @@ export default function ProgressPage() {
                 labels={calorieTrend.labels}
                 color={t.green}
                 avg={insights.avgCalories}
+                selected={selCalDay}
+                onBarPress={(i) => setSelCalDay(i === selCalDay ? null : i)}
               />
+              {selCalDay != null && (
+                <ChartDayLink
+                  dateKey={daysAgoKey(6 - selCalDay)}
+                  value={`${calorieTrend.values[selCalDay].toLocaleString('en-US')} kcal`}
+                />
+              )}
             </View>
           ) : (
             <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 3 }}>

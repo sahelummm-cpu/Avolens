@@ -1,28 +1,40 @@
-import { Fragment } from 'react';
+import { Fragment, useId } from 'react';
 import Svg, { Defs, Line, LinearGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '@/lib/store';
 import { F } from '@/lib/fonts';
 
 /**
  * Single-series bar chart for the Progress trends — gradient bars over faint
- * full-height tracks, today's bar emphasized with its value on top, and a
- * recessive dashed average line with an "avg" chip.
+ * full-height tracks, the highlighted day emphasized with its value on top,
+ * and a recessive dashed average line with an "avg" chip. Pass `onBarPress`
+ * to make past-day bars tappable (`selected` controls the highlight).
  */
 export function MiniBarChart({
   values,
   labels,
   color,
   avg,
+  selected,
+  onBarPress,
 }: {
   values: number[];
   labels: string[];
   color: string;
   avg: number;
+  /** Index of the tapped bar; highlights it instead of today. */
+  selected?: number | null;
+  onBarPress?: (index: number) => void;
 }) {
   const t = useTheme();
+  // SVG ids are global per document (web) — a fixed id makes every chart on
+  // screen reuse the FIRST chart's gradient, so the calories/protein/water
+  // charts all rendered in one color. Unique ids per instance fix that.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const barId = `mbcBar${uid}`;
+  const dimId = `mbcDim${uid}`;
   const W = 300;
   const H = 138;
-  const padTop = 22; // room for the value label above today's bar
+  const padTop = 22; // room for the value label above the highlighted bar
   const baseline = 110;
   const n = values.length || 1;
   const slot = W / n;
@@ -32,18 +44,19 @@ export function MiniBarChart({
   const y = (v: number) => baseline - (baseline - padTop) * (v / max);
   const avgY = y(avg);
   const lastIdx = n - 1;
-  const lastVal = values[lastIdx] ?? 0;
+  const highlightIdx = selected != null && selected >= 0 && selected < n ? selected : lastIdx;
+  const highlightVal = values[highlightIdx] ?? 0;
 
   return (
     <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
       <Defs>
-        <LinearGradient id="mbcBar" x1="0" y1="0" x2="0" y2="1">
+        <LinearGradient id={barId} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={color} stopOpacity={1} />
-          <Stop offset="1" stopColor={color} stopOpacity={0.55} />
+          <Stop offset="1" stopColor={color} stopOpacity={0.6} />
         </LinearGradient>
-        <LinearGradient id="mbcBarDim" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={color} stopOpacity={0.45} />
-          <Stop offset="1" stopColor={color} stopOpacity={0.18} />
+        <LinearGradient id={dimId} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color} stopOpacity={0.4} />
+          <Stop offset="1" stopColor={color} stopOpacity={0.14} />
         </LinearGradient>
       </Defs>
 
@@ -53,7 +66,7 @@ export function MiniBarChart({
       {values.map((v, i) => {
         const cx = i * slot + slot / 2;
         const x = cx - barW / 2;
-        const isLast = i === lastIdx;
+        const isLast = i === highlightIdx;
         const barH = v > 0 ? Math.max(5, baseline - y(v)) : 0;
         return (
           <Fragment key={i}>
@@ -74,24 +87,24 @@ export function MiniBarChart({
                 width={barW}
                 height={barH}
                 rx={Math.min(barW / 2, barH / 2)}
-                fill={isLast ? 'url(#mbcBar)' : 'url(#mbcBarDim)'}
+                fill={isLast ? `url(#${barId})` : `url(#${dimId})`}
               />
             )}
           </Fragment>
         );
       })}
 
-      {/* today's value floats above its bar */}
-      {lastVal > 0 && (
+      {/* the highlighted day's value floats above its bar */}
+      {highlightVal > 0 && (
         <SvgText
-          x={lastIdx * slot + slot / 2}
-          y={Math.max(12, y(lastVal) - 7)}
+          x={highlightIdx * slot + slot / 2}
+          y={Math.max(12, y(highlightVal) - 7)}
           fontSize={10}
           fontFamily={F.d700}
           fill={t.ink}
           textAnchor="middle"
         >
-          {Math.round(lastVal).toLocaleString('en-US')}
+          {Math.round(highlightVal).toLocaleString('en-US')}
         </SvgText>
       )}
 
@@ -120,13 +133,27 @@ export function MiniBarChart({
           x={i * slot + slot / 2}
           y={H - 4}
           fontSize={10}
-          fontFamily={i === lastIdx ? F.b600 : F.b400}
-          fill={i === lastIdx ? t.ink : t.muted2}
+          fontFamily={i === highlightIdx ? F.b600 : F.b400}
+          fill={i === highlightIdx ? t.ink : t.muted2}
           textAnchor="middle"
         >
           {lab}
         </SvgText>
       ))}
+
+      {/* invisible full-height touch targets, one per day */}
+      {onBarPress &&
+        values.map((_, i) => (
+          <Rect
+            key={`hit${i}`}
+            x={i * slot}
+            y={0}
+            width={slot}
+            height={H}
+            fill="transparent"
+            onPress={() => onBarPress(i)}
+          />
+        ))}
     </Svg>
   );
 }

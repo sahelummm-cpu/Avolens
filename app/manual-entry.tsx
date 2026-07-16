@@ -133,9 +133,16 @@ export default function ManualEntryPage() {
     return Math.round((protein * 4 + carbs * 4 + fat * 9) * servings);
   }, [quick, quickKcal, scaled, protein, carbs, fat, servings]);
 
-  // Typing a value here overrides the computed calories (empty = auto).
+  // Typing a value here overrides the computed calories (empty = auto). For
+  // new custom foods the typed value is PER SERVING, so the servings stepper
+  // multiplies it just like the macros — otherwise "300 kcal × 2 servings"
+  // silently logged 300. (Editing loads totals and starts at 1 serving.)
   const [kcalOverride, setKcalOverride] = useState(editing ? String(editing.calories) : '');
-  const kcalFinal = kcalOverride.trim() !== '' ? Math.max(0, Number(kcalOverride) || 0) : calories;
+  const overrideServings = quick || basis || editing ? 1 : servings;
+  const kcalFinal =
+    kcalOverride.trim() !== ''
+      ? Math.max(0, Math.round((Number(kcalOverride) || 0) * overrideServings))
+      : calories;
 
   const pickBasis = (b: FoodBasis) => {
     setBasis(b);
@@ -159,15 +166,20 @@ export default function ManualEntryPage() {
     return { name, meal, time, calories: kcalFinal, protein: protein * servings, carbs: carbs * servings, fat: fat * servings, fiber: fiber * servings, sodium: sodium * servings, sugar: sugar * servings, healthScore: 7, icon: 'generic', amount: servings, unit: 'serving' };
   };
 
-  // Don't allow logging a nameless (or, for quick-add, zero-calorie) entry —
-  // an accidental tap used to log a placeholder meal.
-  const canSave = quick ? Number(quickKcal) > 0 : name.trim().length > 0;
+  // Don't allow logging a nameless or zero-calorie entry — an accidental tap
+  // used to log a placeholder meal, and empty macros used to log 0 kcal.
+  const canSave = quick
+    ? Number(quickKcal) > 0
+    : name.trim().length > 0 && (basis != null || kcalFinal > 0);
 
   const save = () => {
     if (!canSave) return;
     if (editing) {
+      // Preserve the entry's original amount/unit metadata ("150 g", "2
+      // servings") — the edit form works in totals, so rewriting it to
+      // "1 serving" here was wrong.
       const e = buildEntry();
-      updateEntry(editing.id, { name: e.name, meal: e.meal, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, fiber: e.fiber, sodium: e.sodium, sugar: e.sugar, amount: e.amount, unit: e.unit }, editDay);
+      updateEntry(editing.id, { name: e.name, meal: e.meal, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, fiber: e.fiber, sodium: e.sodium, sugar: e.sugar }, editDay);
       router.push('/home');
       return;
     }
@@ -182,6 +194,7 @@ export default function ManualEntryPage() {
   };
 
   const saveFavorite = () => {
+    if (!basis && !name.trim()) return; // nothing meaningful to favorite yet
     // Favorite stores a per-100g basis. From a DB basis directly; from a custom
     // food, treat the entered per-serving macros as the per-portion basis.
     const b: Omit<FavoriteFood, 'id'> = basis
@@ -453,7 +466,9 @@ export default function ManualEntryPage() {
                 {quick
                   ? 'Enter total calories'
                   : kcalOverride.trim() !== ''
-                    ? 'Custom — clear to auto-calculate'
+                    ? overrideServings > 1
+                      ? `Per serving — logs ${kcalFinal.toLocaleString('en-US')} kcal (× ${overrideServings})`
+                      : 'Custom — clear to auto-calculate'
                     : basis
                       ? `${basis.calories} kcal / 100g · tap to edit`
                       : 'Auto from macros · tap to edit'}

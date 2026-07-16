@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useStore } from '@/lib/store';
 import { exportCsv, shareProgress } from '@/lib/export';
@@ -121,10 +123,49 @@ function NetPart({ label, value, color }: { label: string; value: number; color:
   );
 }
 
+/**
+ * Detail row shown when a chart bar is tapped — names the day, shows its
+ * value, and opens that date on Home (day strip + log + water follow it).
+ */
+export function ChartDayLink({ dateKey, value }: { dateKey: string; value: string }) {
+  const router = useRouter();
+  const { selectDay, theme: t } = useStore();
+  const label = new Date(`${dateKey}T12:00:00`).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  return (
+    <Pressable
+      onPress={() => {
+        selectDay(dateKey);
+        router.push('/home');
+      }}
+      accessibilityRole="button"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 10,
+        backgroundColor: t.surface2,
+        borderRadius: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+      }}
+    >
+      <Text style={{ fontFamily: F.b600, fontSize: 12.5, color: t.ink }}>
+        {label} · {value}
+      </Text>
+      <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Open day →</Text>
+    </Pressable>
+  );
+}
+
 /** Hydration — last-7-days water bars vs the daily goal. */
 export function HydrationCard() {
   const { state, theme: t } = useStore();
   const { card } = useCard();
+  const [sel, setSel] = useState<number | null>(null);
 
   const days: { glasses: number; label: string }[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -155,7 +196,15 @@ export function HydrationCard() {
             labels={days.map((d) => d.label)}
             color={t.fat}
             avg={avgGlasses}
+            selected={sel}
+            onBarPress={(i) => setSel(i === sel ? null : i)}
           />
+          {sel != null && (
+            <ChartDayLink
+              dateKey={daysAgoKey(6 - sel)}
+              value={`${days[sel].glasses} glasses · ${(days[sel].glasses * 0.5).toFixed(1)} L`}
+            />
+          )}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
             <AdherenceTile value={`${(avgGlasses * 0.5).toFixed(1)} L`} label="avg per day" color={t.fat} />
             <AdherenceTile value={`${daysMet}/7`} label="days goal met" color={t.green} />
@@ -174,6 +223,7 @@ export function HydrationCard() {
 export function AdherenceCard() {
   const { state, theme: t } = useStore();
   const { card } = useCard();
+  const [sel, setSel] = useState<number | null>(null);
   const week = last7(state);
   const logged = week.some((d) => d.logged);
   if (!logged) return null;
@@ -184,7 +234,17 @@ export function AdherenceCard() {
   return (
     <View style={card}>
       <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink, marginBottom: 4 }}>Protein this week</Text>
-      <MiniBarChart values={proteinVals} labels={week.map((d) => d.label)} color={t.protein} avg={avgProtein} />
+      <MiniBarChart
+        values={proteinVals}
+        labels={week.map((d) => d.label)}
+        color={t.protein}
+        avg={avgProtein}
+        selected={sel}
+        onBarPress={(i) => setSel(i === sel ? null : i)}
+      />
+      {sel != null && (
+        <ChartDayLink dateKey={daysAgoKey(6 - sel)} value={`${Math.round(week[sel].protein)}g protein`} />
+      )}
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
         <AdherenceTile value={`${adh.proteinDaysHit}/${adh.loggedDays}`} label={`days hit ${state.goal.protein}g protein`} color={t.protein} />
         <AdherenceTile value={`${adh.calorieDaysOnTarget}/${adh.loggedDays}`} label="days on calorie target" color={t.green} />

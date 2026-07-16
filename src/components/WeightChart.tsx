@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '@/lib/store';
 import { F } from '@/lib/fonts';
@@ -40,6 +41,10 @@ export function WeightChart({
   trend?: number[];
 }) {
   const t = useTheme();
+  // Unique gradient ids per instance — SVG ids are document-global on web.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const areaId = `wcArea${uid}`;
+  const lineId = `wcLine${uid}`;
 
   let pts = values.slice(-MAX_POINTS);
   let marks = (markers ?? []).slice(-MAX_POINTS);
@@ -78,11 +83,11 @@ export function WeightChart({
   return (
     <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
       <Defs>
-        <LinearGradient id="wcArea" x1="0" y1="0" x2="0" y2="1">
+        <LinearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={t.green} stopOpacity={0.28} />
           <Stop offset="1" stopColor={t.green} stopOpacity={0.02} />
         </LinearGradient>
-        <LinearGradient id="wcLine" x1="0" y1="0" x2="1" y2="0">
+        <LinearGradient id={lineId} x1="0" y1="0" x2="1" y2="0">
           <Stop offset="0" stopColor={t.greenGrad1} />
           <Stop offset="1" stopColor={t.greenGrad2} />
         </LinearGradient>
@@ -95,8 +100,8 @@ export function WeightChart({
       })}
 
       {/* gradient area + smooth line */}
-      <Path d={area} fill="url(#wcArea)" />
-      <Path d={line} fill="none" stroke="url(#wcLine)" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d={area} fill={`url(#${areaId})`} />
+      <Path d={line} fill="none" stroke={`url(#${lineId})`} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
 
       {/* smoothed trend overlay */}
       {showTrend && (
