@@ -19,6 +19,10 @@ export interface OnboardingProfile {
   activityLevel: ActivityLevel;
   targetWeightKg?: number | null;
   usesGlp1?: boolean;
+  /** Catalog key of the GLP-1 medication picked during onboarding. */
+  medKey?: string;
+  /** Daily water goal in 500 ml glasses. */
+  waterGlasses?: number;
   paceKgPerWeek?: number;
   dietSplit?: import('./goals').DietSplit;
   name?: string;

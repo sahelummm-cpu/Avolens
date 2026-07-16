@@ -2,6 +2,7 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useStore } from '@/lib/store';
 import { exportCsv, shareProgress } from '@/lib/export';
+import { daysAgoKey } from '@/lib/days';
 import { MiniBarChart } from './MiniBarChart';
 import {
   achievements,
@@ -116,6 +117,55 @@ function NetPart({ label, value, color }: { label: string; value: number; color:
     <View style={{ alignItems: 'center' }}>
       <Text style={{ fontFamily: F.d800, fontSize: 19, color }}>{Math.round(value).toLocaleString('en-US')}</Text>
       <Text style={{ fontFamily: F.b500, fontSize: 10.5, color: t.muted2, marginTop: 1 }}>{label}</Text>
+    </View>
+  );
+}
+
+/** Hydration — last-7-days water bars vs the daily goal. */
+export function HydrationCard() {
+  const { state, theme: t } = useStore();
+  const { card } = useCard();
+
+  const days: { glasses: number; label: string }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const glasses = i === 0 ? state.glasses : (state.history[daysAgoKey(i)]?.glasses ?? 0);
+    days.push({ glasses, label: d.toLocaleDateString('en-US', { weekday: 'narrow' }) });
+  }
+  const totalGlasses = days.reduce((a, d) => a + d.glasses, 0);
+  const avgGlasses = totalGlasses / 7;
+  const daysMet = days.filter((d) => d.glasses >= state.goal.water).length;
+  const todayL = (state.glasses * 0.5).toFixed(1);
+  const goalL = (state.goal.water * 0.5).toFixed(1);
+
+  return (
+    <View style={card}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Hydration</Text>
+        <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.fat }}>
+          {todayL}
+          <Text style={{ color: t.muted2, fontSize: 11 }}>/{goalL} L today</Text>
+        </Text>
+      </View>
+      {totalGlasses > 0 ? (
+        <>
+          <MiniBarChart
+            values={days.map((d) => d.glasses)}
+            labels={days.map((d) => d.label)}
+            color={t.fat}
+            avg={avgGlasses}
+          />
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+            <AdherenceTile value={`${(avgGlasses * 0.5).toFixed(1)} L`} label="avg per day" color={t.fat} />
+            <AdherenceTile value={`${daysMet}/7`} label="days goal met" color={t.green} />
+          </View>
+        </>
+      ) : (
+        <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 6 }}>
+          Tap + on the Home water card as you drink — your week shows up here.
+        </Text>
+      )}
     </View>
   );
 }

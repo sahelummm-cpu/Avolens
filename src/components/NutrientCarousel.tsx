@@ -138,7 +138,37 @@ export function NutrientCarousel() {
               setPage(Math.round(e.nativeEvent.contentOffset.x / (pageW + PAGE_GAP)))
             }
           >
-            {/* Page 1: GLP-1 Medication (hidden when tracking is off) */}
+            {/* Page 1: Water — always first, shown by default */}
+            <View style={{ ...pageStyle, backgroundColor: t.fatTint2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Svg width={15} height={19} viewBox="0 0 20 26" fill={t.fat}>
+                    <Path d="M10 1 C10 1 18 12 18 17.5 A8 8 0 0 1 2 17.5 C2 12 10 1 10 1 Z" />
+                  </Svg>
+                  <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.ink }}>
+                    Water{viewingToday ? '' : ' · past day'}
+                  </Text>
+                </View>
+                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.fat }}>
+                  {waterCur}
+                  <Text style={{ color: t.muted2, fontSize: 11 }}>/{waterTarget}L</Text>
+                </Text>
+              </View>
+              <ProgressBar fraction={frac(dayGlasses, state.goal.water)} color={t.fat} trackColor={t.fatTint3} height={8} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <RoundBtn label="Remove glass" onPress={removeGlass} bg={t.surface}>
+                  <MinusIcon stroke={t.fat} />
+                </RoundBtn>
+                <Text style={{ flex: 1, textAlign: 'center', fontFamily: F.b600, fontSize: 12, color: t.ink }}>
+                  {dayGlasses} glasses <Text style={{ color: t.muted }}>· 500 ml</Text>
+                </Text>
+                <RoundBtn label="Add glass" onPress={addGlass} bg={t.fat}>
+                  <PlusIcon stroke="#fff" />
+                </RoundBtn>
+              </View>
+            </View>
+
+            {/* Page 2: GLP-1 Medication (hidden when tracking is off) */}
             {state.medEnabled && (
               <View style={{ ...pageStyle, backgroundColor: t.purpleTint }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
@@ -255,36 +285,6 @@ export function NutrientCarousel() {
                 )}
               </View>
             )}
-
-            {/* Page 2: Water */}
-            <View style={{ ...pageStyle, backgroundColor: t.fatTint2 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Svg width={15} height={19} viewBox="0 0 20 26" fill={t.fat}>
-                    <Path d="M10 1 C10 1 18 12 18 17.5 A8 8 0 0 1 2 17.5 C2 12 10 1 10 1 Z" />
-                  </Svg>
-                  <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.ink }}>
-                    Water{viewingToday ? '' : ' · past day'}
-                  </Text>
-                </View>
-                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.fat }}>
-                  {waterCur}
-                  <Text style={{ color: t.muted2, fontSize: 11 }}>/{waterTarget}L</Text>
-                </Text>
-              </View>
-              <ProgressBar fraction={frac(dayGlasses, state.goal.water)} color={t.fat} trackColor={t.fatTint3} height={8} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <RoundBtn label="Remove glass" onPress={removeGlass} bg={t.surface}>
-                  <MinusIcon stroke={t.fat} />
-                </RoundBtn>
-                <Text style={{ flex: 1, textAlign: 'center', fontFamily: F.b600, fontSize: 12, color: t.ink }}>
-                  {dayGlasses} glasses <Text style={{ color: t.muted }}>· 500 ml</Text>
-                </Text>
-                <RoundBtn label="Add glass" onPress={addGlass} bg={t.fat}>
-                  <PlusIcon stroke="#fff" />
-                </RoundBtn>
-              </View>
-            </View>
 
             {/* Page 3: Fiber / Sodium / Sugar */}
             <View style={{ ...pageStyle, backgroundColor: t.surface2 }}>

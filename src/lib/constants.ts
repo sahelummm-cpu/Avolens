@@ -47,7 +47,10 @@ export function average(values: number[]): number {
 export const SUGGESTED_FOODS: { name: string; color: keyof Theme; calories: number; protein: number; carbs: number; fat: number }[] = [
   { name: 'Greek yogurt', color: 'protein', calories: 130, protein: 17, carbs: 8, fat: 3 },
   { name: 'Banana', color: 'carbs', calories: 105, protein: 1, carbs: 27, fat: 0 },
+  { name: 'Apple', color: 'carbs', calories: 95, protein: 0, carbs: 25, fat: 0 },
+  { name: 'Orange', color: 'carbs', calories: 62, protein: 1, carbs: 15, fat: 0 },
   { name: 'Chicken breast', color: 'green', calories: 165, protein: 31, carbs: 0, fat: 4 },
+  { name: 'Eggs (2)', color: 'protein', calories: 155, protein: 13, carbs: 1, fat: 11 },
   { name: 'Almonds', color: 'fat', calories: 164, protein: 6, carbs: 6, fat: 14 },
 ];
 

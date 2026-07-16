@@ -500,7 +500,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       completeOnboarding: (p) =>
         setState((s) => ({
           ...s,
-          goal: { ...s.goal, ...computeGoal(p) },
+          goal: {
+            ...s.goal,
+            ...computeGoal(p),
+            ...(p.waterGlasses && p.waterGlasses > 0 ? { water: p.waterGlasses } : null),
+          },
           heightCm: p.heightCm,
           heightUnit: p.heightUnit,
           unit: p.unit,
@@ -510,6 +514,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           activityLevel: p.activityLevel,
           targetWeightKg: p.targetWeightKg ?? s.targetWeightKg,
           medEnabled: p.usesGlp1 ?? s.medEnabled,
+          medKey: p.medKey ?? s.medKey,
+          // A newly picked medication starts at the bottom of its dose ladder.
+          dose: p.medKey ? 0 : s.dose,
           displayName: p.name?.trim() ? p.name.trim() : s.displayName,
           weightLog: [
             ...s.weightLog,

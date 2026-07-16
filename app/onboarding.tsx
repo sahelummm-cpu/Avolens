@@ -8,6 +8,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { ToggleSwitch } from '@/components/ToggleSwitch';
 import { useStore } from '@/lib/store';
 import { cmToFtIn, computeGoal, ftInToCm, KG_PER_LB, type DietSplit } from '@/lib/goals';
+import { CUSTOM_MED_KEY, MEDICATIONS } from '@/lib/meds';
 import { supabaseConfigured } from '@/lib/supabase';
 import type { ActivityLevel, GoalType, HeightUnit, OnboardingProfile, Sex, WeightUnit } from '@/lib/types';
 import { F } from '@/lib/fonts';
@@ -33,6 +34,14 @@ const DIETS: { key: DietSplit; title: string; sub: string }[] = [
   { key: 'high-protein', title: 'High protein', sub: '40% protein · 30% carbs · 30% fat' },
   { key: 'low-carb', title: 'Low carb', sub: '35% protein · 25% carbs · 40% fat' },
   { key: 'keto', title: 'Keto', sub: '30% protein · 10% carbs · 60% fat' },
+];
+
+/** Daily water goal options (500 ml glasses). */
+const WATER_OPTIONS: { glasses: number; title: string; sub: string; rec?: boolean }[] = [
+  { glasses: 4, title: '2.0 L', sub: '4 glasses · light activity' },
+  { glasses: 5, title: '2.5 L', sub: '5 glasses · recommended', rec: true },
+  { glasses: 6, title: '3.0 L', sub: '6 glasses · active days' },
+  { glasses: 8, title: '4.0 L', sub: '8 glasses · training hard' },
 ];
 
 const PACES: Record<'lose' | 'gain', { kg: number; label: string; rec?: boolean }[]> = {
@@ -66,6 +75,8 @@ export default function OnboardingPage() {
   const [weight, setWeight] = useState('');
   const [targetWeight, setTargetWeight] = useState('');
   const [usesGlp1, setUsesGlp1] = useState(false);
+  const [medKey, setMedKey] = useState('semaglutide');
+  const [waterGlasses, setWaterGlasses] = useState(5);
   const [diet, setDiet] = useState<DietSplit>('balanced');
   const [activity, setActivity] = useState<ActivityLevel | null>(null);
 
@@ -79,13 +90,15 @@ export default function OnboardingPage() {
     return Number.isFinite(w) && w > 0 ? (unit === 'kg' ? w : w * KG_PER_LB) : null;
   };
 
-  // Dynamic step list — the pace step only applies when losing/gaining.
+  // Dynamic step list — pace only when losing/gaining, medication only when
+  // the user said they take a GLP-1.
   const steps = useMemo(() => {
     const s: string[] = ['name', 'goal', 'about', 'body'];
     if (goalType && goalType !== 'maintain') s.push('pace');
-    s.push('diet', 'activity', 'summary');
+    if (usesGlp1) s.push('glp1');
+    s.push('diet', 'water', 'activity', 'summary');
     return s;
-  }, [goalType]);
+  }, [goalType, usesGlp1]);
   const current = steps[Math.min(step, steps.length - 1)];
   const isLast = current === 'summary';
 
@@ -95,7 +108,9 @@ export default function OnboardingPage() {
     about: sex !== null && (parseInt(age, 10) || 0) >= 13 && (parseInt(age, 10) || 0) <= 100,
     body: heightCm() >= 90 && heightCm() <= 250 && weightKg() >= 30 && weightKg() <= 300,
     pace: pace !== null,
+    glp1: medKey.length > 0,
     diet: true,
+    water: true,
     activity: activity !== null,
     summary: true,
   };
@@ -117,6 +132,8 @@ export default function OnboardingPage() {
     activityLevel: activity!,
     targetWeightKg: targetKg() != null ? Math.round(targetKg()! * 10) / 10 : null,
     usesGlp1,
+    medKey: usesGlp1 ? medKey : undefined,
+    waterGlasses,
     paceKgPerWeek: pace ?? undefined,
     dietSplit: diet,
     name: name.trim() || undefined,
@@ -255,6 +272,24 @@ export default function OnboardingPage() {
               </StepView>
             )}
 
+            {current === 'glp1' && (
+              <StepView>
+                <Title t={t.ink}>Which medication?</Title>
+                <Sub t={t.muted}>We'll match dose reminders and the dose ladder to your medication. You can change it any time in Settings.</Sub>
+                <View style={{ gap: 10, marginTop: 24 }}>
+                  {MEDICATIONS.filter((m) => m.key !== CUSTOM_MED_KEY).map((m) => (
+                    <OptionCard
+                      key={m.key}
+                      selected={medKey === m.key}
+                      onPress={() => setMedKey(m.key)}
+                      title={m.name}
+                      sub={`${m.brands} · ${m.frequency === 'weekly' ? 'Weekly' : 'Daily'}`}
+                    />
+                  ))}
+                </View>
+              </StepView>
+            )}
+
             {current === 'diet' && (
               <StepView>
                 <Title t={t.ink}>Diet preference</Title>
@@ -262,6 +297,25 @@ export default function OnboardingPage() {
                 <View style={{ gap: 12, marginTop: 24 }}>
                   {DIETS.map((d) => (
                     <OptionCard key={d.key} selected={diet === d.key} onPress={() => setDiet(d.key)} title={d.title} sub={d.sub} />
+                  ))}
+                </View>
+              </StepView>
+            )}
+
+            {current === 'water' && (
+              <StepView>
+                <Title t={t.ink}>Daily hydration</Title>
+                <Sub t={t.muted}>How much water do you want to drink each day? We'll track it in 500 ml glasses on Home.</Sub>
+                <View style={{ gap: 12, marginTop: 24 }}>
+                  {WATER_OPTIONS.map((w) => (
+                    <OptionCard
+                      key={w.glasses}
+                      selected={waterGlasses === w.glasses}
+                      onPress={() => setWaterGlasses(w.glasses)}
+                      title={w.title}
+                      sub={w.rec ? `${w.sub} ✓` : w.sub}
+                      icon="💧"
+                    />
                   ))}
                 </View>
               </StepView>

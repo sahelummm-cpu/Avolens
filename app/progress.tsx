@@ -10,7 +10,7 @@ import { SegmentedControl } from '@/components/SegmentedControl';
 import { WeightChart } from '@/components/WeightChart';
 import { MiniBarChart } from '@/components/MiniBarChart';
 import { PromptModal } from '@/components/PromptModal';
-import { AchievementsCard, AdherenceCard, ExportCard, HeatmapCard, NetCaloriesCard, ProjectionCard } from '@/components/ProgressCards';
+import { AchievementsCard, AdherenceCard, ExportCard, HeatmapCard, HydrationCard, NetCaloriesCard, ProjectionCard } from '@/components/ProgressCards';
 import { MeasurementsCard, PhotosCard } from '@/components/BodyProgress';
 import { useStore } from '@/lib/store';
 import { daysAgoKey, sumCalories, weeklyInsights } from '@/lib/days';
@@ -23,11 +23,12 @@ const kgToLb = (kg: number) => kg * 2.20462;
 
 const RANGE_DAYS: Record<ChartRange, number> = { W: 7, M: 30, Y: 365 };
 
-type Category = 'weight' | 'calories' | 'protein' | 'exercise' | 'body' | 'awards';
+type Category = 'weight' | 'calories' | 'protein' | 'water' | 'exercise' | 'body' | 'awards';
 const CATEGORIES: { key: Category; label: string }[] = [
   { key: 'weight', label: 'Weight' },
   { key: 'calories', label: 'Calories' },
   { key: 'protein', label: 'Protein' },
+  { key: 'water', label: 'Hydration' },
   { key: 'exercise', label: 'Exercise' },
   { key: 'body', label: 'Body' },
   { key: 'awards', label: 'Awards' },
@@ -486,6 +487,9 @@ export default function ProgressPage() {
 
         {/* Protein trend + goal adherence */}
         {cat === 'protein' && <AdherenceCard />}
+
+        {/* Water intake over the week */}
+        {cat === 'water' && <HydrationCard />}
 
         {/* Weekly insights */}
         {cat === 'calories' && insights.daysLogged > 0 && (

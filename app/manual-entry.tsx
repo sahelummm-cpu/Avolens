@@ -9,6 +9,7 @@ import { useStore } from '@/lib/store';
 import { SUGGESTED_FOODS } from '@/lib/constants';
 import { recentMeals, dayKey } from '@/lib/days';
 import { searchFoods, scaleBasis, type FoodBasis } from '@/lib/foods';
+import { searchCommonFoods } from '@/lib/commonFoods';
 import type { FavoriteFood, FoodEntry } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
@@ -86,7 +87,8 @@ export default function ManualEntryPage() {
   const recents = useMemo(() => recentMeals(state), [state]);
   const favBasis = state.favorites.some((f) => f.name.toLowerCase() === name.trim().toLowerCase());
 
-  // Debounced OpenFoodFacts search.
+  // Search: the built-in common-foods database answers instantly (fruits,
+  // staples, basics), then debounced OpenFoodFacts results merge in below.
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => {
     if (editing) return;
@@ -97,6 +99,9 @@ export default function ManualEntryPage() {
       setSearchErr(null);
       return;
     }
+    const local = searchCommonFoods(q);
+    setResults(local);
+    setSearchErr(null);
     setSearching(true);
     const timer = setTimeout(async () => {
       abortRef.current?.abort();
@@ -104,10 +109,12 @@ export default function ManualEntryPage() {
       abortRef.current = ctrl;
       try {
         const found = await searchFoods(q, ctrl.signal);
-        setResults(found);
-        setSearchErr(found.length === 0 ? 'No matches — enter it manually below.' : null);
+        const seen = new Set(local.map((f) => `${f.name.toLowerCase()}|${f.brands ?? ''}`));
+        const merged = [...local, ...found.filter((f) => !seen.has(`${f.name.toLowerCase()}|${f.brands ?? ''}`))].slice(0, 20);
+        setResults(merged);
+        setSearchErr(merged.length === 0 ? 'No matches — enter it manually below.' : null);
       } catch {
-        if (!ctrl.signal.aborted) {
+        if (!ctrl.signal.aborted && local.length === 0) {
           setSearchErr("Couldn't reach the food database — you can still add the food manually below.");
         }
       } finally {

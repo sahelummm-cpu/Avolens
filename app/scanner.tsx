@@ -52,6 +52,9 @@ export default function ScannerPage() {
   const [mode, setMode] = useState<'food' | 'barcode' | 'label' | 'voice'>('food');
   const [basis, setBasis] = useState<FoodBasis | null>(null);
   const [grams, setGrams] = useState(100);
+  // Portion multiplier for AI (meal/label/voice) results — barcode results
+  // scale by grams via `basis` instead.
+  const [aiServings, setAiServings] = useState(1);
   const scanningBarcode = useRef(false);
 
   // Voice mode: on-device speech recognition → AI parse of the transcript.
@@ -105,6 +108,7 @@ export default function ScannerPage() {
     }
     setLoading(true);
     setScanError(null);
+    setAiServings(1);
     try {
       setResult(await parseSpokenMeal(text));
     } catch (err) {
@@ -143,6 +147,7 @@ export default function ScannerPage() {
     setScanError(null);
     setResult(null);
     setBasis(null);
+    setAiServings(1);
     try {
       const photo = await cameraRef.current?.takePictureAsync({ base64: true, quality: 0.85 });
       if (!photo?.base64) throw new Error('Could not capture a photo.');
@@ -180,6 +185,7 @@ export default function ScannerPage() {
   const discardResult = () => {
     setResult(null);
     setBasis(null);
+    setAiServings(1);
     setTranscript('');
   };
 
@@ -194,28 +200,44 @@ export default function ScannerPage() {
     if (basis) setResult(scanResultFromBasis(basis, clamped));
   };
 
+  // The values shown/logged — AI results scale by the servings multiplier,
+  // barcode results are already scaled by grams via `basis`.
+  const scaleAi = (r: ScanResult, k: number): ScanResult => ({
+    ...r,
+    calories: r.calories * k,
+    protein: r.protein * k,
+    carbs: r.carbs * k,
+    fat: r.fat * k,
+    fiber: r.fiber * k,
+    sodium: r.sodium * k,
+    sugar: r.sugar * k,
+  });
+  const shown = result ? (basis ? result : scaleAi(result, aiServings)) : null;
+
   const addToLog = () => {
-    if (!result) return;
+    if (!shown) return;
     addEntry({
-      name: result.name,
+      name: shown.name,
       meal: mealForNow(),
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-      calories: Math.round(result.calories),
-      protein: Math.round(result.protein),
-      carbs: Math.round(result.carbs),
-      fat: Math.round(result.fat),
-      fiber: Math.round(result.fiber),
-      sodium: Math.round(result.sodium),
-      sugar: Math.round(result.sugar),
-      healthScore: Math.round(result.healthScore),
-      ingredients: result.ingredients,
+      calories: Math.round(shown.calories),
+      protein: Math.round(shown.protein),
+      carbs: Math.round(shown.carbs),
+      fat: Math.round(shown.fat),
+      fiber: Math.round(shown.fiber),
+      sodium: Math.round(shown.sodium),
+      sugar: Math.round(shown.sugar),
+      healthScore: Math.round(shown.healthScore),
+      ingredients: shown.ingredients,
       icon: 'generic',
-      ...(basis ? { amount: grams, unit: 'g' as const } : null),
+      ...(basis
+        ? { amount: grams, unit: 'g' as const }
+        : { amount: aiServings, unit: 'serving' as const }),
     });
     router.push('/home');
   };
 
-  const macroTotal = result ? result.protein + result.carbs + result.fat : 0;
+  const macroTotal = shown ? shown.protein + shown.carbs + shown.fat : 0;
   const pct = (v: number) => (macroTotal > 0 ? Math.round((v / macroTotal) * 100) : 0);
 
   return (
@@ -295,7 +317,7 @@ export default function ScannerPage() {
           </View>
         )}
 
-        {result && !loading && (
+        {shown && !loading && (
           <ScrollView
             style={{ position: 'absolute', left: 18, right: 18, bottom: 184, backgroundColor: t.surface, borderRadius: 26, zIndex: 30, maxHeight: '62%' }}
             contentContainerStyle={{ padding: 18 }}
@@ -308,21 +330,21 @@ export default function ScannerPage() {
                 </Svg>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontFamily: F.b600, fontSize: 15, color: t.ink }}>{result.name}</Text>
+                <Text style={{ fontFamily: F.b600, fontSize: 15, color: t.ink }}>{shown.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
                   <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted }}>
-                    {Math.round(result.matchConfidence)}% match · AvoLens AI
+                    {Math.round(shown.matchConfidence)}% match · AvoLens AI
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 2, paddingHorizontal: 7 }}>
                     <Svg width={9} height={9} viewBox="0 0 24 24" fill={t.green}>
                       <Path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10Z" />
                     </Svg>
-                    <Text style={{ fontFamily: F.d700, fontSize: 10, color: t.greenGrad2 }}>{Math.round(result.healthScore)}/10</Text>
+                    <Text style={{ fontFamily: F.d700, fontSize: 10, color: t.greenGrad2 }}>{Math.round(shown.healthScore)}/10</Text>
                   </View>
                 </View>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>{Math.round(result.calories)}</Text>
+                <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>{Math.round(shown.calories)}</Text>
                 <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: -4 }}>kcal</Text>
               </View>
             </View>
@@ -342,9 +364,33 @@ export default function ScannerPage() {
               </View>
             )}
 
+            {/* Servings adjust for AI meal/label/voice results (barcode scales by grams above) */}
+            {!basis && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, backgroundColor: t.surface2, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}>
+                <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
+                  Portion <Text style={{ color: t.muted }}>· of what was scanned</Text>
+                </Text>
+                <Pressable
+                  onPress={() => setAiServings((s) => Math.max(0.5, Math.round((s - 0.5) * 2) / 2))}
+                  accessibilityLabel="Smaller portion"
+                  style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
+                </Pressable>
+                <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink, minWidth: 52, textAlign: 'center' }}>{aiServings}×</Text>
+                <Pressable
+                  onPress={() => setAiServings((s) => Math.min(10, Math.round((s + 0.5) * 2) / 2))}
+                  accessibilityLabel="Larger portion"
+                  style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
+                </Pressable>
+              </View>
+            )}
+
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
               <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.muted2, width: '100%' }}>Ingredients</Text>
-              {result.ingredients.map((ing, i) => (
+              {shown.ingredients.map((ing, i) => (
                 <View
                   key={ing + i}
                   style={{
@@ -370,15 +416,15 @@ export default function ScannerPage() {
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              <MacroCell color={t.protein} value={`${Math.round(result.protein)}g`} label={`Protein · ${pct(result.protein)}%`} />
-              <MacroCell color={t.carbs} value={`${Math.round(result.carbs)}g`} label={`Carbs · ${pct(result.carbs)}%`} />
-              <MacroCell color={t.fat} value={`${Math.round(result.fat)}g`} label={`Fat · ${pct(result.fat)}%`} />
+              <MacroCell color={t.protein} value={`${Math.round(shown.protein)}g`} label={`Protein · ${pct(shown.protein)}%`} />
+              <MacroCell color={t.carbs} value={`${Math.round(shown.carbs)}g`} label={`Carbs · ${pct(shown.carbs)}%`} />
+              <MacroCell color={t.fat} value={`${Math.round(shown.fat)}g`} label={`Fat · ${pct(shown.fat)}%`} />
             </View>
 
             <View style={{ flexDirection: 'row', marginTop: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, overflow: 'hidden' }}>
-              <NutrientCell value={`${Math.round(result.fiber)}g`} label={`Fiber · ${Math.round((result.fiber / state.goal.fiber) * 100)}%`} />
-              <NutrientCell value={`${Math.round(result.sodium)}mg`} label={`Sodium · ${Math.round((result.sodium / state.goal.sodium) * 100)}%`} border />
-              <NutrientCell value={`${Math.round(result.sugar)}g`} label={`Sugar · ${Math.round((result.sugar / state.goal.sugar) * 100)}%`} border />
+              <NutrientCell value={`${Math.round(shown.fiber)}g`} label={`Fiber · ${Math.round((shown.fiber / state.goal.fiber) * 100)}%`} />
+              <NutrientCell value={`${Math.round(shown.sodium)}mg`} label={`Sodium · ${Math.round((shown.sodium / state.goal.sodium) * 100)}%`} border />
+              <NutrientCell value={`${Math.round(shown.sugar)}g`} label={`Sugar · ${Math.round((shown.sugar / state.goal.sugar) * 100)}%`} border />
             </View>
 
             <Pressable
