@@ -140,6 +140,7 @@ export default function CoachPage() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Back"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{ width: 36, height: 36, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
           >
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
@@ -156,6 +157,7 @@ export default function CoachPage() {
               onPress={clearChat}
               accessibilityRole="button"
               accessibilityLabel="Clear chat"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={{ width: 36, height: 36, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
             >
               <Svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
@@ -264,6 +266,7 @@ export default function CoachPage() {
             disabled={!input.trim() || busy}
             accessibilityRole="button"
             accessibilityLabel="Send"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{
               width: 42,
               height: 42,

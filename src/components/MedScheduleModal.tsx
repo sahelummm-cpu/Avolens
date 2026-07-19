@@ -60,6 +60,7 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
                     key={m.key}
                     onPress={() => (m.key === CUSTOM_MED_KEY ? setCustomMed(state.medCustomName, state.medCustomFrequency, state.medCustomDose) : setMedication(m.key))}
                     accessibilityRole="button"
+                    accessibilityState={{ selected }}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -122,6 +123,8 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
                         <Pressable
                           key={f}
                           onPress={() => setCustomMed(state.medCustomName, f, state.medCustomDose)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: state.medCustomFrequency === f }}
                           style={{ flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center', backgroundColor: state.medCustomFrequency === f ? t.purple : 'transparent' }}
                         >
                           <Text style={{ fontFamily: F.d700, fontSize: 12, color: state.medCustomFrequency === f ? '#fff' : t.muted }}>
@@ -148,6 +151,7 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
                         key={i}
                         onPress={() => setMedSchedule(i, state.medHour, state.medMinute)}
                         accessibilityRole="button"
+                        accessibilityState={{ selected }}
                         style={{
                           width: 40,
                           height: 40,
@@ -175,6 +179,7 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
                 onPress={() => shiftHour(-1)}
                 accessibilityRole="button"
                 accessibilityLabel="Earlier"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={{ width: 38, height: 38, borderRadius: 99, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
               >
                 <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2.6} strokeLinecap="round">
@@ -191,6 +196,7 @@ export function MedScheduleModal({ onClose }: { onClose: () => void }) {
                 onPress={() => shiftHour(1)}
                 accessibilityRole="button"
                 accessibilityLabel="Later"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={{ width: 38, height: 38, borderRadius: 99, backgroundColor: t.purple, alignItems: 'center', justifyContent: 'center' }}
               >
                 <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round">

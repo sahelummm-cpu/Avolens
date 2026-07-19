@@ -45,6 +45,8 @@ export function DayStrip() {
             key={d.key}
             onPress={d.isFuture ? undefined : () => selectDay(d.key)}
             disabled={d.isFuture}
+            accessibilityRole="button"
+            accessibilityState={{ selected: sel }}
             style={{
               width: CELL_W,
               alignItems: 'center',

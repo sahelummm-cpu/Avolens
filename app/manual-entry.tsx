@@ -232,6 +232,7 @@ export default function ManualEntryPage() {
           onPress={() => router.back()}
           accessibilityRole="button"
           accessibilityLabel="Back"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={{ width: 36, height: 36, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
         >
           <Svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
@@ -240,13 +241,13 @@ export default function ManualEntryPage() {
         </Pressable>
         <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>{editing ? 'Edit Food' : 'Add Food'}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <Pressable onPress={saveFavorite} accessibilityRole="button" accessibilityLabel="Save to favorites">
+          <Pressable onPress={saveFavorite} accessibilityRole="button" accessibilityLabel="Save to favorites" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Svg width={20} height={20} viewBox="0 0 24 24" fill={favBasis ? t.carbs : 'none'} stroke={favBasis ? t.carbs : t.muted2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <Path d="m12 3 2.7 5.9 6.3.6-4.7 4.2 1.4 6.3L12 17.8 6.3 20.9l1.4-6.3L3 9.5l6.3-.6Z" />
             </Svg>
           </Pressable>
           {editing && (
-            <Pressable onPress={deleteEntry} accessibilityRole="button" accessibilityLabel="Delete entry">
+            <Pressable onPress={deleteEntry} accessibilityRole="button" accessibilityLabel="Delete entry" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={t.protein} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
                 <Path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
               </Svg>
@@ -266,7 +267,7 @@ export default function ManualEntryPage() {
               <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 10 }}>Log to</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 18 }}>
                 {days.map((d) => (
-                  <Pressable key={d.key} onPress={() => setTargetKey(d.key)} style={chip(targetKey === d.key)}>
+                  <Pressable key={d.key} onPress={() => setTargetKey(d.key)} accessibilityRole="button" accessibilityState={{ selected: targetKey === d.key }} style={chip(targetKey === d.key)}>
                     <Text style={{ fontFamily: F.d700, fontSize: 12, color: targetKey === d.key ? t.green : t.ink }}>{d.label}</Text>
                   </Pressable>
                 ))}
@@ -321,7 +322,7 @@ export default function ManualEntryPage() {
                       <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 10 }}>Favorites</Text>
                       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
                         {state.favorites.map((f) => (
-                          <Pressable key={f.id} onPress={() => pickBasis(favToBasis(f))} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.carbsTint, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 99 }}>
+                          <Pressable key={f.id} onPress={() => pickBasis(favToBasis(f))} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.carbsTint, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 99 }}>
                             <Svg width={11} height={11} viewBox="0 0 24 24" fill={t.carbs} stroke="none"><Path d="m12 3 2.7 5.9 6.3.6-4.7 4.2 1.4 6.3L12 17.8 6.3 20.9l1.4-6.3L3 9.5l6.3-.6Z" /></Svg>
                             <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.ink }}>{f.name}</Text>
                           </Pressable>
@@ -345,6 +346,7 @@ export default function ManualEntryPage() {
                               setFat(f.fat);
                               setServings(1);
                             }}
+                            accessibilityRole="button"
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 99 }}
                           >
                             <View style={{ width: 7, height: 7, borderRadius: 9, backgroundColor: t[f.color] as string }} />
@@ -374,6 +376,7 @@ export default function ManualEntryPage() {
                               setSugar(r.sugar);
                               setServings(1);
                             }}
+                            accessibilityRole="button"
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.greenTint, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 99 }}
                           >
                             <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round"><Circle cx={12} cy={12} r={9} /><Path d="M12 7v5l3 3" /></Svg>
@@ -384,7 +387,7 @@ export default function ManualEntryPage() {
                     </>
                   )}
 
-                  <Pressable onPress={() => setQuick((q) => !q)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: quick ? t.greenTint : t.surface, borderWidth: 1, borderColor: quick ? t.green : t.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 18 }}>
+                  <Pressable onPress={() => setQuick((q) => !q)} accessibilityRole="button" accessibilityState={{ selected: quick }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: quick ? t.greenTint : t.surface, borderWidth: 1, borderColor: quick ? t.green : t.border, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 18 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
                       <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={quick ? t.green : t.muted} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><Path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" /></Svg>
                       <Text style={{ fontFamily: F.b600, fontSize: 13.5, color: quick ? t.green : t.ink }}>Quick add calories only</Text>
@@ -418,7 +421,7 @@ export default function ManualEntryPage() {
           <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <FieldLabel>Meal</FieldLabel>
-              <Pressable onPress={() => setMealPickerOpen(true)} style={{ ...inputStyle, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Pressable onPress={() => setMealPickerOpen(true)} accessibilityRole="button" style={{ ...inputStyle, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={{ fontFamily: F.b600, fontSize: 15, color: t.ink }}>{meal}</Text>
                 <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.muted2} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"><Path d="m6 9 6 6 6-6" /></Svg>
               </Pressable>
@@ -446,13 +449,13 @@ export default function ManualEntryPage() {
           {basis && (
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
               {[basis.servingG, 50, 100, 150, 200].filter((g, i, a): g is number => !!g && a.indexOf(g) === i).map((g) => (
-                <Pressable key={g} onPress={() => setGrams(String(g))} style={chip(gramsNum === g)}>
+                <Pressable key={g} onPress={() => setGrams(String(g))} accessibilityRole="button" accessibilityState={{ selected: gramsNum === g }} style={chip(gramsNum === g)}>
                   <Text style={{ fontFamily: F.b600, fontSize: 12, color: gramsNum === g ? t.green : t.ink }}>
                     {g === basis.servingG ? `1 serving (${g}g)` : `${g}g`}
                   </Text>
                 </Pressable>
               ))}
-              <Pressable onPress={clearBasis} style={chip(false)}>
+              <Pressable onPress={clearBasis} accessibilityRole="button" style={chip(false)}>
                 <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.muted }}>Enter macros manually</Text>
               </Pressable>
             </View>
@@ -536,7 +539,7 @@ export default function ManualEntryPage() {
 
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
         <LinearGradient colors={['rgba(0,0,0,0)', t.bg]} locations={[0, 0.28]} style={{ paddingTop: 14, paddingHorizontal: 22, paddingBottom: Math.max(26, insets.bottom + 10) }}>
-          <Pressable onPress={save} disabled={!canSave} style={{ width: '100%', height: 54, borderRadius: 18, backgroundColor: t.green, opacity: canSave ? 1 : 0.45, alignItems: 'center', justifyContent: 'center', shadowColor: 'rgba(47,158,110,1)', shadowOpacity: canSave ? 0.6 : 0, shadowRadius: 26, shadowOffset: { width: 0, height: 12 }, elevation: canSave ? 8 : 0 }}>
+          <Pressable onPress={save} disabled={!canSave} accessibilityRole="button" style={{ width: '100%', height: 54, borderRadius: 18, backgroundColor: t.green, opacity: canSave ? 1 : 0.45, alignItems: 'center', justifyContent: 'center', shadowColor: 'rgba(47,158,110,1)', shadowOpacity: canSave ? 0.6 : 0, shadowRadius: 26, shadowOffset: { width: 0, height: 12 }, elevation: canSave ? 8 : 0 }}>
             <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 16 }}>{editing ? 'Save changes' : 'Add to Log'}</Text>
           </Pressable>
         </LinearGradient>
@@ -547,7 +550,7 @@ export default function ManualEntryPage() {
           <View style={{ backgroundColor: t.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 32 }}>
             <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink, marginBottom: 12 }}>Meal</Text>
             {MEALS.map((m, i) => (
-              <Pressable key={m} onPress={() => { setMeal(m); setMealPickerOpen(false); }} style={{ paddingVertical: 14, borderTopWidth: i > 0 ? 1 : 0, borderTopColor: t.border2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Pressable key={m} onPress={() => { setMeal(m); setMealPickerOpen(false); }} accessibilityRole="tab" accessibilityState={{ selected: meal === m }} style={{ paddingVertical: 14, borderTopWidth: i > 0 ? 1 : 0, borderTopColor: t.border2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={{ fontFamily: F.b600, fontSize: 15, color: meal === m ? t.green : t.ink }}>{m}</Text>
                 {meal === m && <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><Path d="m5 12 5 5 9-11" /></Svg>}
               </Pressable>
@@ -566,7 +569,13 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 function Stepper({ onPress, bg, iconColor, icon }: { onPress: () => void; bg: string; iconColor: string; icon: 'plus' | 'minus' }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={icon === 'plus' ? 'Increase servings' : 'Decrease servings'}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}
+    >
       <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={3} strokeLinecap="round">
         {icon === 'plus' ? <Path d="M12 5v14M5 12h14" /> : <Path d="M5 12h14" />}
       </Svg>

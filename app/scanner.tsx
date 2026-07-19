@@ -354,11 +354,11 @@ export default function ScannerPage() {
                 <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
                   Portion <Text style={{ color: t.muted }}>· {basis.calories} kcal / 100g</Text>
                 </Text>
-                <Pressable onPress={() => setPortion(grams - 10)} accessibilityLabel="Less" style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
+                <Pressable onPress={() => setPortion(grams - 10)} accessibilityRole="button" accessibilityLabel="Less" hitSlop={8} style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
                   <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
                 </Pressable>
                 <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink, minWidth: 52, textAlign: 'center' }}>{grams} g</Text>
-                <Pressable onPress={() => setPortion(grams + 10)} accessibilityLabel="More" style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
+                <Pressable onPress={() => setPortion(grams + 10)} accessibilityRole="button" accessibilityLabel="More" hitSlop={8} style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
                   <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
                 </Pressable>
               </View>
@@ -372,7 +372,9 @@ export default function ScannerPage() {
                 </Text>
                 <Pressable
                   onPress={() => setAiServings((s) => Math.max(0.5, Math.round((s - 0.5) * 2) / 2))}
+                  accessibilityRole="button"
                   accessibilityLabel="Smaller portion"
+                  hitSlop={8}
                   style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
@@ -380,7 +382,9 @@ export default function ScannerPage() {
                 <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink, minWidth: 52, textAlign: 'center' }}>{aiServings}×</Text>
                 <Pressable
                   onPress={() => setAiServings((s) => Math.min(10, Math.round((s + 0.5) * 2) / 2))}
+                  accessibilityRole="button"
                   accessibilityLabel="Larger portion"
+                  hitSlop={8}
                   style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
@@ -406,7 +410,7 @@ export default function ScannerPage() {
                   }}
                 >
                   <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.greenGrad2 }}>{ing}</Text>
-                  <Pressable onPress={() => removeIngredient(i)} hitSlop={8}>
+                  <Pressable onPress={() => removeIngredient(i)} accessibilityRole="button" accessibilityLabel={`Remove ${ing}`} hitSlop={8}>
                     <Svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="#7FB79A" strokeWidth={3} strokeLinecap="round">
                       <Path d="M6 6l12 12M18 6 6 18" />
                     </Svg>
@@ -429,6 +433,7 @@ export default function ScannerPage() {
 
             <Pressable
               onPress={addToLog}
+              accessibilityRole="button"
               style={{ width: '100%', height: 50, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center', marginTop: 14 }}
             >
               <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Add to Log</Text>

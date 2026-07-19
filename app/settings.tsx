@@ -124,23 +124,25 @@ export default function SettingsPage() {
         </View>
 
         {/* Profile */}
-        <Pressable
-          onPress={() => setModal('profile')}
-          accessibilityRole="button"
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 22, padding: 16, marginBottom: 20 }}
-        >
-          <LinearGradient colors={[t.greenGrad1, t.greenGrad2]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={{ width: 52, height: 52, borderRadius: 99, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Text style={{ fontFamily: F.d700, fontSize: 20, color: '#fff' }}>{initial}</Text>
-          </LinearGradient>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontFamily: F.d700, fontSize: 16, color: t.ink }}>{name}</Text>
-            <Text numberOfLines={1} style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 2 }}>{email}</Text>
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 22, padding: 16, marginBottom: 20 }}>
+          <Pressable
+            onPress={() => setModal('profile')}
+            accessibilityRole="button"
+            style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 14 }}
+          >
+            <LinearGradient colors={[t.greenGrad1, t.greenGrad2]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={{ width: 52, height: 52, borderRadius: 99, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Text style={{ fontFamily: F.d700, fontSize: 20, color: '#fff' }}>{initial}</Text>
+            </LinearGradient>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={{ fontFamily: F.d700, fontSize: 16, color: t.ink }}>{name}</Text>
+              <Text numberOfLines={1} style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 2 }}>{email}</Text>
+            </View>
+          </Pressable>
           <Pressable onPress={() => router.push('/paywall')} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: t.navBg, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 11 }}>
             <Logo size={13} />
             <Text style={{ fontFamily: F.d700, fontSize: 10, color: '#fff' }}>PRO</Text>
           </Pressable>
-        </Pressable>
+        </View>
 
         {/* Goals */}
         <SectionLabel>Goals</SectionLabel>
@@ -171,10 +173,10 @@ export default function SettingsPage() {
           <Row>
             <Text style={rowLabel(t)}>Units</Text>
             <View style={{ flexDirection: 'row', gap: 3, backgroundColor: t.surface3, borderRadius: 11, padding: 3 }}>
-              <Pressable onPress={() => setUnit('kg')} style={{ paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8, backgroundColor: !isLb ? t.navBg : 'transparent' }}>
+              <Pressable onPress={() => setUnit('kg')} accessibilityRole="button" accessibilityState={{ selected: !isLb }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8, backgroundColor: !isLb ? t.navBg : 'transparent' }}>
                 <Text style={{ color: !isLb ? '#fff' : t.muted, fontFamily: F.d700, fontSize: 12 }}>kg</Text>
               </Pressable>
-              <Pressable onPress={() => setUnit('lb')} style={{ paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8, backgroundColor: isLb ? t.navBg : 'transparent' }}>
+              <Pressable onPress={() => setUnit('lb')} accessibilityRole="button" accessibilityState={{ selected: isLb }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingVertical: 6, paddingHorizontal: 16, borderRadius: 8, backgroundColor: isLb ? t.navBg : 'transparent' }}>
                 <Text style={{ color: isLb ? '#fff' : t.muted, fontFamily: F.d700, fontSize: 12 }}>lb</Text>
               </Pressable>
             </View>
@@ -189,7 +191,7 @@ export default function SettingsPage() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               {state.themeMode !== 'auto' && (
-                <Pressable onPress={() => setThemeMode('auto')} style={{ backgroundColor: t.greenTint, paddingVertical: 5, paddingHorizontal: 11, borderRadius: 99 }}>
+                <Pressable onPress={() => setThemeMode('auto')} accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ backgroundColor: t.greenTint, paddingVertical: 5, paddingHorizontal: 11, borderRadius: 99 }}>
                   <Text style={{ fontFamily: F.d700, fontSize: 11, color: t.green }}>Auto</Text>
                 </Pressable>
               )}
@@ -252,7 +254,7 @@ export default function SettingsPage() {
                   </Row>
                 </>
               ) : (
-                <Row onPress={() => router.push('/auth')}>
+                <Row onPress={() => router.push('/auth')} accessibilityRole="link">
                   <View style={{ gap: 1 }}>
                     <Text style={rowLabel(t)}>Sign in</Text>
                     <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Back up & sync your data</Text>
@@ -308,10 +310,10 @@ export default function SettingsPage() {
         {/* About */}
         <SectionLabel>About</SectionLabel>
         <Card>
-          <Row onPress={() => openLink(PRIVACY_URL)}><Text style={rowLabel(t)}>Privacy policy</Text><ChevronValue>{''}</ChevronValue></Row>
-          <Row border onPress={() => openLink(TERMS_URL)}><Text style={rowLabel(t)}>Terms of service</Text><ChevronValue>{''}</ChevronValue></Row>
-          <Row border onPress={() => openLink(`mailto:${SUPPORT_EMAIL}`)}><Text style={rowLabel(t)}>Contact support</Text><ChevronValue>{''}</ChevronValue></Row>
-          <Row border onPress={() => openLink(APP_STORE_URL)}><Text style={rowLabel(t)}>Rate AvoLens</Text><ChevronValue>{''}</ChevronValue></Row>
+          <Row onPress={() => openLink(PRIVACY_URL)} accessibilityRole="link"><Text style={rowLabel(t)}>Privacy policy</Text><ChevronValue>{''}</ChevronValue></Row>
+          <Row border onPress={() => openLink(TERMS_URL)} accessibilityRole="link"><Text style={rowLabel(t)}>Terms of service</Text><ChevronValue>{''}</ChevronValue></Row>
+          <Row border onPress={() => openLink(`mailto:${SUPPORT_EMAIL}`)} accessibilityRole="link"><Text style={rowLabel(t)}>Contact support</Text><ChevronValue>{''}</ChevronValue></Row>
+          <Row border onPress={() => openLink(APP_STORE_URL)} accessibilityRole="link"><Text style={rowLabel(t)}>Rate AvoLens</Text><ChevronValue>{''}</ChevronValue></Row>
           <Row border>
             <Text style={rowLabel(t)}>Version</Text>
             <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.muted2 }}>{version}</Text>
@@ -350,10 +352,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return <Text style={{ fontFamily: F.b700, fontSize: 11, color: t.muted2, letterSpacing: 0.66, textTransform: 'uppercase', marginBottom: 10 }}>{children}</Text>;
 }
 
-function Row({ children, border, onPress }: { children: React.ReactNode; border?: boolean; onPress?: () => void }) {
+function Row({ children, border, onPress, accessibilityRole = 'button' }: { children: React.ReactNode; border?: boolean; onPress?: () => void; accessibilityRole?: 'button' | 'link' }) {
   const { theme: t } = useStore();
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15, paddingHorizontal: 18, borderTopWidth: border ? 1 : 0, borderTopColor: t.border2 }}>
+    <Pressable onPress={onPress} disabled={!onPress} accessibilityRole={onPress ? accessibilityRole : undefined} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15, paddingHorizontal: 18, borderTopWidth: border ? 1 : 0, borderTopColor: t.border2 }}>
       {children}
     </Pressable>
   );

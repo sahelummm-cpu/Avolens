@@ -301,6 +301,10 @@ export function NutrientCarousel() {
           <Pressable
             key={i}
             onPress={() => goTo(i)}
+            accessibilityRole="button"
+            accessibilityLabel={`Page ${i + 1}`}
+            accessibilityState={{ selected: page === i }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={{
               width: page === i ? 16 : 6,
               height: 6,

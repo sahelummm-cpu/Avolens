@@ -114,7 +114,7 @@ function MeasurementModal({ onClose, onSave, initial }: { onClose: () => void; o
                 </View>
               ))}
             </View>
-            <Pressable onPress={save} style={{ width: '100%', height: 50, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={save} accessibilityRole="button" style={{ width: '100%', height: 50, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Save</Text>
             </Pressable>
           </Pressable>
@@ -188,10 +188,10 @@ export function PhotosCard() {
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Progress photos</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Pressable onPress={() => add(true)} disabled={busy} accessibilityLabel="Take photo" style={{ width: 34, height: 34, borderRadius: 99, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
+          <Pressable onPress={() => add(true)} disabled={busy} accessibilityRole="button" accessibilityLabel="Take photo" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ width: 34, height: 34, borderRadius: 99, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M4 8a2 2 0 0 1 2-2h1.5l1-2h5l1 2H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" /><Path d="M12 17a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" /></Svg>
           </Pressable>
-          <Pressable onPress={() => add(false)} disabled={busy} accessibilityLabel="Add from library" style={{ width: 34, height: 34, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
+          <Pressable onPress={() => add(false)} disabled={busy} accessibilityRole="button" accessibilityLabel="Add from library" hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ width: 34, height: 34, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
             <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
           </Pressable>
         </View>
@@ -211,7 +211,7 @@ export function PhotosCard() {
           )}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
             {photos.map((p) => (
-              <Pressable key={p.id} onPress={() => setViewer(p.uri)} onLongPress={() => confirmDelete(p.id, p.path)} style={{ alignItems: 'center' }}>
+              <Pressable key={p.id} onPress={() => setViewer(p.uri)} onLongPress={() => confirmDelete(p.id, p.path)} accessibilityRole="button" style={{ alignItems: 'center' }}>
                 <Image source={{ uri: p.uri }} style={{ width: 76, height: 100, borderRadius: 12, backgroundColor: t.surface2 }} />
                 <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2, marginTop: 4 }}>{p.date.split(',')[0]}</Text>
               </Pressable>
@@ -222,7 +222,7 @@ export function PhotosCard() {
       )}
 
       <Modal visible={viewer != null} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
-        <Pressable onPress={() => setViewer(null)} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,.92)', alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable onPress={() => setViewer(null)} accessibilityRole="button" accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,.92)', alignItems: 'center', justifyContent: 'center' }}>
           {viewer && <Image source={{ uri: viewer }} style={{ width: '92%', height: '80%', resizeMode: 'contain' }} />}
         </Pressable>
       </Modal>
@@ -232,7 +232,7 @@ export function PhotosCard() {
 
 function BeforeAfter({ label, photo, onPress, t }: { label: string; photo: { uri: string; date: string; weightKg?: number }; onPress: () => void; t: ReturnType<typeof useStore>['theme'] }) {
   return (
-    <Pressable onPress={onPress} style={{ flex: 1 }}>
+    <Pressable onPress={onPress} accessibilityRole="button" style={{ flex: 1 }}>
       <Image source={{ uri: photo.uri }} style={{ width: '100%', height: 180, borderRadius: 16, backgroundColor: t.surface2 }} />
       <View style={{ position: 'absolute', top: 8, left: 8, backgroundColor: 'rgba(0,0,0,.6)', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 10 }}>
         <Text style={{ fontFamily: F.d700, fontSize: 11, color: '#fff' }}>{label}</Text>

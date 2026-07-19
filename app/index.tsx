@@ -46,7 +46,7 @@ export default function SplashPage() {
 
         <View style={{ position: 'absolute', bottom: 48, left: 40, right: 40, gap: 16 }}>
           <PrimaryButton onPress={start}>Get Started</PrimaryButton>
-          <Pressable onPress={skip}>
+          <Pressable onPress={skip} accessibilityRole="button">
             <Text style={{ textAlign: 'center', fontFamily: F.b600, fontSize: 14, color: t.ink, opacity: 0.6 }}>
               I already have an account
             </Text>

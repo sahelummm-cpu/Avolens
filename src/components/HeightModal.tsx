@@ -87,12 +87,16 @@ export function HeightModal({
               <View style={{ flexDirection: 'row', gap: 3, backgroundColor: t.surface3, borderRadius: 11, padding: 3 }}>
                 <Pressable
                   onPress={() => switchUnit('cm')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: unit === 'cm' }}
                   style={{ paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: unit === 'cm' ? t.navBg : 'transparent' }}
                 >
                   <Text style={{ color: unit === 'cm' ? '#fff' : t.muted, fontFamily: F.d700, fontSize: 12 }}>cm</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => switchUnit('ftin')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: unit === 'ftin' }}
                   style={{ paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: unit === 'ftin' ? t.navBg : 'transparent' }}
                 >
                   <Text style={{ color: unit === 'ftin' ? '#fff' : t.muted, fontFamily: F.d700, fontSize: 12 }}>ft / in</Text>
@@ -141,6 +145,7 @@ export function HeightModal({
 
             <Pressable
               onPress={submit}
+              accessibilityRole="button"
               style={{
                 width: '100%',
                 height: 50,

@@ -18,6 +18,8 @@ export function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => ({
         opacity: disabled ? 0.45 : 1,
         height: small ? 50 : 56,

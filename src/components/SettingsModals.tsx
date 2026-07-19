@@ -81,7 +81,7 @@ export function MacroGoalModal({ onClose }: { onClose: () => void }) {
 
       <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
         {SPLITS.map((s) => (
-          <Pressable key={s.key} onPress={() => applySplit(s)} style={{ backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, borderRadius: 99, paddingVertical: 8, paddingHorizontal: 13 }}>
+          <Pressable key={s.key} onPress={() => applySplit(s)} accessibilityRole="button" style={{ backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, borderRadius: 99, paddingVertical: 8, paddingHorizontal: 13 }}>
             <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.ink }}>{s.label}</Text>
           </Pressable>
         ))}
@@ -159,8 +159,8 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
 
       <Label>Sex</Label>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-        <Pressable onPress={() => setSex('male')} style={chip(sex === 'male')}><Text style={{ fontFamily: F.d700, fontSize: 14, color: sex === 'male' ? t.green : t.ink }}>Male</Text></Pressable>
-        <Pressable onPress={() => setSex('female')} style={chip(sex === 'female')}><Text style={{ fontFamily: F.d700, fontSize: 14, color: sex === 'female' ? t.green : t.ink }}>Female</Text></Pressable>
+        <Pressable onPress={() => setSex('male')} accessibilityRole="button" accessibilityState={{ selected: sex === 'male' }} style={chip(sex === 'male')}><Text style={{ fontFamily: F.d700, fontSize: 14, color: sex === 'male' ? t.green : t.ink }}>Male</Text></Pressable>
+        <Pressable onPress={() => setSex('female')} accessibilityRole="button" accessibilityState={{ selected: sex === 'female' }} style={chip(sex === 'female')}><Text style={{ fontFamily: F.d700, fontSize: 14, color: sex === 'female' ? t.green : t.ink }}>Female</Text></Pressable>
       </View>
 
       <Label>Age</Label>
@@ -172,7 +172,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
       <Label>Activity level</Label>
       <View style={{ gap: 8, marginBottom: 20 }}>
         {ACTIVITIES.map((a) => (
-          <Pressable key={a.key} onPress={() => setActivity(a.key)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: activity === a.key ? t.green : t.border, backgroundColor: activity === a.key ? t.greenTint : t.surface2 }}>
+          <Pressable key={a.key} onPress={() => setActivity(a.key)} accessibilityRole="button" accessibilityState={{ selected: activity === a.key }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: activity === a.key ? t.green : t.border, backgroundColor: activity === a.key ? t.greenTint : t.surface2 }}>
             <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>{a.label}</Text>
             {activity === a.key && <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><Path d="m5 12 5 5 9-11" /></Svg>}
           </Pressable>
@@ -198,7 +198,7 @@ export function ReminderTimeModal({ onClose }: { onClose: () => void }) {
       <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginBottom: 20 }}>When should we nudge you to log your meals?</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 22 }}>
         <Stepper onPress={() => setHour((h) => (h + 23) % 24)} icon="minus" />
-        <Pressable onPress={() => setMinute((m) => (m === 0 ? 30 : 0))}>
+        <Pressable onPress={() => setMinute((m) => (m === 0 ? 30 : 0))} accessibilityRole="button">
           <Text style={{ fontFamily: F.d800, fontSize: 30, color: t.ink }}>{h12}:{String(minute).padStart(2, '0')}<Text style={{ fontSize: 16, color: t.muted }}> {ampm}</Text></Text>
         </Pressable>
         <Stepper onPress={() => setHour((h) => (h + 1) % 24)} icon="plus" primary />
@@ -228,7 +228,7 @@ function Stepper({ onPress, icon, primary }: { onPress: () => void; icon: 'plus'
 function SaveButton({ onPress }: { onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} style={{ width: '100%', height: 50, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
+    <Pressable onPress={onPress} accessibilityRole="button" style={{ width: '100%', height: 50, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Save</Text>
     </Pressable>
   );

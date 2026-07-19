@@ -72,6 +72,7 @@ export function PromptModal({
             />
             <Pressable
               onPress={submit}
+              accessibilityRole="button"
               style={{
                 width: '100%',
                 height: 50,

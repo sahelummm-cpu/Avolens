@@ -72,7 +72,7 @@ export function defaultState(): AvoLensState {
     activityLevel: null,
     targetWeightKg: null,
     displayName: '',
-    themeMode: 'auto',
+    themeMode: 'light',
     glasses: 0,
     medEnabled: true,
     medKey: 'semaglutide',
