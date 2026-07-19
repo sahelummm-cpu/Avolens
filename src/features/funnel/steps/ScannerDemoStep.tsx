@@ -32,11 +32,31 @@ type Phase = 'idle' | 'scanning' | 'done';
  * recognition tags, and slides up the result card whose CTA advances the
  * funnel. No camera, no backend.
  */
+/**
+ * The demo plate's fixed nutrition — one realistic total for the whole meal,
+ * scaled by the portion multiplier exactly like real AI scan results are.
+ */
+const BASE = { calories: 536, protein: 39, carbs: 40, fat: 22.5, fiber: 8, sodium: 560, sugar: 9 };
+
 export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
-  const { theme: t } = useStore();
+  const { state, theme: t } = useStore();
   const insets = useSafeAreaInsets();
   const [phase, setPhase] = useState<Phase>('idle');
+  const [servings, setServings] = useState(1);
   const scanY = useSharedValue(0);
+
+  const shown = {
+    calories: BASE.calories * servings,
+    protein: BASE.protein * servings,
+    carbs: BASE.carbs * servings,
+    fat: BASE.fat * servings,
+    fiber: BASE.fiber * servings,
+    sodium: BASE.sodium * servings,
+    sugar: BASE.sugar * servings,
+  };
+  const macroTotal = shown.protein + shown.carbs + shown.fat;
+  const pct = (v: number) => (macroTotal > 0 ? Math.round((v / macroTotal) * 100) : 0);
+  const grams = (v: number) => `${Math.round(v * 10) / 10}g`;
 
   const finishScan = () => {
     success();
@@ -56,6 +76,7 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
   const rescan = () => {
     tap();
     scanY.value = 0;
+    setServings(1);
     setPhase('idle');
   };
 
@@ -64,10 +85,11 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
     opacity: interpolate(scanY.value, [0, 0.05, 0.95, 1], [0, 1, 1, 0]),
   }));
 
+  // Per-item tags sum to the 536 kcal total shown on the result card.
   const TAGS: { label: string; dot: string; pos: { top: number; left?: number; right?: number } }[] = [
-    { label: 'Grilled Chicken Breast · 280 kcal', dot: t.protein, pos: { top: 96, left: 10 } },
-    { label: 'Steamed Broccoli · 55 kcal', dot: t.green, pos: { top: 18, left: 64 } },
-    { label: 'Roasted Sweet Potato · 130 kcal', dot: t.carbs, pos: { top: 196, right: 10 } },
+    { label: 'Grilled Chicken Breast · 320 kcal', dot: t.protein, pos: { top: 96, left: 10 } },
+    { label: 'Steamed Broccoli · 46 kcal', dot: t.green, pos: { top: 18, left: 64 } },
+    { label: 'Roasted Sweet Potato · 170 kcal', dot: t.carbs, pos: { top: 196, right: 10 } },
   ];
 
   return (
@@ -156,6 +178,7 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
               </View>
               <FauxChip label="Barcode"><Path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" /></FauxChip>
               <FauxChip label="Label"><Rect x={4} y={3} width={16} height={18} rx={2.5} /><Path d="M8 8h8M8 12h8M8 16h5" /></FauxChip>
+              <FauxChip label="Manual"><Path d="M12 20h9" /><Path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></FauxChip>
               <FauxChip label="Voice"><Rect x={9} y={3} width={6} height={12} rx={3} /><Path d="M6 11a6 6 0 0 0 12 0M12 17v4" /></FauxChip>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 28 }}>
@@ -207,15 +230,48 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
                 </View>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>465</Text>
+                <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>{Math.round(shown.calories)}</Text>
                 <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: -4 }}>kcal</Text>
               </View>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-              <DemoMacroCell color={t.protein} value="44g" label="Protein · 43%" t={t} />
-              <DemoMacroCell color={t.carbs} value="48g" label="Carbs · 47%" t={t} />
-              <DemoMacroCell color={t.fat} value="10g" label="Fat · 10%" t={t} />
+            {/* Portion adjuster — same row as real AI scan results, scales the totals */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, backgroundColor: t.surface2, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}>
+              <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
+                Portion <Text style={{ color: t.muted }}>· of what was scanned</Text>
+              </Text>
+              <Pressable
+                onPress={() => { tap(); setServings((s) => Math.max(0.5, Math.round((s - 0.5) * 2) / 2)); }}
+                accessibilityRole="button"
+                accessibilityLabel="Smaller portion"
+                hitSlop={8}
+                style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
+              </Pressable>
+              <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink, minWidth: 52, textAlign: 'center' }}>{servings}×</Text>
+              <Pressable
+                onPress={() => { tap(); setServings((s) => Math.min(10, Math.round((s + 0.5) * 2) / 2)); }}
+                accessibilityRole="button"
+                accessibilityLabel="Larger portion"
+                hitSlop={8}
+                style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
+              </Pressable>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+              <DemoMacroCell color={t.protein} value={grams(shown.protein)} label={`Protein · ${pct(shown.protein)}%`} t={t} />
+              <DemoMacroCell color={t.carbs} value={grams(shown.carbs)} label={`Carbs · ${pct(shown.carbs)}%`} t={t} />
+              <DemoMacroCell color={t.fat} value={grams(shown.fat)} label={`Fat · ${pct(shown.fat)}%`} t={t} />
+            </View>
+
+            {/* Fiber / sodium / sugar strip, % of daily goals — same as the real result card */}
+            <View style={{ flexDirection: 'row', marginTop: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, overflow: 'hidden' }}>
+              <DemoNutrientCell value={grams(shown.fiber)} label={`Fiber · ${Math.round((shown.fiber / state.goal.fiber) * 100)}%`} t={t} />
+              <DemoNutrientCell value={`${Math.round(shown.sodium)}mg`} label={`Sodium · ${Math.round((shown.sodium / state.goal.sodium) * 100)}%`} border t={t} />
+              <DemoNutrientCell value={grams(shown.sugar)} label={`Sugar · ${Math.round((shown.sugar / state.goal.sugar) * 100)}%`} border t={t} />
             </View>
 
             <Pressable
@@ -261,6 +317,15 @@ function DemoMacroCell({ color, value, label, t }: { color: string; value: strin
         <View style={{ width: 8, height: 8, borderRadius: 9, backgroundColor: color }} />
         <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
       </View>
+      <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{label}</Text>
+    </View>
+  );
+}
+
+function DemoNutrientCell({ value, label, border, t }: { value: string; label: string; border?: boolean; t: ReturnType<typeof useStore>['theme'] }) {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', gap: 2, paddingVertical: 9, borderLeftWidth: border ? 1 : 0, borderLeftColor: t.border }}>
+      <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{label}</Text>
     </View>
   );
