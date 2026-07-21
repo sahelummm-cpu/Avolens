@@ -8,12 +8,17 @@ import { ProgressBar } from './ProgressBar';
 import { MedScheduleModal } from './MedScheduleModal';
 import { ShotModal } from './ShotModal';
 
-function ProgressRow({ label, value, target, color }: { label: string; value: number; target: number; color: string }) {
+import { FiberIcon, SodiumIcon, SugarIcon, WaterIcon } from './NutritionIcons';
+
+function ProgressRow({ label, value, target, color, icon }: { label: string; value: number; target: number; color: string; icon?: React.ReactNode }) {
   const { theme: t } = useStore();
   return (
     <View style={{ gap: 5 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.ink }}>{label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {icon}
+          <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.ink }}>{label}</Text>
+        </View>
         <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.ink }}>
           {value}
           <Text style={{ fontFamily: F.d600, fontSize: 11, color: t.muted2 }}>
@@ -139,30 +144,30 @@ export function NutrientCarousel() {
             }
           >
             {/* Page 1: Water — always first, shown by default */}
-            <View style={{ ...pageStyle, backgroundColor: t.fatTint2 }}>
+            <View style={{ ...pageStyle, backgroundColor: t.waterTint2 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Svg width={15} height={19} viewBox="0 0 20 26" fill={t.fat}>
+                  <Svg width={15} height={19} viewBox="0 0 20 26" fill={t.water}>
                     <Path d="M10 1 C10 1 18 12 18 17.5 A8 8 0 0 1 2 17.5 C2 12 10 1 10 1 Z" />
                   </Svg>
                   <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.ink }}>
                     Water{viewingToday ? '' : ' · past day'}
                   </Text>
                 </View>
-                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.fat }}>
+                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.water }}>
                   {waterCur}
                   <Text style={{ color: t.muted2, fontSize: 11 }}>/{waterTarget}L</Text>
                 </Text>
               </View>
-              <ProgressBar fraction={frac(dayGlasses, state.goal.water)} color={t.fat} trackColor={t.fatTint3} height={8} />
+              <ProgressBar fraction={frac(dayGlasses, state.goal.water)} color={t.water} trackColor={t.waterTint3} height={8} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <RoundBtn label="Remove glass" onPress={removeGlass} bg={t.surface}>
-                  <MinusIcon stroke={t.fat} />
+                  <MinusIcon stroke={t.water} />
                 </RoundBtn>
                 <Text style={{ flex: 1, textAlign: 'center', fontFamily: F.b600, fontSize: 12, color: t.ink }}>
                   {dayGlasses} glasses <Text style={{ color: t.muted }}>· 500 ml</Text>
                 </Text>
-                <RoundBtn label="Add glass" onPress={addGlass} bg={t.fat}>
+                <RoundBtn label="Add glass" onPress={addGlass} bg={t.water}>
                   <PlusIcon stroke="#fff" />
                 </RoundBtn>
               </View>
@@ -288,9 +293,9 @@ export function NutrientCarousel() {
 
             {/* Page 3: Fiber / Sodium / Sugar */}
             <View style={{ ...pageStyle, backgroundColor: t.surface2 }}>
-              <ProgressRow label="Fiber" value={totals.fiber} target={state.goal.fiber} color={t.green} />
-              <ProgressRow label="Sodium" value={totals.sodium} target={state.goal.sodium} color={t.carbs} />
-              <ProgressRow label="Sugar" value={totals.sugar} target={state.goal.sugar} color={t.protein} />
+              <ProgressRow label="Fiber" value={totals.fiber} target={state.goal.fiber} color={t.fiber} icon={<FiberIcon color={t.fiber} size={15} />} />
+              <ProgressRow label="Sodium" value={totals.sodium} target={state.goal.sodium} color={t.sodium} icon={<SodiumIcon color={t.sodium} size={15} />} />
+              <ProgressRow label="Sugar" value={totals.sugar} target={state.goal.sugar} color={t.sugar} icon={<SugarIcon color={t.sugar} size={15} />} />
             </View>
           </ScrollView>
         )}

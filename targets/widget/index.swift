@@ -18,15 +18,15 @@ extension Color {
   }
 }
 
-private let inkColor = Color(hex: 0x26331a)
-private let mutedColor = Color(hex: 0x7c8a7f)
-private let greenColor = Color(hex: 0x6e9e3a)
-private let greenTrack = Color(hex: 0xedf1eb)
+private let inkColor = Color(hex: 0x0E0E12)
+private let mutedColor = Color(hex: 0x8A8A8F)
+private let greenColor = Color(hex: 0x111116)
+private let greenTrack = Color(hex: 0xE9E9EB)
 private let proteinColor = Color(hex: 0xe4586e)
 private let proteinTint = Color(hex: 0xf1e6e9)
 private let carbsColor = Color(hex: 0xe8a13b)
 private let carbsTint = Color(hex: 0xf3ecdd)
-private let flameColor = Color(hex: 0xe8862e)
+private let flameColor = Color(hex: 0xff3b30)
 private let waterColor = Color(hex: 0x4da8f0)
 
 private func frac(_ value: Int, _ total: Int) -> Double {

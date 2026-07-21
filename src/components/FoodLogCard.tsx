@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, Text, View, Image } from 'react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -7,40 +7,14 @@ import type { FoodEntry } from '@/lib/types';
 import { useTheme } from '@/lib/store';
 import { F } from '@/lib/fonts';
 
-function MealIcon({ icon }: { icon?: FoodEntry['icon'] }) {
+import { getFoodImageUri } from '@/lib/foodImages';
+
+function MealIcon({ entry }: { entry: FoodEntry }) {
   const t = useTheme();
-  if (icon === 'yogurt') {
-    return (
-      <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.proteinTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Svg width={28} height={28} viewBox="0 0 32 32" fill="none" stroke="#E2703C" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-          <Path d="M4 15h24a12 12 0 0 1-24 0Z" />
-          <Path d="M8 15a8 5 0 0 1 16 0" />
-          <Circle cx={12} cy={10.5} r={1.3} fill="#E2703C" stroke="none" />
-          <Circle cx={16.5} cy={9} r={1.3} fill="#E2703C" stroke="none" />
-          <Circle cx={21} cy={11} r={1.3} fill="#E2703C" stroke="none" />
-        </Svg>
-      </View>
-    );
-  }
-  if (icon === 'bowl') {
-    return (
-      <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.greenTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Svg width={27} height={27} viewBox="0 0 32 32" fill="none" stroke={t.green} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-          <Path d="M4 16h24a12 12 0 0 1-24 0Z" />
-          <Path d="M7.5 16a8.5 5.5 0 0 1 17 0" />
-          <Path d="M18 5 27 10M20 4 28 8" />
-        </Svg>
-      </View>
-    );
-  }
+  const uri = entry.imageUri || getFoodImageUri(entry.name, entry.meal);
   return (
-    <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.surface3, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-      <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-        <Path d="M6.5 6.5 17.5 17.5" />
-        <Path d="M4 8V6a2 2 0 0 1 2-2h2" />
-        <Path d="M20 16v2a2 2 0 0 1-2 2h-2" />
-        <Path d="M2 12h2M20 12h2M12 2v2M12 20v2" />
-      </Svg>
+    <View style={{ width: 56, height: 56, borderRadius: 16, overflow: 'hidden', flexShrink: 0, backgroundColor: t.surface3 }}>
+      <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
     </View>
   );
 }
@@ -74,11 +48,13 @@ function MealTimeIcon({ meal }: { meal: FoodEntry['meal'] }) {
   );
 }
 
-function MacroDot({ color, grams }: { color: string; grams: number }) {
+import { ProteinIcon, CarbsIcon, FatIcon, CalorieIcon } from './NutritionIcons';
+
+function MacroTag({ icon, grams }: { icon: React.ReactNode; grams: number }) {
   const t = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      <View style={{ width: 6, height: 6, borderRadius: 9, backgroundColor: color }} />
+      {icon}
       <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.muted }}>{grams}g</Text>
     </View>
   );
@@ -125,7 +101,7 @@ export function FoodLogCard({
         transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
       }}
     >
-      <MealIcon icon={entry.icon} />
+      <MealIcon entry={entry} />
       <View style={{ flex: 1, gap: 5, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>
           {entry.name}
@@ -134,18 +110,19 @@ export function FoodLogCard({
           <MealTimeIcon meal={entry.meal} />
           <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2 }}>
             {entry.amount && entry.unit && entry.unit !== 'kcal' && entry.unit !== 'serving'
-              ? `${entry.amount} ${entry.unit} · ${entry.time}`
+              ? `${entry.meal} · ${entry.amount} ${entry.unit} · ${entry.time}`
               : `${entry.meal} · ${entry.time}`}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <MacroDot color={t.protein} grams={entry.protein} />
-          <MacroDot color={t.carbs} grams={entry.carbs} />
-          <MacroDot color={t.fat} grams={entry.fat} />
+          <MacroTag icon={<ProteinIcon color={t.protein} size={13} />} grams={entry.protein} />
+          <MacroTag icon={<CarbsIcon color={t.carbs} size={13} />} grams={entry.carbs} />
+          <MacroTag icon={<FatIcon color={t.fat} size={13} />} grams={entry.fat} />
         </View>
       </View>
       <View style={{ alignSelf: 'flex-start', alignItems: 'flex-end', gap: 5 }}>
-        <View style={{ backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 11 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 11 }}>
+          <CalorieIcon color="#FF3B30" size={12} />
           <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.greenGrad2 }}>{entry.calories} kcal</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { Platform, Text as RNText, TextInput as RNTextInput, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,11 +17,27 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { StoreProvider, useStore } from '@/lib/store';
+import { F } from '@/lib/fonts';
+
+// Configure PlusJakartaSans as the default font family everywhere across the app
+if ((RNText as any).defaultProps) {
+  (RNText as any).defaultProps.style = [{ fontFamily: F.b400 }, (RNText as any).defaultProps.style];
+} else {
+  (RNText as any).defaultProps = { style: { fontFamily: F.b400 } };
+}
+
+if ((RNTextInput as any).defaultProps) {
+  (RNTextInput as any).defaultProps.style = [{ fontFamily: F.b400 }, (RNTextInput as any).defaultProps.style];
+} else {
+  (RNTextInput as any).defaultProps = { style: { fontFamily: F.b400 } };
+}
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function ThemedApp() {
   const { theme, resolvedDark } = useStore();
+  const isWeb = Platform.OS === 'web';
+
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <StatusBar style={resolvedDark ? 'light' : 'dark'} />
@@ -29,15 +45,15 @@ function ThemedApp() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: theme.bg },
-          animation: 'fade',
+          animation: isWeb ? 'none' : 'fade',
         }}
       >
-        <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="auth" options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="coach" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="onboarding" options={{ animation: isWeb ? 'none' : 'slide_from_right' }} />
+        <Stack.Screen name="auth" options={{ animation: isWeb ? 'none' : 'slide_from_bottom' }} />
+        <Stack.Screen name="coach" options={{ animation: isWeb ? 'none' : 'slide_from_right' }} />
         <Stack.Screen name="scanner" options={{ contentStyle: { backgroundColor: '#121614' } }} />
-        <Stack.Screen name="manual-entry" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="paywall" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="manual-entry" options={{ animation: isWeb ? 'none' : 'slide_from_right' }} />
+        <Stack.Screen name="paywall" options={{ animation: isWeb ? 'none' : 'slide_from_bottom' }} />
       </Stack>
     </View>
   );

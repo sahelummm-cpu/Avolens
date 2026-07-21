@@ -4,7 +4,7 @@ import { dayKey } from './days';
 
 export const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 /**
  * Bring a persisted / cloud-synced partial state (possibly written by an
@@ -16,6 +16,12 @@ export function migrateState(saved: Partial<AvoLensState>): Partial<AvoLensState
   const out: Partial<AvoLensState> = { ...saved };
   if (v < 1) {
     // v0 → v1: no structural changes — the version field itself is new.
+  }
+  if (v < 2) {
+    // v1 → v2: default themeMode to 'light' instead of 'auto' or undefined
+    if (out.themeMode === 'auto' || !out.themeMode) {
+      out.themeMode = 'light';
+    }
   }
   out.stateVersion = STATE_VERSION;
   return out;

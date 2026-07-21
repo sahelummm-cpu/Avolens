@@ -33,7 +33,7 @@ async function ensureAndroidChannel() {
     name: 'Medication reminders',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#6e9e3a',
+    lightColor: '#111116',
   });
 }
 
@@ -53,7 +53,7 @@ export async function syncLogReminder(on: boolean, hour = 20, minute = 0): Promi
       identifier: LOG_REMINDER_ID,
       content: {
         title: 'AvoLens',
-        body: "Don't forget to log today's meals 🥑",
+        body: "Don't forget to log today's meals",
         sound: true,
       },
       trigger: {

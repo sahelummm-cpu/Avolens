@@ -30,15 +30,15 @@ const EMPTY: WidgetSnapshot = {
 
 // Light-theme tokens (src/lib/theme.tsx → lightTheme).
 const SURFACE = '#ffffff';
-const INK: ColorProp = '#26331a';
-const MUTED: ColorProp = '#7c8a7f';
-const GREEN = '#6e9e3a';
-const GREEN_TRACK = '#edf1eb';
+const INK: ColorProp = '#0E0E12';
+const MUTED: ColorProp = '#8A8A8F';
+const GREEN = '#111116';
+const GREEN_TRACK = '#E9E9EB';
 const PROTEIN = '#e4586e';
 const PROTEIN_TINT = '#f1e6e9';
 const CARBS = '#e8a13b';
 const CARBS_TINT = '#f3ecdd';
-const FLAME = '#e8862e';
+const FLAME = '#ff3b30';
 const WATER = '#4da8f0';
 
 const AVO_LOGO = require('../../assets/images/avo-logo.png');

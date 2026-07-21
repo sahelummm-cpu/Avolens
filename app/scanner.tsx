@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View, Modal, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
@@ -8,9 +8,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/Screen';
 import { useStore } from '@/lib/store';
 import { parseSpokenMeal, scanMeal } from '@/lib/api';
-import { barcodeBasis, scaleBasis, type FoodBasis } from '@/lib/foods';
+import { barcodeBasis, scaleBasis, searchFoods, type FoodBasis } from '@/lib/foods';
+import { searchCommonFoods } from '@/lib/commonFoods';
 import type { ScanResult } from '@/lib/types';
 import { F } from '@/lib/fonts';
+import { ProteinIcon, CarbsIcon, FatIcon, FiberIcon, SodiumIcon, SugarIcon, CalorieIcon } from '@/components/NutritionIcons';
 
 function scanResultFromBasis(b: FoodBasis, grams: number): ScanResult {
   const s = scaleBasis(b, grams);
@@ -56,6 +58,69 @@ export default function ScannerPage() {
   // scale by grams via `basis` instead.
   const [aiServings, setAiServings] = useState(1);
   const scanningBarcode = useRef(false);
+
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
+  const [search, setSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<FoodBasis[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchErr, setSearchErr] = useState<string | null>(null);
+  const [selectedBasis, setSelectedBasis] = useState<FoodBasis | null>(null);
+  const [addGrams, setAddGrams] = useState('100');
+
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (!searchModalVisible) return;
+    const q = search.trim();
+    if (q.length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      setSearchErr(null);
+      return;
+    }
+    setSearching(true);
+    setSearchErr(null);
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const timeoutId = setTimeout(async () => {
+      try {
+        const common = searchCommonFoods(q);
+        setSearchResults(common);
+        const apiRes = await searchFoods(q, ac.signal);
+        setSearchResults([...common, ...apiRes]);
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setSearchErr(err instanceof Error ? err.message : 'Search failed');
+      } finally {
+        if (!ac.signal.aborted) setSearching(false);
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timeoutId);
+      ac.abort();
+    };
+  }, [search, searchModalVisible]);
+
+  const confirmAddIngredient = () => {
+    if (!selectedBasis || !result) return;
+    const g = parseFloat(addGrams) || 0;
+    if (g <= 0) return;
+    const s = scaleBasis(selectedBasis, g);
+    setResult({
+      ...result,
+      calories: result.calories + s.calories,
+      protein: result.protein + s.protein,
+      carbs: result.carbs + s.carbs,
+      fat: result.fat + s.fat,
+      fiber: result.fiber + s.fiber,
+      sodium: result.sodium + s.sodium,
+      sugar: result.sugar + s.sugar,
+      ingredients: [...result.ingredients, `${selectedBasis.name} (${g}g)`],
+    });
+    setSearchModalVisible(false);
+    setSelectedBasis(null);
+    setSearch('');
+  };
 
   // Voice mode: on-device speech recognition → AI parse of the transcript.
   const [listening, setListening] = useState(false);
@@ -344,7 +409,10 @@ export default function ScannerPage() {
                 </View>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>{Math.round(shown.calories)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <CalorieIcon color="#FF3B30" size={18} />
+                  <Text style={{ fontFamily: F.d800, fontSize: 24, color: t.ink }}>{Math.round(shown.calories)}</Text>
+                </View>
                 <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: -4 }}>kcal</Text>
               </View>
             </View>
@@ -392,44 +460,75 @@ export default function ScannerPage() {
               </View>
             )}
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
-              <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.muted2, width: '100%' }}>Ingredients</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, flexWrap: 'wrap' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 4 }}>
+                <Text style={{ fontFamily: F.b700, fontSize: 12, color: t.ink, letterSpacing: 0.2 }}>
+                  Scanned Ingredients ({shown.ingredients.length})
+                </Text>
+                <Pressable
+                  onPress={() => setSearchModalVisible(true)}
+                  accessibilityRole="button"
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                >
+                  <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round">
+                    <Path d="M12 5v14M5 12h14" />
+                  </Svg>
+                  <Text style={{ fontFamily: F.d700, fontSize: 11.5, color: t.green }}>+ Add Ingredient</Text>
+                </Pressable>
+              </View>
               {shown.ingredients.map((ing, i) => (
                 <View
                   key={ing + i}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 5,
+                    gap: 6,
                     backgroundColor: t.greenTint,
-                    paddingTop: 4,
-                    paddingBottom: 4,
-                    paddingLeft: 10,
-                    paddingRight: 8,
+                    borderWidth: 1,
+                    borderColor: t.green + '33',
+                    paddingVertical: 5,
+                    paddingLeft: 11,
+                    paddingRight: 9,
                     borderRadius: 99,
                   }}
                 >
-                  <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.greenGrad2 }}>{ing}</Text>
+                  <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.greenGrad2 }}>{ing}</Text>
                   <Pressable onPress={() => removeIngredient(i)} accessibilityRole="button" accessibilityLabel={`Remove ${ing}`} hitSlop={8}>
-                    <Svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="#7FB79A" strokeWidth={3} strokeLinecap="round">
+                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={t.greenGrad2} strokeWidth={3} strokeLinecap="round">
                       <Path d="M6 6l12 12M18 6 6 18" />
                     </Svg>
                   </Pressable>
                 </View>
               ))}
+              {shown.ingredients.length === 0 && (
+                <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, fontStyle: 'italic' }}>
+                  No ingredients listed. Tap + Add Ingredient to add items.
+                </Text>
+              )}
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              <MacroCell color={t.protein} value={`${Math.round(shown.protein)}g`} label={`Protein · ${pct(shown.protein)}%`} />
-              <MacroCell color={t.carbs} value={`${Math.round(shown.carbs)}g`} label={`Carbs · ${pct(shown.carbs)}%`} />
-              <MacroCell color={t.fat} value={`${Math.round(shown.fat)}g`} label={`Fat · ${pct(shown.fat)}%`} />
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+              <MacroCell icon={<ProteinIcon color={t.protein} size={14} />} value={`${Math.round(shown.protein)}g`} label={`Protein · ${pct(shown.protein)}%`} />
+              <MacroCell icon={<CarbsIcon color={t.carbs} size={14} />} value={`${Math.round(shown.carbs)}g`} label={`Carbs · ${pct(shown.carbs)}%`} />
+              <MacroCell icon={<FatIcon color={t.fat} size={14} />} value={`${Math.round(shown.fat)}g`} label={`Fat · ${pct(shown.fat)}%`} />
             </View>
 
             <View style={{ flexDirection: 'row', marginTop: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, overflow: 'hidden' }}>
-              <NutrientCell value={`${Math.round(shown.fiber)}g`} label={`Fiber · ${Math.round((shown.fiber / state.goal.fiber) * 100)}%`} />
-              <NutrientCell value={`${Math.round(shown.sodium)}mg`} label={`Sodium · ${Math.round((shown.sodium / state.goal.sodium) * 100)}%`} border />
-              <NutrientCell value={`${Math.round(shown.sugar)}g`} label={`Sugar · ${Math.round((shown.sugar / state.goal.sugar) * 100)}%`} border />
+              <NutrientCell icon={<FiberIcon color={t.fiber} size={13} />} value={`${Math.round(shown.fiber)}g`} label={`Fiber · ${Math.round((shown.fiber / state.goal.fiber) * 100)}%`} />
+              <NutrientCell icon={<SodiumIcon color={t.sodium} size={13} />} value={`${Math.round(shown.sodium)}mg`} label={`Sodium · ${Math.round((shown.sodium / state.goal.sodium) * 100)}%`} border />
+              <NutrientCell icon={<SugarIcon color={t.sugar} size={13} />} value={`${Math.round(shown.sugar)}g`} label={`Sugar · ${Math.round((shown.sugar / state.goal.sugar) * 100)}%`} border />
             </View>
+
+            <Pressable
+              onPress={() => setSearchModalVisible(true)}
+              accessibilityRole="button"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, backgroundColor: t.surface2, paddingVertical: 12, borderRadius: 14 }}
+            >
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round">
+                <Path d="M12 5v14M5 12h14" />
+              </Svg>
+              <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.green }}>+ Add ingredient to improve scan accuracy</Text>
+            </Pressable>
 
             <Pressable
               onPress={addToLog}
@@ -591,6 +690,69 @@ export default function ScannerPage() {
             <Text style={{ color: '#fff', fontFamily: F.b600, fontSize: 12 }}>{toast}</Text>
           </View>
         )}
+
+        <Modal visible={searchModalVisible} animationType="slide" transparent>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+            <View style={{ height: '80%', backgroundColor: t.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <Pressable onPress={() => { setSearchModalVisible(false); setSelectedBasis(null); }} hitSlop={12}>
+                  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2.5} strokeLinecap="round"><Path d="M18 6L6 18M6 6l12 12" /></Svg>
+                </Pressable>
+                <Text style={{ fontFamily: F.b600, fontSize: 16, color: t.ink, flex: 1 }}>{selectedBasis ? 'Amount' : 'Search Ingredient'}</Text>
+              </View>
+
+              {!selectedBasis ? (
+                <>
+                  <TextInput
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder="Search foods (e.g. butter)"
+                    placeholderTextColor={t.muted2}
+                    autoFocus
+                    style={{ backgroundColor: t.surface2, borderRadius: 12, padding: 14, fontFamily: F.b500, fontSize: 15, color: t.ink, marginBottom: 16 }}
+                  />
+                  {searching && <ActivityIndicator style={{ marginTop: 20 }} color={t.green} />}
+                  {searchErr && <Text style={{ fontFamily: F.b500, fontSize: 13, color: t.protein, marginTop: 10 }}>{searchErr}</Text>}
+                  <ScrollView keyboardShouldPersistTaps="handled">
+                    {searchResults.map((r, i) => (
+                      <Pressable
+                        key={i}
+                        onPress={() => setSelectedBasis(r)}
+                        style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: t.border }}
+                      >
+                        <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>{r.name}</Text>
+                        <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted }}>{r.brands ? `${r.brands} · ` : ''}{r.calories} kcal / 100g</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </>
+              ) : (
+                <View style={{ gap: 20, marginTop: 10 }}>
+                  <Text style={{ fontFamily: F.b600, fontSize: 18, color: t.ink, textAlign: 'center' }}>{selectedBasis.name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                    <TextInput
+                      value={addGrams}
+                      onChangeText={setAddGrams}
+                      keyboardType="numeric"
+                      autoFocus
+                      style={{ backgroundColor: t.surface2, borderRadius: 12, padding: 14, fontFamily: F.d700, fontSize: 24, color: t.ink, minWidth: 100, textAlign: 'center' }}
+                    />
+                    <Text style={{ fontFamily: F.b600, fontSize: 16, color: t.muted }}>grams</Text>
+                  </View>
+                  <Text style={{ fontFamily: F.b500, fontSize: 13, color: t.muted, textAlign: 'center' }}>
+                    Tip: 1 tsp butter ≈ 5g, 1 tbsp ≈ 14g.
+                  </Text>
+                  <Pressable
+                    onPress={confirmAddIngredient}
+                    style={{ backgroundColor: t.green, borderRadius: 16, height: 50, alignItems: 'center', justifyContent: 'center', marginTop: 10 }}
+                  >
+                    <Text style={{ fontFamily: F.d700, fontSize: 15, color: '#fff' }}>Add to Scan</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
       </View>
     </Screen>
   );
@@ -638,12 +800,12 @@ function ModeChip({ label, onPress, children }: { label: string; onPress: () => 
   );
 }
 
-function MacroCell({ color, value, label }: { color: string; value: string; label: string }) {
+function MacroCell({ icon, value, label }: { icon?: React.ReactNode; value: string; label: string }) {
   const { theme: t } = useStore();
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: 3, borderWidth: 1, borderColor: t.border, paddingVertical: 10, borderRadius: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ width: 8, height: 8, borderRadius: 9, backgroundColor: color }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        {icon}
         <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
       </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{label}</Text>
@@ -651,11 +813,14 @@ function MacroCell({ color, value, label }: { color: string; value: string; labe
   );
 }
 
-function NutrientCell({ value, label, border }: { value: string; label: string; border?: boolean }) {
+function NutrientCell({ icon, value, label, border }: { icon?: React.ReactNode; value: string; label: string; border?: boolean }) {
   const { theme: t } = useStore();
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: 2, paddingVertical: 9, borderLeftWidth: border ? 1 : 0, borderLeftColor: t.border }}>
-      <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        {icon}
+        <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
+      </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{label}</Text>
     </View>
   );

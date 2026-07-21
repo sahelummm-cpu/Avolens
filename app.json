@@ -6,7 +6,7 @@
     "scheme": "avolens",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.avolens.mobile",
@@ -58,7 +58,7 @@
       [
         "expo-notifications",
         {
-          "color": "#6e9e3a"
+          "color": "#111116"
         }
       ],
       [
@@ -73,10 +73,7 @@
         {
           "image": "./assets/images/avo-logo.png",
           "imageWidth": 140,
-          "backgroundColor": "#f5f7f3",
-          "dark": {
-            "backgroundColor": "#12160f"
-          }
+          "backgroundColor": "#f5f7f3"
         }
       ],
       [

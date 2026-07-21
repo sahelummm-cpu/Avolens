@@ -1,13 +1,31 @@
 import { Fragment, useId } from 'react';
-import Svg, { Defs, Line, LinearGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '@/lib/store';
 import { F } from '@/lib/fonts';
 
+const W = 300;
+const H = 138;
+const PAD_L = 16;
+const PAD_R = 16;
+const TOP = 26;
+const BOTTOM = 106;
+
+/** Smooth cubic spline path through data points (matching WeightChart) */
+function smoothPath(xs: number[], ys: number[]): string {
+  if (xs.length === 0) return '';
+  if (xs.length === 1) return `M ${xs[0]} ${ys[0]}`;
+  let d = `M ${xs[0]} ${ys[0]}`;
+  for (let i = 1; i < xs.length; i++) {
+    const mx = (xs[i - 1] + xs[i]) / 2;
+    d += ` C ${mx} ${ys[i - 1]}, ${mx} ${ys[i]}, ${xs[i]} ${ys[i]}`;
+  }
+  return d;
+}
+
 /**
- * Single-series bar chart for the Progress trends — gradient bars over faint
- * full-height tracks, the highlighted day emphasized with its value on top,
- * and a recessive dashed average line with an "avg" chip. Pass `onBarPress`
- * to make past-day bars tappable (`selected` controls the highlight).
+ * Progress Spline Line-Area Chart — matches the WeightChart visual style.
+ * Renders smooth spline curve, translucent area gradient, tappable data points,
+ * and floating value badge chip.
  */
 export function MiniBarChart({
   values,
@@ -21,139 +39,135 @@ export function MiniBarChart({
   labels: string[];
   color: string;
   avg: number;
-  /** Index of the tapped bar; highlights it instead of today. */
+  /** Index of the selected data point. */
   selected?: number | null;
   onBarPress?: (index: number) => void;
 }) {
   const t = useTheme();
-  // SVG ids are global per document (web) — a fixed id makes every chart on
-  // screen reuse the FIRST chart's gradient, so the calories/protein/water
-  // charts all rendered in one color. Unique ids per instance fix that.
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const barId = `mbcBar${uid}`;
-  const dimId = `mbcDim${uid}`;
-  const W = 300;
-  const H = 138;
-  const padTop = 22; // room for the value label above the highlighted bar
-  const baseline = 110;
-  const n = values.length || 1;
-  const slot = W / n;
-  const barW = Math.max(6, Math.min(26, slot - 10));
-  const max = Math.max(...values, 1);
+  const areaId = `mbcArea${uid}`;
+  const lineId = `mbcLine${uid}`;
 
-  const y = (v: number) => baseline - (baseline - padTop) * (v / max);
-  const avgY = y(avg);
-  const lastIdx = n - 1;
-  const highlightIdx = selected != null && selected >= 0 && selected < n ? selected : lastIdx;
+  const n = values.length || 1;
+  const max = Math.max(...values, avg || 1, 1);
+  const min = Math.min(...values, 0);
+  const span = Math.max(1, max - min);
+
+  const x = (i: number) => (n === 1 ? W / 2 : PAD_L + ((W - PAD_L - PAD_R) * i) / (n - 1));
+  const y = (v: number) => BOTTOM - (BOTTOM - TOP) * ((v - min) / span);
+
+  const xs = values.map((_, i) => x(i));
+  const ys = values.map((v) => y(v));
+  const line = smoothPath(xs, ys);
+  const area = n > 1 ? `${line} L ${xs[n - 1]} ${BOTTOM} L ${xs[0]} ${BOTTOM} Z` : '';
+
+  const highlightIdx = selected != null && selected >= 0 && selected < n ? selected : n - 1;
   const highlightVal = values[highlightIdx] ?? 0;
+  const hX = xs[highlightIdx] ?? x(n - 1);
+  const hY = ys[highlightIdx] ?? y(0);
+
+  const chipW = 52;
+  const chipX = Math.min(W - chipW - 2, Math.max(2, hX - chipW / 2));
+  const chipY = hY - 26 < 2 ? hY + 10 : hY - 26;
 
   return (
     <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
       <Defs>
-        <LinearGradient id={barId} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={color} stopOpacity={1} />
-          <Stop offset="1" stopColor={color} stopOpacity={0.6} />
+        <LinearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color} stopOpacity={0.32} />
+          <Stop offset="1" stopColor={color} stopOpacity={0.03} />
         </LinearGradient>
-        <LinearGradient id={dimId} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={color} stopOpacity={0.4} />
-          <Stop offset="1" stopColor={color} stopOpacity={0.14} />
+        <LinearGradient id={lineId} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={color} />
+          <Stop offset="1" stopColor={color} />
         </LinearGradient>
       </Defs>
 
-      {/* recessive baseline */}
-      <Line x1={0} y1={baseline} x2={W} y2={baseline} stroke={t.border} strokeWidth={1} />
+      {/* Recessive grid lines */}
+      {[0.3, 0.65].map((f) => {
+        const gy = TOP + (BOTTOM - TOP) * f;
+        return <Line key={f} x1={PAD_L} y1={gy} x2={W - PAD_R} y2={gy} stroke={t.border} strokeWidth={1} opacity={0.5} />;
+      })}
 
+      {/* Average dashed line */}
+      {avg > 0 && (
+        <Line
+          x1={PAD_L}
+          y1={y(avg)}
+          x2={W - PAD_R}
+          y2={y(avg)}
+          stroke={color}
+          strokeWidth={1.2}
+          strokeDasharray="4 3"
+          opacity={0.45}
+        />
+      )}
+
+      {/* Translucent area fill */}
+      {area ? <Path d={area} fill={`url(#${areaId})`} /> : null}
+
+      {/* Main Spline Line */}
+      <Path d={line} fill="none" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* Data point dots */}
       {values.map((v, i) => {
-        const cx = i * slot + slot / 2;
-        const x = cx - barW / 2;
-        const isLast = i === highlightIdx;
-        const barH = v > 0 ? Math.max(5, baseline - y(v)) : 0;
+        const cx = xs[i];
+        const cy = ys[i];
+        const isSelected = i === highlightIdx;
         return (
           <Fragment key={i}>
-            {/* faint full-height track so empty days still read as slots */}
-            <Rect
-              x={x}
-              y={padTop}
-              width={barW}
-              height={baseline - padTop}
-              rx={barW / 2}
-              fill={t.chartTrack}
-              opacity={0.5}
+            <Circle
+              cx={cx}
+              cy={cy}
+              r={isSelected ? 5 : 3.5}
+              fill={isSelected ? color : t.surface}
+              stroke={color}
+              strokeWidth={isSelected ? 2.5 : 1.8}
+              onPress={() => onBarPress?.(i)}
             />
-            {barH > 0 && (
-              <Rect
-                x={x}
-                y={baseline - barH}
-                width={barW}
-                height={barH}
-                rx={Math.min(barW / 2, barH / 2)}
-                fill={isLast ? `url(#${barId})` : `url(#${dimId})`}
-              />
-            )}
           </Fragment>
         );
       })}
 
-      {/* the highlighted day's value floats above its bar */}
+      {/* Floating value chip badge */}
       {highlightVal > 0 && (
-        <SvgText
-          x={highlightIdx * slot + slot / 2}
-          y={Math.max(12, y(highlightVal) - 7)}
-          fontSize={10}
-          fontFamily={F.d700}
-          fill={t.ink}
-          textAnchor="middle"
-        >
-          {Math.round(highlightVal).toLocaleString('en-US')}
-        </SvgText>
+        <Fragment>
+          <Rect
+            x={chipX}
+            y={chipY}
+            width={chipW}
+            height={19}
+            rx={9.5}
+            fill={color}
+          />
+          <SvgText
+            x={chipX + chipW / 2}
+            y={chipY + 13}
+            fontFamily={F.d700}
+            fontSize={11}
+            fill="#FFFFFF"
+            textAnchor="middle"
+          >
+            {highlightVal >= 1000 ? `${(highlightVal / 1000).toFixed(1)}k` : Math.round(highlightVal)}
+          </SvgText>
+        </Fragment>
       )}
 
-      {/* average reference line — recessive, dashed, labeled. The chip sits
-          above the line but flips below it near the top so it never clips. */}
-      {avg > 0 && (
-        <>
-          <Line x1={0} y1={avgY} x2={W} y2={avgY} stroke={t.muted2} strokeWidth={1.5} strokeDasharray="4 4" />
-          {(() => {
-            const chipY = avgY - 18 < 2 ? avgY + 4 : avgY - 18;
-            return (
-              <>
-                <Rect x={W - 44} y={chipY} width={40} height={15} rx={7} fill={t.navBg} />
-                <SvgText x={W - 24} y={chipY + 11} fontSize={9} fontFamily={F.d700} fill="#fff" textAnchor="middle">
-                  avg
-                </SvgText>
-              </>
-            );
-          })()}
-        </>
-      )}
-
-      {labels.map((lab, i) => (
+      {/* Day Labels along bottom */}
+      {labels.map((lbl, i) => (
         <SvgText
           key={i}
-          x={i * slot + slot / 2}
+          x={xs[i]}
           y={H - 4}
+          fontFamily={F.b600}
           fontSize={10}
-          fontFamily={i === highlightIdx ? F.b600 : F.b400}
           fill={i === highlightIdx ? t.ink : t.muted2}
           textAnchor="middle"
+          onPress={() => onBarPress?.(i)}
         >
-          {lab}
+          {lbl}
         </SvgText>
       ))}
-
-      {/* invisible full-height touch targets, one per day */}
-      {onBarPress &&
-        values.map((_, i) => (
-          <Rect
-            key={`hit${i}`}
-            x={i * slot}
-            y={0}
-            width={slot}
-            height={H}
-            fill="transparent"
-            onPress={() => onBarPress(i)}
-          />
-        ))}
     </Svg>
   );
 }

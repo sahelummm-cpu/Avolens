@@ -3,7 +3,7 @@ export type WeightUnit = 'kg' | 'lb';
 export type HeightUnit = 'cm' | 'ftin';
 export type ChartRange = 'W' | 'M' | 'Y';
 
-export type Sex = 'male' | 'female';
+export type Sex = 'male' | 'female' | 'other';
 export type GoalType = 'lose' | 'maintain' | 'gain';
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'very';
 
@@ -26,6 +26,10 @@ export interface OnboardingProfile {
   paceKgPerWeek?: number;
   dietSplit?: import('./goals').DietSplit;
   name?: string;
+  workoutsPerWeek?: '0-2' | '3-5' | '6+';
+  triedOtherApps?: boolean;
+  accomplishments?: string[];
+  referralCode?: string;
 }
 
 export interface FoodEntry {
@@ -43,6 +47,7 @@ export interface FoodEntry {
   healthScore: number;
   ingredients?: string[];
   icon?: 'yogurt' | 'bowl' | 'generic';
+  imageUri?: string;
   /** Display portion, e.g. amount 150 unit 'g'. Macros above stay absolute. */
   amount?: number;
   unit?: 'g' | 'ml' | 'serving' | 'item' | 'kcal';
@@ -225,6 +230,7 @@ export interface ScanResult {
   sugar: number;
   healthScore: number;
   ingredients: string[];
+  imageUri?: string;
   /** Per-100g basis, when the result came from a database lookup. */
   per100?: import('./foods').FoodBasis;
 }

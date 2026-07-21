@@ -14,7 +14,7 @@ const MAX_TEXT = 2_000;
 const MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 
 const SHAPE =
-  'Respond ONLY with a JSON object (no prose, no code fences) with keys: name (string, short common dish name), matchConfidence (number 0-100), calories (number), protein (number, g), carbs (number, g), fat (number, g), fiber (number, g), sodium (number, mg), sugar (number, g), healthScore (number 1-10), ingredients (array of strings).';
+  'Respond ONLY with a JSON object (no prose, no code fences) with keys: name (string, short common dish name), matchConfidence (number 0-100), calories (number), protein (number, g), carbs (number, g), fat (number, g), fiber (number, g), sodium (number, mg), sugar (number, g), healthScore (number 1-10), ingredients (array of strings, including estimated portion weights/sizes e.g. ["Grilled Chicken (150g)", "White Rice (100g)"]).';
 
 const PROMPTS: Record<string, string> = {
   meal: `Identify the meal in this photo and estimate its nutrition. ${SHAPE} ingredients = visible ingredients.`,
@@ -106,7 +106,7 @@ Deno.serve(async (req: Request) => {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-opus-4-8',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1024,
       messages: [{ role: 'user', content }],
     }),

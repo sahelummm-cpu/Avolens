@@ -13,7 +13,6 @@ export function PrimaryButton({
   small?: boolean;
   disabled?: boolean;
 }) {
-  const t = useTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -24,7 +23,7 @@ export function PrimaryButton({
         opacity: disabled ? 0.45 : 1,
         height: small ? 50 : 56,
         borderRadius: small ? 16 : 20,
-        backgroundColor: t.green,
+        backgroundColor: disabled ? '#CFCFD4' : '#111116',
         alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
@@ -32,11 +31,11 @@ export function PrimaryButton({
         ...(small
           ? null
           : {
-              shadowColor: 'rgba(47,158,110,1)',
-              shadowOpacity: 0.5,
-              shadowRadius: 26,
-              shadowOffset: { width: 0, height: 12 },
-              elevation: 6,
+              shadowColor: '#111116',
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 4,
             }),
       })}
     >

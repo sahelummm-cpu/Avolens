@@ -161,6 +161,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
         <Pressable onPress={() => setSex('male')} accessibilityRole="button" accessibilityState={{ selected: sex === 'male' }} style={chip(sex === 'male')}><Text style={{ fontFamily: F.d700, fontSize: 14, color: sex === 'male' ? t.green : t.ink }}>Male</Text></Pressable>
         <Pressable onPress={() => setSex('female')} accessibilityRole="button" accessibilityState={{ selected: sex === 'female' }} style={chip(sex === 'female')}><Text style={{ fontFamily: F.d700, fontSize: 14, color: sex === 'female' ? t.green : t.ink }}>Female</Text></Pressable>
+        <Pressable onPress={() => setSex('other')} accessibilityRole="button" accessibilityState={{ selected: sex === 'other' }} style={chip(sex === 'other')}><Text style={{ fontFamily: F.d700, fontSize: 14, color: sex === 'other' ? t.green : t.ink }}>Other</Text></Pressable>
       </View>
 
       <Label>Age</Label>

@@ -184,7 +184,7 @@ export function HydrationCard() {
     <View style={card}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
         <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.ink }}>Hydration</Text>
-        <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.fat }}>
+        <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.water }}>
           {todayL}
           <Text style={{ color: t.muted2, fontSize: 11 }}>/{goalL} L today</Text>
         </Text>
@@ -194,7 +194,7 @@ export function HydrationCard() {
           <MiniBarChart
             values={days.map((d) => d.glasses)}
             labels={days.map((d) => d.label)}
-            color={t.fat}
+            color={t.water}
             avg={avgGlasses}
             selected={sel}
             onBarPress={(i) => setSel(i === sel ? null : i)}
@@ -206,7 +206,7 @@ export function HydrationCard() {
             />
           )}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-            <AdherenceTile value={`${(avgGlasses * 0.5).toFixed(1)} L`} label="avg per day" color={t.fat} />
+            <AdherenceTile value={`${(avgGlasses * 0.5).toFixed(1)} L`} label="avg per day" color={t.water} />
             <AdherenceTile value={`${daysMet}/7`} label="days goal met" color={t.green} />
           </View>
         </>

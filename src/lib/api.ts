@@ -28,9 +28,9 @@ export async function lookupBarcode(code: string): Promise<ScanResult> {
   const healthScore = { a: 9, b: 8, c: 6, d: 4, e: 2 }[grade as 'a'] ?? 6;
   const ingredients: string[] = Array.isArray(p.ingredients)
     ? p.ingredients
-        .map((i: { text?: string }) => (i.text ?? '').trim())
-        .filter(Boolean)
-        .slice(0, 6)
+      .map((i: { text?: string }) => (i.text ?? '').trim())
+      .filter(Boolean)
+      .slice(0, 6)
     : [];
   return {
     name: [p.product_name, p.brands ? `(${String(p.brands).split(',')[0].trim()})` : '']

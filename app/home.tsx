@@ -80,12 +80,12 @@ export default function HomePage() {
             }}
           >
             <LinearGradient
-              colors={[t.amberGrad1, t.amberGrad2]}
+              colors={['#FF3B30', '#FF2D55']}
               start={{ x: 0.15, y: 0 }}
               end={{ x: 0.85, y: 1 }}
               style={{ width: 28, height: 28, borderRadius: 99, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Svg width={15} height={15} viewBox="0 0 24 24" fill="#fff">
+              <Svg width={23} height={23} viewBox="0 0 24 24" fill="#fff">
                 <Path d="M12 2c1 4 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 1-3-1 5 3 5 3 2 0-3-1-5 0-8Z" />
               </Svg>
             </LinearGradient>
@@ -190,14 +190,14 @@ export default function HomePage() {
               <Pressable
                 onPress={() => router.push('/settings')}
                 accessibilityRole="button"
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
               >
-                <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+                <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
                   <Path d="M9 17H7A5 5 0 0 1 7 7h2" />
                   <Path d="M15 7h2a5 5 0 0 1 0 10h-2" />
                   <Path d="M8 12h8" />
                 </Svg>
-                <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Connect</Text>
+                <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.ink }}>Connect</Text>
               </Pressable>
             </>
           )}
@@ -208,12 +208,12 @@ export default function HomePage() {
           <Pressable
             onPress={() => router.push('/scanner')}
             accessibilityRole="button"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.greenTint, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
           >
-            <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.8} strokeLinecap="round">
+            <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2.8} strokeLinecap="round">
               <Path d="M12 5v14M5 12h14" />
             </Svg>
-            <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.green }}>Add meal</Text>
+            <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.ink }}>Add meal</Text>
           </Pressable>
         </View>
         {dayEntries.length === 0 ? (
@@ -226,7 +226,7 @@ export default function HomePage() {
                 <Pressable
                   onPress={() => router.push('/scanner')}
                   accessibilityRole="button"
-                  style={{ backgroundColor: t.green, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
+                  style={{ backgroundColor: '#111116', borderRadius: 14, paddingVertical: 11, paddingHorizontal: 18 }}
                 >
                   <Text style={{ fontFamily: F.d700, fontSize: 13, color: '#fff' }}>Scan a meal</Text>
                 </Pressable>

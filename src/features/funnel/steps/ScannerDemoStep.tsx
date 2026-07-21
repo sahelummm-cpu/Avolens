@@ -3,11 +3,13 @@ import { Image, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ProteinIcon, CarbsIcon, FatIcon, FiberIcon, SodiumIcon, SugarIcon } from '@/components/NutritionIcons';
 import Animated, {
   Easing,
   interpolate,
   runOnJS,
   SlideInDown,
+  SlideInRight,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -93,9 +95,10 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
   ];
 
   return (
-    <Screen bg="#121614" inset={false}>
-      <View style={{ flex: 1, backgroundColor: '#121614', overflow: 'hidden' }}>
-        {/* Fake live preview — the bundled sample plate, under the same scrim the real camera uses */}
+    <Animated.View entering={SlideInRight.duration(350).easing(Easing.out(Easing.poly(4)))} style={{ flex: 1 }}>
+      <Screen bg="#121614" inset={false}>
+        <View style={{ flex: 1, backgroundColor: '#121614', overflow: 'hidden' }}>
+          {/* Fake live preview — the bundled sample plate, under the same scrim the real camera uses */}
         <Image source={require('../../../../assets/demo-meal.jpg')} resizeMode="cover" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} accessibilityLabel="Sample meal in the camera preview" />
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(18,22,20,.35)' }} />
 
@@ -174,7 +177,7 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
                   <Path d="M17 2c-1.6 0-2.6 2-2.6 5s1 5 2.6 5 2.6-1.6 2.6-5S18.6 2 17 2Z" />
                   <Path d="M17 12v10" />
                 </Svg>
-                <Text style={{ fontFamily: F.b700, fontSize: 12, color: '#26331a' }}>Food</Text>
+                <Text style={{ fontFamily: F.b700, fontSize: 12, color: '#111116' }}>Food</Text>
               </View>
               <FauxChip label="Barcode"><Path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" /></FauxChip>
               <FauxChip label="Label"><Rect x={4} y={3} width={16} height={18} rx={2.5} /><Path d="M8 8h8M8 12h8M8 16h5" /></FauxChip>
@@ -262,22 +265,22 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
             </View>
 
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-              <DemoMacroCell color={t.protein} value={grams(shown.protein)} label={`Protein · ${pct(shown.protein)}%`} t={t} />
-              <DemoMacroCell color={t.carbs} value={grams(shown.carbs)} label={`Carbs · ${pct(shown.carbs)}%`} t={t} />
-              <DemoMacroCell color={t.fat} value={grams(shown.fat)} label={`Fat · ${pct(shown.fat)}%`} t={t} />
+              <DemoMacroCell icon={<ProteinIcon color={t.protein} size={14} />} value={grams(shown.protein)} label={`Protein · ${pct(shown.protein)}%`} t={t} />
+              <DemoMacroCell icon={<CarbsIcon color={t.carbs} size={14} />} value={grams(shown.carbs)} label={`Carbs · ${pct(shown.carbs)}%`} t={t} />
+              <DemoMacroCell icon={<FatIcon color={t.fat} size={14} />} value={grams(shown.fat)} label={`Fat · ${pct(shown.fat)}%`} t={t} />
             </View>
 
             {/* Fiber / sodium / sugar strip, % of daily goals — same as the real result card */}
             <View style={{ flexDirection: 'row', marginTop: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, overflow: 'hidden' }}>
-              <DemoNutrientCell value={grams(shown.fiber)} label={`Fiber · ${Math.round((shown.fiber / state.goal.fiber) * 100)}%`} t={t} />
-              <DemoNutrientCell value={`${Math.round(shown.sodium)}mg`} label={`Sodium · ${Math.round((shown.sodium / state.goal.sodium) * 100)}%`} border t={t} />
-              <DemoNutrientCell value={grams(shown.sugar)} label={`Sugar · ${Math.round((shown.sugar / state.goal.sugar) * 100)}%`} border t={t} />
+              <DemoNutrientCell icon={<FiberIcon color={t.fiber} size={13} />} value={grams(shown.fiber)} label={`Fiber · ${Math.round((shown.fiber / (state.goal?.fiber || 30)) * 100)}%`} t={t} />
+              <DemoNutrientCell icon={<SodiumIcon color={t.sodium} size={13} />} value={`${Math.round(shown.sodium)}mg`} label={`Sodium · ${Math.round((shown.sodium / (state.goal?.sodium || 2300)) * 100)}%`} border t={t} />
+              <DemoNutrientCell icon={<SugarIcon color={t.sugar} size={13} />} value={grams(shown.sugar)} label={`Sugar · ${Math.round((shown.sugar / (state.goal?.sugar || 50)) * 100)}%`} border t={t} />
             </View>
 
             <Pressable
               onPress={() => { tap(); onDone(); }}
               accessibilityRole="button"
-              style={({ pressed }) => ({ flexDirection: 'row', width: '100%', height: 52, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+              style={({ pressed }) => ({ flexDirection: 'row', width: '100%', height: 52, borderRadius: 16, backgroundColor: '#111116', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, transform: [{ scale: pressed ? 0.98 : 1 }] })}
             >
               <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Continue to My Personalized Plan</Text>
               <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
@@ -297,7 +300,8 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
         </View>
       </View>
     </Screen>
-  );
+  </Animated.View>
+);
 }
 
 function FauxChip({ label, children }: { label: string; children: React.ReactNode }) {
@@ -310,11 +314,11 @@ function FauxChip({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
-function DemoMacroCell({ color, value, label, t }: { color: string; value: string; label: string; t: ReturnType<typeof useStore>['theme'] }) {
+function DemoMacroCell({ icon, value, label, t }: { icon?: React.ReactNode; value: string; label: string; t: ReturnType<typeof useStore>['theme'] }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: 3, borderWidth: 1, borderColor: t.border, paddingVertical: 10, borderRadius: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ width: 8, height: 8, borderRadius: 9, backgroundColor: color }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        {icon}
         <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
       </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{label}</Text>
@@ -322,10 +326,13 @@ function DemoMacroCell({ color, value, label, t }: { color: string; value: strin
   );
 }
 
-function DemoNutrientCell({ value, label, border, t }: { value: string; label: string; border?: boolean; t: ReturnType<typeof useStore>['theme'] }) {
+function DemoNutrientCell({ icon, value, label, border, t }: { icon?: React.ReactNode; value: string; label: string; border?: boolean; t: ReturnType<typeof useStore>['theme'] }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: 2, paddingVertical: 9, borderLeftWidth: border ? 1 : 0, borderLeftColor: t.border }}>
-      <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        {icon}
+        <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.ink }}>{value}</Text>
+      </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{label}</Text>
     </View>
   );

@@ -6,6 +6,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '@/components/Screen';
 import { Logo } from '@/components/Logo';
+import { BottomNav } from '@/components/BottomNav';
 import { useDailyTotals, useStore } from '@/lib/store';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { F } from '@/lib/fonts';
@@ -282,6 +283,7 @@ export default function CoachPage() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+      <BottomNav active="coach" />
     </Screen>
   );
 }

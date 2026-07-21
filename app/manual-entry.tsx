@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +12,7 @@ import { searchFoods, scaleBasis, type FoodBasis } from '@/lib/foods';
 import { searchCommonFoods } from '@/lib/commonFoods';
 import type { FavoriteFood, FoodEntry } from '@/lib/types';
 import { F } from '@/lib/fonts';
+import { ProteinIcon, CarbsIcon, FatIcon, FiberIcon, SodiumIcon, SugarIcon, CalorieIcon } from '@/components/NutritionIcons';
 
 const MEALS: FoodEntry['meal'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
@@ -83,6 +84,7 @@ export default function ManualEntryPage() {
   const [sodium, setSodium] = useState(editing?.sodium ?? 0);
   const [sugar, setSugar] = useState(editing?.sugar ?? 0);
   const [showMoreNutrients, setShowMoreNutrients] = useState(false);
+  const [basisImageUri, setBasisImageUri] = useState<string | null>(editing?.imageUri ?? null);
 
   const recents = useMemo(() => recentMeals(state), [state]);
   const favBasis = state.favorites.some((f) => f.name.toLowerCase() === name.trim().toLowerCase());
@@ -148,6 +150,7 @@ export default function ManualEntryPage() {
     setBasis(b);
     setName(b.brands ? `${b.name} (${b.brands})` : b.name);
     setGrams(String(b.servingG ?? 100));
+    setBasisImageUri(b.imageUri ?? null);
     setSearch('');
     setResults([]);
   };
@@ -161,9 +164,9 @@ export default function ManualEntryPage() {
       return { name: name.trim() || 'Quick add', meal, time, calories, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium: 0, sugar: 0, healthScore: 6, icon: 'generic', unit: 'kcal' };
     }
     if (basis && scaled) {
-      return { name, meal, time, calories: kcalFinal, protein: scaled.protein, carbs: scaled.carbs, fat: scaled.fat, fiber: scaled.fiber, sodium: scaled.sodium, sugar: scaled.sugar, healthScore: basis.healthScore, icon: 'generic', amount: gramsNum, unit: 'g' };
+      return { name, meal, time, calories: kcalFinal, protein: scaled.protein, carbs: scaled.carbs, fat: scaled.fat, fiber: scaled.fiber, sodium: scaled.sodium, sugar: scaled.sugar, healthScore: basis.healthScore, icon: 'generic', imageUri: basisImageUri || undefined, amount: gramsNum, unit: 'g' };
     }
-    return { name, meal, time, calories: kcalFinal, protein: protein * servings, carbs: carbs * servings, fat: fat * servings, fiber: fiber * servings, sodium: sodium * servings, sugar: sugar * servings, healthScore: 7, icon: 'generic', amount: servings, unit: 'serving' };
+    return { name, meal, time, calories: kcalFinal, protein: protein * servings, carbs: carbs * servings, fat: fat * servings, fiber: fiber * servings, sodium: sodium * servings, sugar: sugar * servings, healthScore: 7, icon: 'generic', imageUri: basisImageUri || undefined, amount: servings, unit: 'serving' };
   };
 
   // Don't allow logging a nameless or zero-calorie entry — an accidental tap
@@ -179,7 +182,7 @@ export default function ManualEntryPage() {
       // servings") — the edit form works in totals, so rewriting it to
       // "1 serving" here was wrong.
       const e = buildEntry();
-      updateEntry(editing.id, { name: e.name, meal: e.meal, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, fiber: e.fiber, sodium: e.sodium, sugar: e.sugar }, editDay);
+      updateEntry(editing.id, { name: e.name, meal: e.meal, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat, fiber: e.fiber, sodium: e.sodium, sugar: e.sugar, imageUri: e.imageUri }, editDay);
       router.push('/home');
       return;
     }
@@ -288,6 +291,15 @@ export default function ManualEntryPage() {
                 <View style={{ marginBottom: 16, gap: 8 }}>
                   {results.map((r, i) => (
                     <Pressable key={`${r.name}-${i}`} onPress={() => pickBasis(r)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 14 }}>
+                      {r.imageUri ? (
+                        <Image source={{ uri: r.imageUri }} style={{ width: 40, height: 40, borderRadius: 8 }} />
+                      ) : (
+                        <View style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: t.surface2, alignItems: 'center', justifyContent: 'center' }}>
+                          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={t.muted2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <Path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v16z" />
+                          </Svg>
+                        </View>
+                      )}
                       <View style={{ flex: 1 }}>
                         <Text numberOfLines={1} style={{ fontFamily: F.b600, fontSize: 13.5, color: t.ink }}>{r.name}</Text>
                         <Text numberOfLines={1} style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: 1 }}>
@@ -464,7 +476,10 @@ export default function ManualEntryPage() {
           {/* Calories */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 18, marginBottom: 16 }}>
             <View>
-              <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink }}>Calories</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <CalorieIcon color="#FF3B30" size={15} />
+                <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink }}>Calories</Text>
+              </View>
               <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: 2 }}>
                 {quick
                   ? 'Enter total calories'
@@ -502,9 +517,9 @@ export default function ManualEntryPage() {
             <>
               <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.muted, marginBottom: 8 }}>Macros (g)</Text>
               <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-                <MacroInput label="Protein" color={t.protein} value={protein} onChange={setProtein} />
-                <MacroInput label="Carbs" color={t.carbs} value={carbs} onChange={setCarbs} />
-                <MacroInput label="Fat" color={t.fat} value={fat} onChange={setFat} />
+                <MacroInput label="Protein" icon={<ProteinIcon color={t.protein} size={14} />} value={protein} onChange={setProtein} />
+                <MacroInput label="Carbs" icon={<CarbsIcon color={t.carbs} size={14} />} value={carbs} onChange={setCarbs} />
+                <MacroInput label="Fat" icon={<FatIcon color={t.fat} size={14} />} value={fat} onChange={setFat} />
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -518,9 +533,9 @@ export default function ManualEntryPage() {
               </View>
               {showMoreNutrients && (
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <NutrientInput label="Fiber" suffix="g" value={fiber} onChange={setFiber} />
-                  <NutrientInput label="Sodium" suffix="mg" value={sodium} onChange={setSodium} />
-                  <NutrientInput label="Sugar" suffix="g" value={sugar} onChange={setSugar} />
+                  <NutrientInput label="Fiber" icon={<FiberIcon color={t.fiber} size={13} />} suffix="g" value={fiber} onChange={setFiber} />
+                  <NutrientInput label="Sodium" icon={<SodiumIcon color={t.sodium} size={13} />} suffix="mg" value={sodium} onChange={setSodium} />
+                  <NutrientInput label="Sugar" icon={<SugarIcon color={t.sugar} size={13} />} suffix="g" value={sugar} onChange={setSugar} />
                 </View>
               )}
             </>
@@ -529,9 +544,9 @@ export default function ManualEntryPage() {
           {/* Macro summary for DB foods (scaled, read-only) */}
           {!quick && basis && scaled && (
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <ReadMacro label="Protein" color={t.protein} value={scaled.protein} />
-              <ReadMacro label="Carbs" color={t.carbs} value={scaled.carbs} />
-              <ReadMacro label="Fat" color={t.fat} value={scaled.fat} />
+              <ReadMacro label="Protein" icon={<ProteinIcon color={t.protein} size={14} />} value={scaled.protein} />
+              <ReadMacro label="Carbs" icon={<CarbsIcon color={t.carbs} size={14} />} value={scaled.carbs} />
+              <ReadMacro label="Fat" icon={<FatIcon color={t.fat} size={14} />} value={scaled.fat} />
             </View>
           )}
         </ScrollView>
@@ -602,13 +617,13 @@ function useNumericField(value: number, onChange: (n: number) => void) {
   return { text, onChangeText };
 }
 
-function MacroInput({ label, color, value, onChange }: { label: string; color: string; value: number; onChange: (n: number) => void }) {
+function MacroInput({ label, icon, value, onChange }: { label: string; icon?: React.ReactNode; value: number; onChange: (n: number) => void }) {
   const { theme: t } = useStore();
   const field = useNumericField(value, onChange);
   return (
     <View style={{ flex: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 10, alignItems: 'center', gap: 4 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ width: 8, height: 8, borderRadius: 9, backgroundColor: color }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        {icon}
         <TextInput keyboardType="decimal-pad" value={field.text} onChangeText={field.onChangeText} placeholder="0" placeholderTextColor={t.muted2} style={{ width: 40, fontFamily: F.d800, fontSize: 20, color: t.ink, textAlign: 'center', padding: 0 }} />
       </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted }}>{label}</Text>
@@ -616,12 +631,12 @@ function MacroInput({ label, color, value, onChange }: { label: string; color: s
   );
 }
 
-function ReadMacro({ label, color, value }: { label: string; color: string; value: number }) {
+function ReadMacro({ label, icon, value }: { label: string; icon?: React.ReactNode; value: number }) {
   const { theme: t } = useStore();
   return (
     <View style={{ flex: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 16, paddingVertical: 12, alignItems: 'center', gap: 4 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ width: 8, height: 8, borderRadius: 9, backgroundColor: color }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        {icon}
         <Text style={{ fontFamily: F.d800, fontSize: 20, color: t.ink }}>{value}</Text>
       </View>
       <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted }}>{label} (g)</Text>
@@ -629,12 +644,13 @@ function ReadMacro({ label, color, value }: { label: string; color: string; valu
   );
 }
 
-function NutrientInput({ label, suffix, value, onChange }: { label: string; suffix: string; value: number; onChange: (n: number) => void }) {
+function NutrientInput({ label, icon, suffix, value, onChange }: { label: string; icon?: React.ReactNode; suffix: string; value: number; onChange: (n: number) => void }) {
   const { theme: t } = useStore();
   const field = useNumericField(value, onChange);
   return (
     <View style={{ flex: 1, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 12, alignItems: 'center', gap: 3 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        {icon}
         <TextInput keyboardType="decimal-pad" value={field.text} onChangeText={field.onChangeText} placeholder="0" placeholderTextColor={t.muted2} style={{ minWidth: 24, fontFamily: F.d700, fontSize: 16, color: t.ink, textAlign: 'center', padding: 0 }} />
         <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{suffix}</Text>
       </View>

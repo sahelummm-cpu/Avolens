@@ -1,6 +1,5 @@
 /**
- * AvoLens design tokens — a 1:1 port of the CSS variables in the web app's
- * `src/app/globals.css`, exposed through a React context instead of CSS vars.
+ * AvoLens design tokens — Cal AI palette with macro nutrition tokens.
  */
 
 export interface Theme {
@@ -31,6 +30,18 @@ export interface Theme {
   fatTint2: string;
   fatTint3: string;
 
+  water: string;
+  waterTint: string;
+  waterTint2: string;
+  waterTint3: string;
+
+  fiber: string;
+  fiberTint: string;
+  sodium: string;
+  sodiumTint: string;
+  sugar: string;
+  sugarTint: string;
+
   purple: string;
   purpleTint: string;
   purpleTint2: string;
@@ -46,85 +57,117 @@ export interface Theme {
 }
 
 export const lightTheme: Theme = {
-  bg: '#f5f7f3',
-  surface: '#ffffff',
-  surface2: '#f7f9f5',
-  surface3: '#f0f3ef',
-  border: '#e5ebe2',
-  border2: '#f0f3ef',
-  ink: '#26331a',
-  muted: '#7c8a7f',
-  muted2: '#a9b4ab',
-  faint: '#c0cac1',
+  bg: '#FFFFFF',
+  surface: '#FFFFFF',
+  surface2: '#F5F5F6',
+  surface3: '#EDEDEF',
+  border: '#ECECEE',
+  border2: '#F5F5F6',
+  ink: '#0E0E12',
+  muted: '#8A8A8F',
+  muted2: '#A9A9AE',
+  faint: '#C7C7CC',
 
-  green: '#6e9e3a',
-  greenGrad1: '#a9c24a',
-  greenGrad2: '#5a8a2e',
-  greenTint: '#f2f2e2',
-  greenTrack: '#edf1eb',
-  chartTrack: '#dcefc5',
+  // General UI primary token (Cal AI jet-black)
+  green: '#111116',
+  greenGrad1: '#26262C',
+  greenGrad2: '#111116',
+  greenTint: '#F5F5F6',
+  greenTrack: '#E9E9EB',
+  chartTrack: '#E9E9EB',
 
-  protein: '#e4586e',
-  proteinTint: '#fbeaed',
-  carbs: '#e8a13b',
-  carbsTint: '#fbf1e0',
-  fat: '#4da8f0',
-  fatTint: '#e9f3fc',
-  fatTint2: '#edf6fc',
-  fatTint3: '#d7eaf8',
+  // Nutrition & Macro Colors (Fat: Olive Green)
+  protein: '#E4586E',
+  proteinTint: '#FBEAED',
+  carbs: '#E8A13B',
+  carbsTint: '#FBF1E0',
+  fat: '#8EA604',
+  fatTint: '#F1F8E9',
+  fatTint2: '#F4FCE8',
+  fatTint3: '#E8F5E9',
 
-  purple: '#7c6be6',
-  purpleTint: '#f5f3fc',
-  purpleTint2: '#eeebfb',
-  purpleBorder: '#e5e0f5',
+  // Water Tracker (Dedicated Light Blue)
+  water: '#4DA8F0',
+  waterTint: '#E9F3FC',
+  waterTint2: '#EDF6FC',
+  waterTint3: '#D7EAF8',
 
-  amberGrad1: '#f2b84b',
-  amberGrad2: '#e8862e',
+  // Micronutrient Colors
+  fiber: '#10B981',
+  fiberTint: '#ECFDF5',
+  sodium: '#F97316',
+  sodiumTint: '#FFF7ED',
+  sugar: '#EC4899',
+  sugarTint: '#FDF2F8',
 
-  navBg: '#26331a',
-  navIcon: '#8fa096',
+  purple: '#7C6BE6',
+  purpleTint: '#F5F3FC',
+  purpleTint2: '#EEEBFB',
+  purpleBorder: '#E5E0F5',
+
+  amberGrad1: '#FFB340',
+  amberGrad2: '#FF6B00',
+
+  navBg: '#111116',
+  navIcon: '#8A8A8F',
 
   scrim: 'rgba(0, 0, 0, 0.4)',
 };
 
 export const darkTheme: Theme = {
-  bg: '#12160f',
-  surface: '#1b2117',
-  surface2: '#20261b',
-  surface3: '#262d20',
-  border: '#313b2a',
-  border2: '#2a3324',
-  ink: '#eef2ea',
-  muted: '#9fae96',
-  muted2: '#7c8a74',
-  faint: '#5c6854',
+  bg: '#0E0E12',
+  surface: '#18181F',
+  surface2: '#202028',
+  surface3: '#282832',
+  border: '#2C2C36',
+  border2: '#22222B',
+  ink: '#FFFFFF',
+  muted: '#8A8A8F',
+  muted2: '#A9A9AE',
+  faint: '#5C5C66',
 
-  green: '#83ba49',
-  greenGrad1: '#b7d15f',
-  greenGrad2: '#6e9e3a',
-  greenTint: '#26311d',
-  greenTrack: '#262d20',
-  chartTrack: '#33421f',
+  // General UI primary token in dark mode
+  green: '#FFFFFF',
+  greenGrad1: '#ECECEE',
+  greenGrad2: '#FFFFFF',
+  greenTint: '#202028',
+  greenTrack: '#282832',
+  chartTrack: '#282832',
 
-  protein: '#ec7284',
-  proteinTint: '#2e1e21',
-  carbs: '#f0b458',
-  carbsTint: '#2f2618',
-  fat: '#6bb8f4',
-  fatTint: '#1b2733',
-  fatTint2: '#1c2833',
-  fatTint3: '#223244',
+  // Nutrition & Macro Colors (Fat: Olive Green)
+  protein: '#EC7284',
+  proteinTint: '#2E1E21',
+  carbs: '#F0B458',
+  carbsTint: '#2F2618',
+  fat: '#A2C40A',
+  fatTint: '#212B14',
+  fatTint2: '#1C2610',
+  fatTint3: '#283618',
 
-  purple: '#9a8cf0',
-  purpleTint: '#221f33',
+  // Water Tracker (Dedicated Light Blue)
+  water: '#6BB8F4',
+  waterTint: '#1B2733',
+  waterTint2: '#1C2833',
+  waterTint3: '#223244',
+
+  // Micronutrient Colors
+  fiber: '#34D399',
+  fiberTint: '#132A22',
+  sodium: '#FB923C',
+  sodiumTint: '#332014',
+  sugar: '#F472B6',
+  sugarTint: '#351C2A',
+
+  purple: '#9A8CF0',
+  purpleTint: '#221F33',
   purpleTint2: '#292440',
-  purpleBorder: '#3a3459',
+  purpleBorder: '#3A3459',
 
-  amberGrad1: '#f2b84b',
-  amberGrad2: '#e8862e',
+  amberGrad1: '#FFB340',
+  amberGrad2: '#FF6B00',
 
-  navBg: '#0c0f0a',
-  navIcon: '#6c7a63',
+  navBg: '#0A0A0E',
+  navIcon: '#8A8A8F',
 
   scrim: 'rgba(0, 0, 0, 0.6)',
 };

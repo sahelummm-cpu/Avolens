@@ -17,6 +17,7 @@ export interface FoodBasis {
   sugar: number;
   healthScore: number;
   servingG?: number; // typical serving weight, when known
+  imageUri?: string;
 }
 
 export interface ScaledMacros {
@@ -66,10 +67,11 @@ function toBasis(p: any): FoodBasis | null {
     sugar: Math.round(n.sugars_100g ?? 0),
     healthScore: nutriHealth(p.nutriscore_grade),
     servingG: Number.isFinite(serving) && serving > 0 ? Math.round(serving) : undefined,
+    imageUri: p.image_front_small_url || p.image_url || undefined,
   };
 }
 
-const FIELDS = 'product_name,brands,nutriments,nutriscore_grade,serving_quantity';
+const FIELDS = 'product_name,brands,nutriments,nutriscore_grade,serving_quantity,image_front_small_url,image_url';
 const UA = { 'User-Agent': 'AvoLens/1.0 (mobile; support@avolens.app)' };
 
 /**

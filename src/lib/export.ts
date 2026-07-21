@@ -1,6 +1,6 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Share } from 'react-native';
+import { Platform, Share } from 'react-native';
 import { dayKey } from './days';
 import type { AvoLensState } from './types';
 
@@ -64,11 +64,25 @@ function buildCsv(state: AvoLensState): string {
   return lines.join('\n');
 }
 
-/** Write the log/weight/measurements to a CSV file and open the share sheet. */
+/** Write the log/weight/measurements to a CSV file and open the share sheet or download on web. */
 export async function exportCsv(state: AvoLensState): Promise<void> {
+  const csvContent = buildCsv(state);
+  if (Platform.OS === 'web') {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `avolens-export-${dayKey(new Date())}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    return;
+  }
+
   const file = new File(Paths.cache, `avolens-export-${dayKey(new Date())}.csv`);
   if (file.exists) file.delete();
-  file.write(buildCsv(state));
+  file.write(csvContent);
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(file.uri, { mimeType: 'text/csv', dialogTitle: 'Export AvoLens data' });
   }

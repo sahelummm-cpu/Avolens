@@ -417,7 +417,7 @@ export default function ProgressPage() {
               <MiniBarChart
                 values={calorieTrend.values}
                 labels={calorieTrend.labels}
-                color={t.green}
+                color={t.carbs}
                 avg={insights.avgCalories}
                 selected={selCalDay}
                 onBarPress={(i) => setSelCalDay(i === selCalDay ? null : i)}

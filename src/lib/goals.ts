@@ -53,8 +53,8 @@ export interface ComputedGoal {
 }
 
 export function maintenanceCalories(p: Pick<OnboardingProfile, 'weightKg' | 'heightCm' | 'age' | 'sex' | 'activityLevel'>): number {
-  const bmr = 10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age + (p.sex === 'male' ? 5 : -161);
-  return bmr * ACTIVITY_FACTOR[p.activityLevel];
+  const bmr = 10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age + (p.sex === 'male' ? 5 : p.sex === 'female' ? -161 : -78);
+  return bmr * (ACTIVITY_FACTOR[p.activityLevel] ?? 1.375);
 }
 
 /**
