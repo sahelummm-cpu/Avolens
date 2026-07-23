@@ -51,7 +51,7 @@ export function projectWeight(log: WeightEntry[], targetKg: number | null): Weig
     num += (xs[i] - mx) * (ys[i] - my);
     den += (xs[i] - mx) ** 2;
   }
-  const slopePerDay = den === 0 ? 0 : num / den; // kg/day
+  const slopePerDay = den < 1e-4 ? 0 : num / den; // kg/day
   const ratePerWeek = slopePerDay * 7;
   const current = trend[trend.length - 1];
 
@@ -201,6 +201,9 @@ export function achievements(state: AvoLensState, streak: number): Achievement[]
   const firstWeight = state.weightLog[0]?.kg;
   const lastWeight = state.weightLog[state.weightLog.length - 1]?.kg;
   const lost = firstWeight != null && lastWeight != null ? firstWeight - lastWeight : 0;
+  const isGain = state.goalType === 'gain';
+  const progress2 = isGain ? -lost >= 2 : lost >= 2;
+  const progress5 = isGain ? -lost >= 5 : lost >= 5;
 
   return [
     { id: 'first-log', label: 'First log', hint: 'Log your first meal', earned: totalLogged >= 1 },
@@ -209,8 +212,18 @@ export function achievements(state: AvoLensState, streak: number): Achievement[]
     { id: 'streak-30', label: '30-day streak', hint: 'Log 30 days in a row', earned: streak >= 30 },
     { id: 'protein-5', label: 'Protein pro', hint: 'Hit protein 5 of 7 days', earned: adh.proteinDaysHit >= 5 },
     { id: 'consistent', label: 'Consistent', hint: 'Log 14 days total', earned: totalLogged >= 14 },
-    { id: 'down-2', label: 'Down 2 kg', hint: 'Lose 2 kg from your start', earned: lost >= 2 },
-    { id: 'down-5', label: 'Down 5 kg', hint: 'Lose 5 kg from your start', earned: lost >= 5 },
+    {
+      id: 'down-2',
+      label: isGain ? 'Up 2 kg' : 'Down 2 kg',
+      hint: isGain ? 'Gain 2 kg from your start' : 'Lose 2 kg from your start',
+      earned: progress2,
+    },
+    {
+      id: 'down-5',
+      label: isGain ? 'Up 5 kg' : 'Down 5 kg',
+      hint: isGain ? 'Gain 5 kg from your start' : 'Lose 5 kg from your start',
+      earned: progress5,
+    },
   ];
 }
 

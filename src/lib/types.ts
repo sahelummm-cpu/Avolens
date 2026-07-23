@@ -30,6 +30,9 @@ export interface OnboardingProfile {
   triedOtherApps?: boolean;
   accomplishments?: string[];
   referralCode?: string;
+  rolloverEnabled?: boolean;
+  rolloverMax?: number;
+  addBurnedCalories?: boolean;
 }
 
 export interface FoodEntry {
@@ -67,6 +70,23 @@ export interface FavoriteFood {
   sugar: number;
   healthScore: number;
   servingG?: number;
+}
+
+/** A saved barcode or AI photo scan. */
+export interface SavedScan {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  sodium: number;
+  sugar: number;
+  healthScore: number;
+  imageUri?: string;
+  barcode?: string;
+  date: string;
 }
 
 export interface WeightEntry {
@@ -211,11 +231,15 @@ export interface AvoLensState {
   /** Past days ('YYYY-MM-DD' → what was logged). Today lives in todayEntries. */
   history: Record<string, DayRecord>;
   favorites: FavoriteFood[];
+  savedScans: SavedScan[];
   weightLog: WeightEntry[];
   measurements: MeasurementEntry[];
   photos: ProgressPhoto[];
   achievementsSeen: string[];
   hasOnboarded: boolean;
+  rolloverEnabled: boolean;
+  rolloverMax: number;
+  addBurnedCalories: boolean;
 }
 
 export interface ScanResult {

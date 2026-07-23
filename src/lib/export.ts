@@ -61,6 +61,15 @@ function buildCsv(state: AvoLensState): string {
       lines.push([dayKey(new Date(m.ts)), m.waist ?? '', m.chest ?? '', m.hips ?? '', m.arm ?? '', m.thigh ?? ''].join(','));
     }
   }
+
+  if (state.favorites.length > 0) {
+    lines.push('');
+    lines.push('# Favorites');
+    lines.push(['name', 'brands', 'calories_100g', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g', 'sodium_mg', 'sugar_g', 'serving_g'].join(','));
+    for (const f of state.favorites) {
+      lines.push([csvCell(f.name), csvCell(f.brands ?? ''), f.calories, f.protein, f.carbs, f.fat, f.fiber, f.sodium, f.sugar, f.servingG ?? ''].join(','));
+    }
+  }
   return lines.join('\n');
 }
 

@@ -7,12 +7,13 @@ import { Screen } from '@/components/Screen';
 import { Logo } from '@/components/Logo';
 import { DayStrip } from '@/components/DayStrip';
 import { CalorieRing } from '@/components/CalorieRing';
+import { SummaryRingCarousel } from '@/components/SummaryRingCarousel';
 import { NutrientCarousel } from '@/components/NutrientCarousel';
 import { FoodLogCard } from '@/components/FoodLogCard';
 import { BottomNav } from '@/components/BottomNav';
 import { useDailyTotals, useStore } from '@/lib/store';
 import { selectedDayTotals } from '@/lib/dayStrip';
-import { daysAgoKey } from '@/lib/days';
+import { computeRollover, daysAgoKey } from '@/lib/days';
 import type { FoodEntry } from '@/lib/types';
 import { F } from '@/lib/fonts';
 
@@ -49,10 +50,10 @@ export default function HomePage() {
       });
 
   const fractions = {
-    calories: state.goal.calories > 0 ? Math.min(1, (state.goal.calories - totals.left) / state.goal.calories) : 0,
-    protein: Math.min(1, totals.protein / state.goal.protein),
-    carbs: Math.min(1, totals.carbs / state.goal.carbs),
-    fat: Math.min(1, totals.fat / state.goal.fat),
+    calories: state.goal.calories > 0 ? totals.calories / state.goal.calories : 0,
+    protein: state.goal.protein > 0 ? totals.protein / state.goal.protein : 0,
+    carbs: state.goal.carbs > 0 ? totals.carbs / state.goal.carbs : 0,
+    fat: state.goal.fat > 0 ? totals.fat / state.goal.fat : 0,
   };
 
   return (
@@ -100,108 +101,17 @@ export default function HomePage() {
 
         <DayStrip />
 
-        <View
-          style={{
-            backgroundColor: t.surface,
-            borderWidth: 1,
-            borderColor: t.border,
-            borderRadius: 28,
-            paddingVertical: 24,
-            paddingHorizontal: 22,
-            marginBottom: 14,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-            <View style={{ width: 156, height: 156, flexShrink: 0 }}>
-              <CalorieRing size={156} fractions={fractions} />
-            </View>
-            <View style={{ flex: 1, gap: 12 }}>
-              <View>
-                <Text style={{ fontFamily: F.d800, fontSize: 34, color: t.ink, lineHeight: 36, letterSpacing: -0.68 }}>
-                  {totals.left.toLocaleString('en-US')}
-                </Text>
-                <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, marginTop: 3 }}>kcal left</Text>
-              </View>
-              <View style={{ gap: 8 }}>
-                <MacroRow color={t.protein} label="Protein" cur={totals.protein} target={state.goal.protein} />
-                <MacroRow color={t.carbs} label="Carbs" cur={totals.carbs} target={state.goal.carbs} />
-                <MacroRow color={t.fat} label="Fat" cur={totals.fat} target={state.goal.fat} />
-              </View>
-            </View>
-          </View>
-        </View>
+        <SummaryRingCarousel
+          totals={totals}
+          state={state}
+          activity={activity}
+          fractions={fractions}
+          viewingToday={viewingToday}
+        />
 
         <NutrientCarousel />
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 14,
-            backgroundColor: t.surface,
-            borderWidth: 1,
-            borderColor: t.border,
-            borderRadius: 22,
-            paddingVertical: 14,
-            paddingHorizontal: 16,
-            marginBottom: 12,
-          }}
-        >
-          <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: t.fatTint, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={t.fat} strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-              <Path d="M6.5 6.5 17.5 17.5" />
-              <Path d="M4 8V6a2 2 0 0 1 2-2h2" />
-              <Path d="M20 16v2a2 2 0 0 1-2 2h-2" />
-              <Path d="M2 12h2M20 12h2M12 2v2M12 20v2" />
-            </Svg>
-          </View>
-          {state.healthConnected && activity ? (
-            <>
-              <View style={{ flex: 1, gap: 3 }}>
-                <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Exercise</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                  <Svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
-                    <Path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
-                    <Path d="M21 3v5h-5" />
-                  </Svg>
-                  <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>
-                    Auto-synced · {Platform.OS === 'android' ? 'Health Connect' : 'Apple Health'}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontFamily: F.d700, fontSize: 15, color: t.green }}>
-                  {activity.activeCalories.toLocaleString('en-US')}
-                  <Text style={{ fontFamily: F.d600, fontSize: 11, color: t.muted2 }}> kcal</Text>
-                </Text>
-                <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted2, marginTop: 1 }}>
-                  {activity.steps.toLocaleString('en-US')} steps
-                </Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={{ flex: 1, gap: 3 }}>
-                <Text style={{ fontFamily: F.b600, fontSize: 14, color: t.ink }}>Exercise</Text>
-                <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>
-                  Connect a device to auto-sync activity
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => router.push('/settings')}
-                accessibilityRole="button"
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.surface2, borderWidth: 1, borderColor: t.border, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 12 }}
-              >
-                <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
-                  <Path d="M9 17H7A5 5 0 0 1 7 7h2" />
-                  <Path d="M15 7h2a5 5 0 0 1 0 10h-2" />
-                  <Path d="M8 12h8" />
-                </Svg>
-                <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.ink }}>Connect</Text>
-              </Pressable>
-            </>
-          )}
-        </View>
+
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontFamily: F.d700, fontSize: 17, color: t.ink }}>{selectedLabel}</Text>

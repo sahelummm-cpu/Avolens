@@ -13,6 +13,8 @@ import { searchCommonFoods } from '@/lib/commonFoods';
 import type { ScanResult } from '@/lib/types';
 import { F } from '@/lib/fonts';
 import { ProteinIcon, CarbsIcon, FatIcon, FiberIcon, SodiumIcon, SugarIcon, CalorieIcon } from '@/components/NutritionIcons';
+import { SwipeableMacros } from '@/components/SwipeableMacros';
+
 
 function scanResultFromBasis(b: FoodBasis, grams: number): ScanResult {
   const s = scaleBasis(b, grams);
@@ -41,9 +43,140 @@ function mealForNow(): 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack' {
   return 'Snack';
 }
 
+function ScannerPortionEditor({
+  basis,
+  grams,
+  setGrams,
+  aiServings,
+  setAiServings,
+}: {
+  basis: FoodBasis | null;
+  grams: number;
+  setGrams: (g: number) => void;
+  aiServings: number;
+  setAiServings: (s: number | ((prev: number) => number)) => void;
+}) {
+  const t = useStore().theme;
+  const [unit, setUnit] = useState<'g' | 'tsp' | 'tbsp' | 'cup' | 'oz' | 'serving'>(basis ? 'g' : 'serving');
+  const [qtyText, setQtyText] = useState(basis ? String(grams) : String(aiServings));
+
+  const getGramMultiplier = (u: string) => {
+    switch (u) {
+      case 'tsp': return 5;
+      case 'tbsp': return 15;
+      case 'cup': return 240;
+      case 'oz': return 28.35;
+      case 'serving': return basis?.servingG || 100;
+      default: return 1; // 'g'
+    }
+  };
+
+  const applyChange = (valStr: string, targetUnit: typeof unit) => {
+    setQtyText(valStr);
+    const num = parseFloat(valStr) || 0;
+    if (basis) {
+      const gPerUnit = getGramMultiplier(targetUnit);
+      const totalGrams = Math.max(1, Math.round(num * gPerUnit));
+      setGrams(totalGrams);
+    } else {
+      const gPerUnit = getGramMultiplier(targetUnit);
+      const mult = targetUnit === 'serving' ? num : Math.max(0.1, (num * gPerUnit) / 100);
+      setAiServings(Math.round(mult * 10) / 10);
+    }
+  };
+
+  const handleStep = (delta: number) => {
+    const currentNum = parseFloat(qtyText) || 1;
+    const nextNum = Math.max(0.5, Math.round((currentNum + delta) * 2) / 2);
+    applyChange(String(nextNum), unit);
+  };
+
+  const presets = [
+    { label: '10g', val: 10, u: 'g' as const },
+    { label: '100g', val: 100, u: 'g' as const },
+    { label: '1 tsp', val: 1, u: 'tsp' as const },
+    { label: '1 tbsp', val: 1, u: 'tbsp' as const },
+    { label: '1 cup', val: 1, u: 'cup' as const },
+    { label: '1 serving', val: 1, u: 'serving' as const },
+  ];
+
+  return (
+    <View style={{ marginTop: 14, backgroundColor: t.surface2, borderRadius: 18, padding: 12, gap: 10 }}>
+      {/* Top Title + Quantity Step Input */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontFamily: F.b700, fontSize: 13, color: t.ink }}>
+          Serving Quantity {basis ? `· ${basis.calories} kcal/100g` : '· Portion'}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Pressable
+            onPress={() => handleStep(-0.5)}
+            accessibilityRole="button"
+            accessibilityLabel="Decrease portion"
+            hitSlop={8}
+            style={{ width: 30, height: 30, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round">
+              <Path d="M5 12h14" />
+            </Svg>
+          </Pressable>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 10, paddingHorizontal: 8, height: 32 }}>
+            <TextInput
+              keyboardType="decimal-pad"
+              value={qtyText}
+              onChangeText={(txt) => applyChange(txt.replace(/[^0-9.]/g, ''), unit)}
+              style={{ fontFamily: F.d800, fontSize: 14, color: t.ink, minWidth: 28, textAlign: 'center', padding: 0 }}
+            />
+            <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.muted, marginLeft: 2 }}>{unit}</Text>
+          </View>
+
+          <Pressable
+            onPress={() => handleStep(0.5)}
+            accessibilityRole="button"
+            accessibilityLabel="Increase portion"
+            hitSlop={8}
+            style={{ width: 30, height: 30, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round">
+              <Path d="M12 5v14M5 12h14" />
+            </Svg>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Quick Unit Presets */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+        {presets.map((p) => {
+          const isSelected = unit === p.u && parseFloat(qtyText) === p.val;
+          return (
+            <Pressable
+              key={p.label}
+              onPress={() => {
+                setUnit(p.u);
+                applyChange(String(p.val), p.u);
+              }}
+              accessibilityRole="button"
+              style={{
+                backgroundColor: isSelected ? t.green : t.surface,
+                borderWidth: 1,
+                borderColor: isSelected ? t.green : t.border,
+                borderRadius: 99,
+                paddingVertical: 4,
+                paddingHorizontal: 10,
+              }}
+            >
+              <Text style={{ fontFamily: F.b600, fontSize: 11, color: isSelected ? '#fff' : t.ink }}>{p.label}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function ScannerPage() {
   const router = useRouter();
-  const { state, addEntry, theme: t } = useStore();
+  const { state, addEntry, saveScan, theme: t } = useStore();
   const insets = useSafeAreaInsets();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -51,9 +184,52 @@ export default function ScannerPage() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [customIngText, setCustomIngText] = useState('');
   const [mode, setMode] = useState<'food' | 'barcode' | 'label' | 'voice'>('food');
   const [basis, setBasis] = useState<FoodBasis | null>(null);
   const [grams, setGrams] = useState(100);
+
+  const updateMacro = (key: string, val: number) => {
+    if (!result) return;
+    const next = { ...result, [key]: val };
+    if (key === 'protein' || key === 'carbs' || key === 'fat') {
+      const p = key === 'protein' ? val : next.protein;
+      const c = key === 'carbs' ? val : next.carbs;
+      const f = key === 'fat' ? val : next.fat;
+      next.calories = Math.round(p * 4 + c * 4 + f * 9);
+    }
+    setResult(next);
+  };
+
+  const addCustomIngredient = () => {
+    const text = customIngText.trim();
+    if (!text || !result) return;
+
+    let extraFat = 0;
+    let extraCal = 0;
+    const lower = text.toLowerCase();
+    if (lower.includes('butter')) {
+      const spoons = parseFloat(lower.match(/(\d+)/)?.[1] ?? '1');
+      extraFat = spoons * 11;
+      extraCal = spoons * 100;
+    } else if (lower.includes('oil')) {
+      const tbsp = parseFloat(lower.match(/(\d+)/)?.[1] ?? '1');
+      extraFat = tbsp * 14;
+      extraCal = tbsp * 120;
+    } else if (lower.includes('sugar')) {
+      const spoons = parseFloat(lower.match(/(\d+)/)?.[1] ?? '1');
+      extraCal = spoons * 40;
+    }
+
+    setResult({
+      ...result,
+      calories: result.calories + extraCal,
+      fat: result.fat + extraFat,
+      ingredients: [...result.ingredients, text],
+    });
+    setCustomIngText('');
+  };
   // Portion multiplier for AI (meal/label/voice) results — barcode results
   // scale by grams via `basis` instead.
   const [aiServings, setAiServings] = useState(1);
@@ -87,7 +263,8 @@ export default function ScannerPage() {
         const common = searchCommonFoods(q);
         setSearchResults(common);
         const apiRes = await searchFoods(q, ac.signal);
-        setSearchResults([...common, ...apiRes]);
+        const seen = new Set(common.map((f) => `${f.name.toLowerCase()}|${f.brands ?? ''}`));
+        setSearchResults([...common, ...apiRes.filter((f) => !seen.has(`${f.name.toLowerCase()}|${f.brands ?? ''}`))]);
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
         setSearchErr(err instanceof Error ? err.message : 'Search failed');
@@ -302,6 +479,25 @@ export default function ScannerPage() {
     router.push('/home');
   };
 
+  const handleSaveScan = () => {
+    if (!shown) return;
+    saveScan({
+      name: shown.name,
+      calories: Math.round(shown.calories),
+      protein: Math.round(shown.protein),
+      carbs: Math.round(shown.carbs),
+      fat: Math.round(shown.fat),
+      fiber: Math.round(shown.fiber),
+      sodium: Math.round(shown.sodium),
+      sugar: Math.round(shown.sugar),
+      healthScore: shown.healthScore,
+      imageUri: shown.imageUri,
+    });
+    setIsSaved(true);
+    setToast('Saved to Food Database under Saved Scans!');
+    setTimeout(() => setToast(null), 2500);
+  };
+
   const macroTotal = shown ? shown.protein + shown.carbs + shown.fat : 0;
   const pct = (v: number) => (macroTotal > 0 ? Math.round((v / macroTotal) * 100) : 0);
 
@@ -417,53 +613,19 @@ export default function ScannerPage() {
               </View>
             </View>
 
-            {basis && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, backgroundColor: t.surface2, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}>
-                <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
-                  Portion <Text style={{ color: t.muted }}>· {basis.calories} kcal / 100g</Text>
-                </Text>
-                <Pressable onPress={() => setPortion(grams - 10)} accessibilityRole="button" accessibilityLabel="Less" hitSlop={8} style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}>
-                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
-                </Pressable>
-                <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink, minWidth: 52, textAlign: 'center' }}>{grams} g</Text>
-                <Pressable onPress={() => setPortion(grams + 10)} accessibilityRole="button" accessibilityLabel="More" hitSlop={8} style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}>
-                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
-                </Pressable>
-              </View>
-            )}
+            <ScannerPortionEditor
+              basis={basis}
+              grams={grams}
+              setGrams={setPortion}
+              aiServings={aiServings}
+              setAiServings={setAiServings}
+            />
 
-            {/* Servings adjust for AI meal/label/voice results (barcode scales by grams above) */}
-            {!basis && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14, backgroundColor: t.surface2, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 12 }}>
-                <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
-                  Portion <Text style={{ color: t.muted }}>· of what was scanned</Text>
-                </Text>
-                <Pressable
-                  onPress={() => setAiServings((s) => Math.max(0.5, Math.round((s - 0.5) * 2) / 2))}
-                  accessibilityRole="button"
-                  accessibilityLabel="Smaller portion"
-                  hitSlop={8}
-                  style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={t.ink} strokeWidth={3} strokeLinecap="round"><Path d="M5 12h14" /></Svg>
-                </Pressable>
-                <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink, minWidth: 52, textAlign: 'center' }}>{aiServings}×</Text>
-                <Pressable
-                  onPress={() => setAiServings((s) => Math.min(10, Math.round((s + 0.5) * 2) / 2))}
-                  accessibilityRole="button"
-                  accessibilityLabel="Larger portion"
-                  hitSlop={8}
-                  style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3} strokeLinecap="round"><Path d="M12 5v14M5 12h14" /></Svg>
-                </Pressable>
-              </View>
-            )}
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, flexWrap: 'wrap' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 4 }}>
+            {/* Ingredients Section */}
+            <View style={{ marginTop: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <Text style={{ fontFamily: F.b700, fontSize: 12, color: t.ink, letterSpacing: 0.2 }}>
-                  Scanned Ingredients ({shown.ingredients.length})
+                  Meal Ingredients ({shown.ingredients.length})
                 </Text>
                 <Pressable
                   onPress={() => setSearchModalVisible(true)}
@@ -471,52 +633,85 @@ export default function ScannerPage() {
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                 >
                   <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={2.6} strokeLinecap="round">
-                    <Path d="M12 5v14M5 12h14" />
+                    <Circle cx={11} cy={11} r={8} />
+                    <Path d="m21 21-4.35-4.35" />
                   </Svg>
-                  <Text style={{ fontFamily: F.d700, fontSize: 11.5, color: t.green }}>+ Add Ingredient</Text>
+                  <Text style={{ fontFamily: F.d700, fontSize: 11.5, color: t.green }}>Search DB</Text>
                 </Pressable>
               </View>
-              {shown.ingredients.map((ing, i) => (
-                <View
-                  key={ing + i}
+
+              {/* Ingredient Chips */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                {shown.ingredients.map((ing, i) => (
+                  <View
+                    key={ing + i}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: t.greenTint,
+                      borderWidth: 1,
+                      borderColor: t.green + '33',
+                      paddingVertical: 5,
+                      paddingLeft: 11,
+                      paddingRight: 9,
+                      borderRadius: 99,
+                    }}
+                  >
+                    <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.greenGrad2 }}>{ing}</Text>
+                    <Pressable onPress={() => removeIngredient(i)} accessibilityRole="button" accessibilityLabel={`Remove ${ing}`} hitSlop={8}>
+                      <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={t.greenGrad2} strokeWidth={3} strokeLinecap="round">
+                        <Path d="M6 6l12 12M18 6 6 18" />
+                      </Svg>
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+
+              {/* Quick Add Missing Ingredient Input Box */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.bg, borderRadius: 14, borderWidth: 1, borderColor: t.border, paddingLeft: 12, paddingRight: 6, paddingVertical: 4 }}>
+                <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.muted} strokeWidth={2.4} strokeLinecap="round">
+                  <Path d="M12 5v14M5 12h14" />
+                </Svg>
+                <TextInput
+                  value={customIngText}
+                  onChangeText={setCustomIngText}
+                  placeholder="Add missing ingredient (e.g. Butter 2 spoons)"
+                  placeholderTextColor={t.muted2}
+                  onSubmitEditing={addCustomIngredient}
+                  style={{ flex: 1, fontFamily: F.b500, fontSize: 13, color: t.ink, paddingVertical: 8 }}
+                />
+                <Pressable
+                  onPress={addCustomIngredient}
+                  disabled={!customIngText.trim()}
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    backgroundColor: t.greenTint,
-                    borderWidth: 1,
-                    borderColor: t.green + '33',
-                    paddingVertical: 5,
-                    paddingLeft: 11,
-                    paddingRight: 9,
-                    borderRadius: 99,
+                    backgroundColor: customIngText.trim() ? t.green : t.faint,
+                    borderRadius: 10,
+                    paddingVertical: 6,
+                    paddingHorizontal: 12,
                   }}
                 >
-                  <Text style={{ fontFamily: F.b600, fontSize: 12, color: t.greenGrad2 }}>{ing}</Text>
-                  <Pressable onPress={() => removeIngredient(i)} accessibilityRole="button" accessibilityLabel={`Remove ${ing}`} hitSlop={8}>
-                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={t.greenGrad2} strokeWidth={3} strokeLinecap="round">
-                      <Path d="M6 6l12 12M18 6 6 18" />
-                    </Svg>
-                  </Pressable>
-                </View>
-              ))}
-              {shown.ingredients.length === 0 && (
-                <Text style={{ fontFamily: F.b500, fontSize: 12, color: t.muted, fontStyle: 'italic' }}>
-                  No ingredients listed. Tap + Add Ingredient to add items.
-                </Text>
-              )}
+                  <Text style={{ fontFamily: F.d700, fontSize: 12, color: '#fff' }}>+ Add</Text>
+                </Pressable>
+              </View>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-              <MacroCell icon={<ProteinIcon color={t.protein} size={14} />} value={`${Math.round(shown.protein)}g`} label={`Protein · ${pct(shown.protein)}%`} />
-              <MacroCell icon={<CarbsIcon color={t.carbs} size={14} />} value={`${Math.round(shown.carbs)}g`} label={`Carbs · ${pct(shown.carbs)}%`} />
-              <MacroCell icon={<FatIcon color={t.fat} size={14} />} value={`${Math.round(shown.fat)}g`} label={`Fat · ${pct(shown.fat)}%`} />
-            </View>
-
-            <View style={{ flexDirection: 'row', marginTop: 12, borderWidth: 1, borderColor: t.border, borderRadius: 12, overflow: 'hidden' }}>
-              <NutrientCell icon={<FiberIcon color={t.fiber} size={13} />} value={`${Math.round(shown.fiber)}g`} label={`Fiber · ${Math.round((shown.fiber / state.goal.fiber) * 100)}%`} />
-              <NutrientCell icon={<SodiumIcon color={t.sodium} size={13} />} value={`${Math.round(shown.sodium)}mg`} label={`Sodium · ${Math.round((shown.sodium / state.goal.sodium) * 100)}%`} border />
-              <NutrientCell icon={<SugarIcon color={t.sugar} size={13} />} value={`${Math.round(shown.sugar)}g`} label={`Sugar · ${Math.round((shown.sugar / state.goal.sugar) * 100)}%`} border />
+            {/* Editable Nutrients & Macros */}
+            <View style={{ marginTop: 16 }}>
+              <Text style={{ fontFamily: F.b700, fontSize: 12, color: t.ink, letterSpacing: 0.2, marginBottom: 8 }}>
+                Nutrition & Macros (Tap to Edit)
+              </Text>
+              <SwipeableMacros
+                values={{
+                  protein: Math.round(shown.protein),
+                  carbs: Math.round(shown.carbs),
+                  fat: Math.round(shown.fat),
+                  fiber: Math.round(shown.fiber),
+                  sodium: Math.round(shown.sodium),
+                  sugar: Math.round(shown.sugar),
+                }}
+                onChange={(key, val) => updateMacro(key, val)}
+              />
             </View>
 
             <Pressable
@@ -530,13 +725,40 @@ export default function ScannerPage() {
               <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.green }}>+ Add ingredient to improve scan accuracy</Text>
             </Pressable>
 
-            <Pressable
-              onPress={addToLog}
-              accessibilityRole="button"
-              style={{ width: '100%', height: 50, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center', marginTop: 14 }}
-            >
-              <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Add to Log</Text>
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+              <Pressable
+                onPress={handleSaveScan}
+                disabled={isSaved}
+                accessibilityRole="button"
+                style={{
+                  flex: 1,
+                  height: 50,
+                  borderRadius: 16,
+                  backgroundColor: isSaved ? t.greenTint : t.surface2,
+                  borderWidth: 1,
+                  borderColor: isSaved ? t.green : t.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'row',
+                  gap: 6,
+                }}
+              >
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill={isSaved ? t.green : 'none'} stroke={isSaved ? t.green : t.ink} strokeWidth={2.2} strokeLinecap="round">
+                  <Path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                </Svg>
+                <Text style={{ color: isSaved ? t.green : t.ink, fontFamily: F.d700, fontSize: 14 }}>
+                  {isSaved ? 'Saved!' : 'Save Scan'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={addToLog}
+                accessibilityRole="button"
+                style={{ flex: 1.4, height: 50, borderRadius: 16, backgroundColor: t.green, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ color: '#fff', fontFamily: F.d700, fontSize: 15 }}>Add to Log</Text>
+              </Pressable>
+            </View>
             <Pressable
               onPress={() => router.push('/manual-entry')}
               accessibilityRole="button"

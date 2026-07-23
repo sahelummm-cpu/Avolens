@@ -52,7 +52,11 @@ function nutriHealth(grade: unknown): number {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toBasis(p: any): FoodBasis | null {
   const n = p?.nutriments ?? {};
-  const kcal = n['energy-kcal_100g'];
+  const kcal =
+    n['energy-kcal_100g'] ??
+    n['energy-kcal'] ??
+    n['energy-kcal_value'] ??
+    (n['energy_100g'] ? n['energy_100g'] / 4.184 : null);
   if (kcal == null || !p?.product_name) return null;
   const serving = Number(p.serving_quantity);
   return {

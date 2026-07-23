@@ -46,7 +46,7 @@ export default function SettingsPage() {
   const {
     state, session, signOut, deleteAccount, toggleLogReminder, setMedEnabled,
     setUnit, setThemeMode, toggleDarkManual, resolvedDark, setGoalCalories, setHeightCm,
-    setHeightUnit, recalcGoals, clearLoggedData, connectHealth, disconnectHealth, theme: t,
+    setHeightUnit, setRolloverEnabled, setRolloverMax, setAddBurnedCalories, recalcGoals, clearLoggedData, connectHealth, disconnectHealth, theme: t,
   } = useStore();
   const [modal, setModal] = useState<ModalKind>(null);
   const [medModalOpen, setMedModalOpen] = useState(false);
@@ -158,6 +158,20 @@ export default function SettingsPage() {
           <Row border onPress={() => setModal('water')}>
             <Text style={rowLabel(t)}>Water goal</Text>
             <ChevronValue>{state.goal.water} glasses</ChevronValue>
+          </Row>
+          <Row border>
+            <View style={{ gap: 1 }}>
+              <Text style={rowLabel(t)}>Rollover extra calories</Text>
+              <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Up to {state.rolloverMax ?? 200} cals from yesterday</Text>
+            </View>
+            <ToggleSwitch on={state.rolloverEnabled ?? true} onChange={() => setRolloverEnabled(!state.rolloverEnabled)} />
+          </Row>
+          <Row border>
+            <View style={{ gap: 1 }}>
+              <Text style={rowLabel(t)}>Add calories burned back</Text>
+              <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted }}>Increase daily goal from workouts</Text>
+            </View>
+            <ToggleSwitch on={state.addBurnedCalories ?? true} onChange={() => setAddBurnedCalories(!state.addBurnedCalories)} />
           </Row>
           <Row border onPress={doRecalc}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>

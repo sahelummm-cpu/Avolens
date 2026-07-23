@@ -128,13 +128,13 @@ function dayKeyAgo(n: number, now: Date): string {
 export function takenThisCycle(s: MedSchedule, now = new Date()): ShotRecord | undefined {
   const med = resolveMedication(s);
   const windowDays = med.frequency === 'daily' ? 0 : 6;
+  const targetDates = new Set<string>();
+  for (let n = 0; n <= windowDays; n++) {
+    targetDates.add(dayKeyAgo(n, now));
+  }
   for (let i = s.shots.length - 1; i >= 0; i--) {
     const shot = s.shots[i];
-    for (let n = 0; n <= windowDays; n++) {
-      if (shot.date === dayKeyAgo(n, now)) return shot;
-    }
-    // Shots are appended chronologically; once older than the window, stop.
-    break;
+    if (targetDates.has(shot.date)) return shot;
   }
   return undefined;
 }
@@ -150,19 +150,22 @@ export function nextDoseAt(s: MedSchedule, now = new Date()): Date {
     return d;
   }
 
-  // Weekly: first occurrence of medDay at the scheduled time that's ahead.
-  for (let i = 0; i < 8; i++) {
-    if (d.getDay() === s.medDay && d > now) break;
-    d.setDate(d.getDate() + 1);
+  // Weekly: find the most recent scheduled slot (today or up to 6 days in the past).
+  const daysSinceSlot = (d.getDay() - s.medDay + 7) % 7;
+  const recentSlot = new Date(d);
+  recentSlot.setDate(recentSlot.getDate() - daysSinceSlot);
+
+  const taken = takenThisCycle(s, now);
+  if (recentSlot <= now || taken) {
+    const nextSlot = new Date(recentSlot);
+    nextSlot.setDate(nextSlot.getDate() + 7);
+    if (taken && taken.date > dayKey(recentSlot) && taken.date >= dayKey(nextSlot)) {
+      nextSlot.setDate(nextSlot.getDate() + 7);
+    }
+    return nextSlot;
   }
-  if (takenThisCycle(s, now) && d.getTime() - now.getTime() < 7 * DAY_MS) {
-    // Already injected this week and the next slot is still inside it.
-    const taken = takenThisCycle(s, now)!;
-    const weekBefore = new Date(d);
-    weekBefore.setDate(weekBefore.getDate() - 7);
-    if (taken.date >= dayKey(weekBefore)) d.setDate(d.getDate() + 7);
-  }
-  return d;
+
+  return recentSlot;
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

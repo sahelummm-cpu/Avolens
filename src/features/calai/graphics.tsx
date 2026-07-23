@@ -3,8 +3,9 @@
  * chart / comparison / testimonial cards that sit between the questions.
  * All vector art is inline react-native-svg so it renders on web + native.
  */
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop, Line } from 'react-native-svg';
+import { RUNNER_BASE64 } from './animalIcons';
 import { F } from '@/lib/fonts';
 import { C } from './kit';
 
@@ -73,28 +74,45 @@ export function PotentialChart() {
 
 function PersonIcon({ check, color }: { check?: boolean; color: string }) {
   return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Circle cx="12" cy="8" r="4" />
-      <Path d="M4 21c0-4 3.5-6 8-6s8 2 8 6" />
-      {check && <Path d="M17 13.5 18.4 15 21 12" />}
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx="12" cy="7" r="4" />
+      <Path d="M5 21c0-3.5 3-6 7-6s7 2.5 7 6" />
+      {check && <Path d="M15 11l2 2 4-4" strokeWidth={2.5} />}
     </Svg>
   );
 }
 
 export function Comparison() {
   return (
-    <View style={{ flexDirection: 'row', gap: 14, backgroundColor: C.card, borderRadius: 24, padding: 18, alignItems: 'flex-end' }}>
-      <View style={{ flex: 1, backgroundColor: '#EAEAEC', borderRadius: 20, height: 210, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 26 }}>
-        <Text style={{ position: 'absolute', top: 24, fontFamily: F.d700, fontSize: 15, color: C.sub, textAlign: 'center' }}>Without{'\n'}AvoLens</Text>
-        <View style={{ backgroundColor: '#DDDDE0', borderRadius: 14, width: 64, height: 46, alignItems: 'center', justifyContent: 'center' }}>
-          <PersonIcon color={C.sub} />
+    <View style={{ backgroundColor: '#F6F5F8', borderRadius: 28, padding: 22, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', gap: 16, width: '100%', height: 230 }}>
+        {/* Without AvoLens Card */}
+        <View style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 22, overflow: 'hidden', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10, elevation: 2 }}>
+          <Text style={{ fontFamily: F.d700, fontSize: 15, color: C.ink, textAlign: 'center', marginTop: 24, lineHeight: 19 }}>
+            Without{'\n'}AvoLens
+          </Text>
+          <View style={{ width: '100%', height: 64, backgroundColor: '#E3E3E6', borderTopLeftRadius: 16, borderTopRightRadius: 16, alignItems: 'center', justifyContent: 'center' }}>
+            <PersonIcon color="#66656E" />
+          </View>
+        </View>
+
+        {/* With AvoLens Card */}
+        <View style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 22, overflow: 'hidden', justifyContent: 'space-between', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 4 }}>
+          <Text style={{ fontFamily: F.d700, fontSize: 15, color: C.ink, textAlign: 'center', marginTop: 24, lineHeight: 19 }}>
+            With{'\n'}AvoLens
+          </Text>
+          <View style={{ width: '100%', height: 146, backgroundColor: C.ink, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+            <PersonIcon check color="#FFFFFF" />
+          </View>
         </View>
       </View>
-      <View style={{ flex: 1, backgroundColor: C.ink, borderRadius: 20, height: 250, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 26 }}>
-        <Text style={{ position: 'absolute', top: 26, fontFamily: F.d700, fontSize: 15, color: C.white, textAlign: 'center' }}>With{'\n'}AvoLens</Text>
-        <View style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 14, width: 64, height: 46, alignItems: 'center', justifyContent: 'center' }}>
-          <PersonIcon check color={C.white} />
-        </View>
+
+      {/* Subtitle checkmark */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20 }}>
+        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#93929A" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+          <Path d="m5 12 5 5 9-11" />
+        </Svg>
+        <Text style={{ fontFamily: F.b600, fontSize: 13.5, color: '#8A8992' }}>Small daily actions lead to progress</Text>
       </View>
     </View>
   );
@@ -112,27 +130,30 @@ function FlameIcon({ size = 22, color = C.ink }: { size?: number; color?: string
 
 export function BurnedCard() {
   return (
-    <View style={{ backgroundColor: C.card, borderRadius: 24, height: 300, overflow: 'hidden', justifyContent: 'flex-end' }}>
-      <View style={{ position: 'absolute', top: 20, right: 20, alignItems: 'center', opacity: 0.18 }}>
-        <Svg width={150} height={200} viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round">
-          <Circle cx="13" cy="4" r="2" />
-          <Path d="M6 20l3-5 3 2 2-4 3 3M9 15l-2-4 4-2 3 3" />
-        </Svg>
-      </View>
-      <View style={{ margin: 18, backgroundColor: C.white, borderRadius: 18, padding: 16, width: 180 }}>
-        <Text style={{ fontFamily: F.b600, fontSize: 12.5, color: C.sub }}>Today's Goal</Text>
+    <View style={{ backgroundColor: C.card, borderRadius: 24, height: 320, overflow: 'hidden', justifyContent: 'flex-end', position: 'relative' }}>
+      <Image
+        source={{ uri: RUNNER_BASE64 }}
+        style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        resizeMode="cover"
+      />
+      <View style={{ margin: 18, backgroundColor: C.white, borderRadius: 20, padding: 18, width: 190, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 4 }}>
+        <Text style={{ fontFamily: F.b600, fontSize: 13, color: C.sub }}>Today's Goal</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
           <FlameIcon />
           <Text style={{ fontFamily: F.d800, fontSize: 24, color: C.ink }}>600 Cals</Text>
         </View>
         <View style={{ height: 1, backgroundColor: C.border, marginVertical: 12 }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={{ width: 26, height: 26, borderRadius: 99, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' }}>
-            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.white} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Path d="M13 4v6M9 8l4-4 4 4M6 20l3-6 4 2 4-6" /></Svg>
+          <View style={{ width: 28, height: 28, borderRadius: 99, backgroundColor: C.ink, alignItems: 'center', justifyContent: 'center' }}>
+            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={C.white} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+              <Path d="M4 17l6-6 4 4 6-8" />
+            </Svg>
           </View>
-          <Text style={{ fontFamily: F.b600, fontSize: 12.5, color: C.sub }}>Running</Text>
+          <Text style={{ fontFamily: F.b600, fontSize: 13, color: C.sub }}>Running</Text>
         </View>
-        <Text style={{ fontFamily: F.d800, fontSize: 18, color: C.ink, marginTop: 8 }}>+100 cals</Text>
+        <View style={{ marginTop: 8, backgroundColor: '#F4F2F8', borderRadius: 99, paddingVertical: 4, paddingHorizontal: 10, alignSelf: 'flex-start' }}>
+          <Text style={{ fontFamily: F.d800, fontSize: 14, color: C.ink }}>+100 cals</Text>
+        </View>
       </View>
     </View>
   );
@@ -166,9 +187,104 @@ function CalRing({ used, total, badge }: { used: number; total: number; badge: s
 
 export function RolloverCards() {
   return (
-    <View style={{ flexDirection: 'row', gap: 14 }}>
-      <CalRing used={2350} total={2500} badge="Yesterday" />
-      <CalRing used={2350} total={2500} badge="Today" />
+    <View style={{ height: 290, width: '100%', position: 'relative', marginTop: 10 }}>
+      {/* Yesterday Card (Top Left) */}
+      <View
+        style={{
+          width: 175,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 22,
+          padding: 16,
+          position: 'absolute',
+          top: 0,
+          left: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.06,
+          shadowRadius: 16,
+          elevation: 4,
+          borderWidth: 1,
+          borderColor: '#F0EFEF',
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8F7FA', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99, alignSelf: 'flex-start' }}>
+          <FlameIcon size={14} />
+          <Text style={{ fontFamily: F.b600, fontSize: 13, color: C.ink }}>Yesterday</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 14 }}>
+          <Text style={{ fontFamily: F.d800, fontSize: 32, color: C.ink, letterSpacing: -0.8 }}>2350</Text>
+          <Text style={{ fontFamily: F.b600, fontSize: 14, color: '#A09FA6' }}>/2500</Text>
+        </View>
+
+        {/* Ring & Floating Tooltip */}
+        <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 14, height: 86, position: 'relative' }}>
+          <Svg width={74} height={74} viewBox="0 0 74 74">
+            <Circle cx="37" cy="37" r={30} fill="none" stroke="#EFEFEF" strokeWidth={5.5} />
+            <Circle cx="37" cy="37" r={30} fill="none" stroke={C.ink} strokeWidth={5.5} strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 30 * (2350 / 2500)} ${2 * Math.PI * 30}`} transform="rotate(-90 37 37)" />
+          </Svg>
+          <View style={{ position: 'absolute' }}>
+            <FlameIcon size={14} />
+          </View>
+          <View style={{ position: 'absolute', left: -14, top: 4, backgroundColor: C.ink, borderRadius: 10, paddingVertical: 5, paddingHorizontal: 8, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 6 }}>
+            <Text style={{ fontFamily: F.b600, fontSize: 9.5, color: '#FFFFFF' }}>Cals left</Text>
+            <Text style={{ fontFamily: F.d800, fontSize: 12, color: '#FFFFFF', marginTop: 1 }}>150</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Today Card (Offset Bottom Right) */}
+      <View
+        style={{
+          width: 185,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 22,
+          padding: 16,
+          position: 'absolute',
+          top: 60,
+          right: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.08,
+          shadowRadius: 18,
+          elevation: 6,
+          borderWidth: 1,
+          borderColor: '#F0EFEF',
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8F7FA', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99, alignSelf: 'flex-start' }}>
+          <FlameIcon size={14} />
+          <Text style={{ fontFamily: F.b600, fontSize: 13, color: C.ink }}>Today</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 14 }}>
+          <Text style={{ fontFamily: F.d800, fontSize: 32, color: C.ink, letterSpacing: -0.8 }}>2350</Text>
+          <Text style={{ fontFamily: F.b600, fontSize: 14, color: '#A09FA6' }}>/2500</Text>
+        </View>
+
+        {/* Rollover badge: ⏱ +150 */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#EFF3FE', borderRadius: 99, paddingVertical: 3, paddingHorizontal: 9, marginTop: 6, alignSelf: 'flex-start' }}>
+          <Text style={{ fontSize: 11 }}>⏱</Text>
+          <Text style={{ fontFamily: F.d700, fontSize: 12, color: '#6A8BFF' }}>+150</Text>
+        </View>
+
+        {/* Ring & Floating Tooltip */}
+        <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 10, height: 86, position: 'relative' }}>
+          <Svg width={74} height={74} viewBox="0 0 74 74">
+            <Circle cx="37" cy="37" r={30} fill="none" stroke="#EFEFEF" strokeWidth={5.5} />
+            <Circle cx="37" cy="37" r={30} fill="none" stroke={C.ink} strokeWidth={5.5} strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 30 * (2350 / 2500)} ${2 * Math.PI * 30}`} transform="rotate(-90 37 37)" />
+          </Svg>
+          <View style={{ position: 'absolute' }}>
+            <FlameIcon size={14} />
+          </View>
+          <View style={{ position: 'absolute', left: -18, top: 8, backgroundColor: C.ink, borderRadius: 10, paddingVertical: 5, paddingHorizontal: 8, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.15, shadowRadius: 6 }}>
+            <Text style={{ fontFamily: F.b600, fontSize: 9.5, color: '#FFFFFF' }}>Cals left</Text>
+            <Text style={{ fontFamily: F.d800, fontSize: 12, color: '#FFFFFF', marginTop: 1 }}>
+              150 <Text style={{ color: '#8AA0FF' }}>+ 150</Text>
+            </Text>
+          </View>
+        </View>
+      </View>
     </View>
   );
 }

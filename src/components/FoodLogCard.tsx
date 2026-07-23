@@ -13,7 +13,7 @@ function MealIcon({ entry }: { entry: FoodEntry }) {
   const t = useTheme();
   const uri = entry.imageUri || getFoodImageUri(entry.name, entry.meal);
   return (
-    <View style={{ width: 56, height: 56, borderRadius: 16, overflow: 'hidden', flexShrink: 0, backgroundColor: t.surface3 }}>
+    <View style={{ width: 72, height: 72, borderRadius: 18, overflow: 'hidden', flexShrink: 0, backgroundColor: t.surface3 }}>
       <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
     </View>
   );
@@ -48,14 +48,13 @@ function MealTimeIcon({ meal }: { meal: FoodEntry['meal'] }) {
   );
 }
 
-import { ProteinIcon, CarbsIcon, FatIcon, CalorieIcon } from './NutritionIcons';
+import { ProteinIcon, CarbsIcon, FatIcon, FiberIcon, SodiumIcon, SugarIcon, CalorieIcon } from './NutritionIcons';
 
-function MacroTag({ icon, grams }: { icon: React.ReactNode; grams: number }) {
-  const t = useTheme();
+function MacroPill({ icon, label, val, unit = 'g', bg, color }: { icon: React.ReactNode; label?: string; val: number; unit?: string; bg: string; color: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3.5, backgroundColor: bg, paddingVertical: 2.5, paddingHorizontal: 7, borderRadius: 7 }}>
       {icon}
-      <Text style={{ fontFamily: F.b600, fontSize: 11, color: t.muted }}>{grams}g</Text>
+      <Text style={{ fontFamily: F.b700, fontSize: 10.5, color }}>{label ? `${label} ` : ''}{val}{unit}</Text>
     </View>
   );
 }
@@ -97,6 +96,11 @@ export function FoodLogCard({
         borderColor: t.border,
         borderRadius: 20,
         padding: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 2,
         opacity: anim,
         transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }],
       }}
@@ -114,10 +118,19 @@ export function FoodLogCard({
               : `${entry.meal} · ${entry.time}`}
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <MacroTag icon={<ProteinIcon color={t.protein} size={13} />} grams={entry.protein} />
-          <MacroTag icon={<CarbsIcon color={t.carbs} size={13} />} grams={entry.carbs} />
-          <MacroTag icon={<FatIcon color={t.fat} size={13} />} grams={entry.fat} />
+        <View style={{ flexDirection: 'row', gap: 5, flexWrap: 'wrap', marginTop: 2 }}>
+          <MacroPill icon={<ProteinIcon color={t.protein} size={11} />} label="P" val={entry.protein} bg={t.proteinTint} color={t.protein} />
+          <MacroPill icon={<CarbsIcon color={t.carbs} size={11} />} label="C" val={entry.carbs} bg={t.carbsTint} color={t.carbs} />
+          <MacroPill icon={<FatIcon color={t.fat} size={11} />} label="F" val={entry.fat} bg={t.fatTint} color={t.fat} />
+          {entry.fiber > 0 && (
+            <MacroPill icon={<FiberIcon color={t.fiber} size={11} />} val={entry.fiber} bg={t.fiberTint} color={t.fiber} />
+          )}
+          {entry.sodium > 0 && (
+            <MacroPill icon={<SodiumIcon color={t.sodium} size={11} />} val={entry.sodium} unit="mg" bg={t.sodiumTint} color={t.sodium} />
+          )}
+          {entry.sugar > 0 && (
+            <MacroPill icon={<SugarIcon color={t.sugar} size={11} />} val={entry.sugar} bg={t.sugarTint} color={t.sugar} />
+          )}
         </View>
       </View>
       <View style={{ alignSelf: 'flex-start', alignItems: 'flex-end', gap: 5 }}>

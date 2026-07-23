@@ -80,7 +80,7 @@ export function defaultState(): AvoLensState {
     displayName: '',
     themeMode: 'light',
     glasses: 0,
-    medEnabled: true,
+    medEnabled: false,
     medKey: 'semaglutide',
     dose: 2,
     medDay: 3, // Wednesday
@@ -101,11 +101,15 @@ export function defaultState(): AvoLensState {
     todayEntries: [],
     history: {},
     favorites: [],
+    savedScans: [],
     weightLog: [],
     measurements: [],
     photos: [],
     achievementsSeen: [],
     hasOnboarded: false,
+    rolloverEnabled: true,
+    rolloverMax: 200,
+    addBurnedCalories: true,
   };
 }
 

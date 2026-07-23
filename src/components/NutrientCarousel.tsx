@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useStore, useDailyTotals, frac } from '@/lib/store';
@@ -83,11 +83,23 @@ const PAGE_GAP = 14;
 export function NutrientCarousel() {
   const { state, addGlass, removeGlass, setDose, toggleReminder, markShot, theme: t } = useStore();
   const totals = useDailyTotals();
-  const [page, setPage] = useState(0);
+
+  const defaultPage = state.medEnabled ? 1 : 0;
+  const [page, setPage] = useState(defaultPage);
   const [pageW, setPageW] = useState(0);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [shotOpen, setShotOpen] = useState(false);
   const scroller = useRef<ScrollView>(null);
+  const hasScrolledInitial = useRef(false);
+
+  useEffect(() => {
+    if (pageW > 0 && !hasScrolledInitial.current) {
+      hasScrolledInitial.current = true;
+      if (defaultPage > 0) {
+        scroller.current?.scrollTo({ x: (pageW + PAGE_GAP) * defaultPage, animated: false });
+      }
+    }
+  }, [pageW, defaultPage]);
 
   const goTo = (i: number) => {
     scroller.current?.scrollTo({ x: (pageW + PAGE_GAP) * i, animated: true });
@@ -117,6 +129,162 @@ export function NutrientCarousel() {
 
   const pageStyle = { width: pageW, borderRadius: 16, paddingVertical: 13, paddingHorizontal: 14, gap: 11 } as const;
 
+  const waterCard = (
+    <View key="water-card" style={{ ...pageStyle, backgroundColor: t.waterTint2 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Svg width={15} height={19} viewBox="0 0 20 26" fill={t.water}>
+            <Path d="M10 1 C10 1 18 12 18 17.5 A8 8 0 0 1 2 17.5 C2 12 10 1 10 1 Z" />
+          </Svg>
+          <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.ink }}>
+            Water{viewingToday ? '' : ' · past day'}
+          </Text>
+        </View>
+        <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.water }}>
+          {waterCur}
+          <Text style={{ color: t.muted2, fontSize: 11 }}>/{waterTarget}L</Text>
+        </Text>
+      </View>
+      <ProgressBar fraction={frac(dayGlasses, state.goal.water)} color={t.water} trackColor={t.waterTint3} height={8} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <RoundBtn label="Remove glass" onPress={removeGlass} bg={t.surface}>
+          <MinusIcon stroke={t.water} />
+        </RoundBtn>
+        <Text style={{ flex: 1, textAlign: 'center', fontFamily: F.b600, fontSize: 12, color: t.ink }}>
+          {dayGlasses} glasses <Text style={{ color: t.muted }}>· 500 ml</Text>
+        </Text>
+        <RoundBtn label="Add glass" onPress={addGlass} bg={t.water}>
+          <PlusIcon stroke="#fff" />
+        </RoundBtn>
+      </View>
+    </View>
+  );
+
+  const medCard = state.medEnabled ? (
+    <View key="med-card" style={{ ...pageStyle, backgroundColor: t.purpleTint }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+        <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: t.purpleTint2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={t.purple} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="m18 2 4 4" />
+            <Path d="m17 7 3-3" />
+            <Path d="M19 9 8.7 19.3c-1 1-2 1-3 0l-.7-.7c-1-1-1-2 0-3L15.3 5.3" />
+            <Path d="m9 11 4 4" />
+            <Path d="m5 19-3 3" />
+            <Path d="m14 4 6 6" />
+          </Svg>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink }}>{med.name}</Text>
+          <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted, marginTop: 1 }}>
+            {med.brands} · {med.frequency === 'weekly' ? 'Weekly' : 'Daily'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={toggleReminder}
+          accessibilityLabel="Toggle reminder"
+          accessibilityRole="button"
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 99,
+            backgroundColor: state.reminderOn ? t.purpleTint2 : t.surface,
+            borderWidth: 1,
+            borderColor: t.purpleBorder,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={state.reminderOn ? t.purple : t.muted2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <Path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+          </Svg>
+          {state.reminderOn ? (
+            <View style={{ position: 'absolute', top: 6, right: 7, width: 7, height: 7, borderRadius: 99, backgroundColor: t.protein, borderWidth: 1.5, borderColor: t.surface }} />
+          ) : (
+            <View style={{ position: 'absolute', left: 5, top: 15, width: 24, height: 1.8, backgroundColor: t.muted2, transform: [{ rotate: '-45deg' }] }} />
+          )}
+        </Pressable>
+        <Pressable onPress={() => setScheduleOpen(true)} accessibilityRole="button" accessibilityLabel="Edit medication schedule" style={{ alignItems: 'flex-end', gap: 1 }}>
+          <View style={{ backgroundColor: t.purpleTint2, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99 }}>
+            <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.purple }}>{formatDoseSlot(sched)}</Text>
+          </View>
+          <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{countdownLabel(sched)}</Text>
+        </Pressable>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
+          Current dose <Text style={{ color: t.muted }}>· {med.doses[state.dose]}{med.unit ? ` ${med.unit}` : ''}</Text>
+        </Text>
+        {isCustom ? (
+          <Pressable
+            onPress={() => setScheduleOpen(true)}
+            accessibilityRole="button"
+            style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.purpleBorder, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 }}
+          >
+            <Text style={{ fontFamily: F.d700, fontSize: 11, color: t.purple }}>Edit dose</Text>
+          </Pressable>
+        ) : (
+          <>
+            <RoundBtn label="Decrease dose" onPress={() => setDose(Math.max(0, state.dose - 1))} bg={t.surface} border={t.purpleBorder}>
+              <MinusIcon stroke={t.purple} />
+            </RoundBtn>
+            <RoundBtn label="Increase dose" onPress={() => setDose(Math.min(med.doses.length - 1, state.dose + 1))} bg={t.purple}>
+              <PlusIcon stroke="#fff" />
+            </RoundBtn>
+          </>
+        )}
+      </View>
+      {taken ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 7,
+            backgroundColor: t.greenTint,
+            borderRadius: 12,
+            paddingVertical: 10,
+          }}
+        >
+          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="m5 12 5 5 9-11" />
+          </Svg>
+          <Text style={{ fontFamily: F.d700, fontSize: 12.5, color: t.green }}>
+            Taken · {taken.site} · {taken.time}
+          </Text>
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => setShotOpen(true)}
+          accessibilityRole="button"
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 7,
+            backgroundColor: t.purple,
+            borderRadius: 12,
+            paddingVertical: 10,
+          }}
+        >
+          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
+            <Path d="m5 12 5 5 9-11" />
+          </Svg>
+          <Text style={{ fontFamily: F.d700, fontSize: 12.5, color: '#fff' }}>Mark as taken</Text>
+        </Pressable>
+      )}
+    </View>
+  ) : null;
+
+  const macrosCard = (
+    <View key="macros-card" style={{ ...pageStyle, backgroundColor: t.surface2 }}>
+      <ProgressRow label="Fiber" value={totals.fiber} target={state.goal.fiber} color={t.fiber} icon={<FiberIcon color={t.fiber} size={15} />} />
+      <ProgressRow label="Sodium" value={totals.sodium} target={state.goal.sodium} color={t.sodium} icon={<SodiumIcon color={t.sodium} size={15} />} />
+      <ProgressRow label="Sugar" value={totals.sugar} target={state.goal.sugar} color={t.sugar} icon={<SugarIcon color={t.sugar} size={15} />} />
+    </View>
+  );
+
   return (
     <View
       style={{
@@ -128,6 +296,11 @@ export function NutrientCarousel() {
         paddingHorizontal: 18,
         marginBottom: 12,
         gap: 13,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.07,
+        shadowRadius: 14,
+        elevation: 3,
       }}
     >
       <View onLayout={(e) => setPageW(e.nativeEvent.layout.width)}>
@@ -138,186 +311,48 @@ export function NutrientCarousel() {
             showsHorizontalScrollIndicator={false}
             snapToInterval={pageW + PAGE_GAP}
             decelerationRate="fast"
+            contentOffset={{ x: (pageW + PAGE_GAP) * defaultPage, y: 0 }}
             contentContainerStyle={{ gap: PAGE_GAP }}
             onMomentumScrollEnd={(e) =>
               setPage(Math.round(e.nativeEvent.contentOffset.x / (pageW + PAGE_GAP)))
             }
           >
-            {/* Page 1: Water — always first, shown by default */}
-            <View style={{ ...pageStyle, backgroundColor: t.waterTint2 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Svg width={15} height={19} viewBox="0 0 20 26" fill={t.water}>
-                    <Path d="M10 1 C10 1 18 12 18 17.5 A8 8 0 0 1 2 17.5 C2 12 10 1 10 1 Z" />
-                  </Svg>
-                  <Text style={{ fontFamily: F.b600, fontSize: 13, color: t.ink }}>
-                    Water{viewingToday ? '' : ' · past day'}
-                  </Text>
-                </View>
-                <Text style={{ fontFamily: F.d700, fontSize: 13, color: t.water }}>
-                  {waterCur}
-                  <Text style={{ color: t.muted2, fontSize: 11 }}>/{waterTarget}L</Text>
-                </Text>
-              </View>
-              <ProgressBar fraction={frac(dayGlasses, state.goal.water)} color={t.water} trackColor={t.waterTint3} height={8} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <RoundBtn label="Remove glass" onPress={removeGlass} bg={t.surface}>
-                  <MinusIcon stroke={t.water} />
-                </RoundBtn>
-                <Text style={{ flex: 1, textAlign: 'center', fontFamily: F.b600, fontSize: 12, color: t.ink }}>
-                  {dayGlasses} glasses <Text style={{ color: t.muted }}>· 500 ml</Text>
-                </Text>
-                <RoundBtn label="Add glass" onPress={addGlass} bg={t.water}>
-                  <PlusIcon stroke="#fff" />
-                </RoundBtn>
-              </View>
-            </View>
-
-            {/* Page 2: GLP-1 Medication (hidden when tracking is off) */}
-            {state.medEnabled && (
-              <View style={{ ...pageStyle, backgroundColor: t.purpleTint }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-                  <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: t.purpleTint2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={t.purple} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <Path d="m18 2 4 4" />
-                      <Path d="m17 7 3-3" />
-                      <Path d="M19 9 8.7 19.3c-1 1-2 1-3 0l-.7-.7c-1-1-1-2 0-3L15.3 5.3" />
-                      <Path d="m9 11 4 4" />
-                      <Path d="m5 19-3 3" />
-                      <Path d="m14 4 6 6" />
-                    </Svg>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontFamily: F.d700, fontSize: 14, color: t.ink }}>{med.name}</Text>
-                    <Text style={{ fontFamily: F.b500, fontSize: 11, color: t.muted, marginTop: 1 }}>
-                      {med.brands} · {med.frequency === 'weekly' ? 'Weekly' : 'Daily'}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={toggleReminder}
-                    accessibilityLabel="Toggle reminder"
-                    accessibilityRole="button"
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 99,
-                      backgroundColor: state.reminderOn ? t.purpleTint2 : t.surface,
-                      borderWidth: 1,
-                      borderColor: t.purpleBorder,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={state.reminderOn ? t.purple : t.muted2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <Path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-                      <Path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-                    </Svg>
-                    {state.reminderOn ? (
-                      <View style={{ position: 'absolute', top: 6, right: 7, width: 7, height: 7, borderRadius: 99, backgroundColor: t.protein, borderWidth: 1.5, borderColor: t.surface }} />
-                    ) : (
-                      <View style={{ position: 'absolute', left: 5, top: 15, width: 24, height: 1.8, backgroundColor: t.muted2, transform: [{ rotate: '-45deg' }] }} />
-                    )}
-                  </Pressable>
-                  <Pressable onPress={() => setScheduleOpen(true)} accessibilityRole="button" accessibilityLabel="Edit medication schedule" style={{ alignItems: 'flex-end', gap: 1 }}>
-                    <View style={{ backgroundColor: t.purpleTint2, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 99 }}>
-                      <Text style={{ fontFamily: F.d700, fontSize: 12, color: t.purple }}>{formatDoseSlot(sched)}</Text>
-                    </View>
-                    <Text style={{ fontFamily: F.b500, fontSize: 10, color: t.muted2 }}>{countdownLabel(sched)}</Text>
-                  </Pressable>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={{ flex: 1, fontFamily: F.b600, fontSize: 12, color: t.ink }}>
-                    Current dose <Text style={{ color: t.muted }}>· {med.doses[state.dose]}{med.unit ? ` ${med.unit}` : ''}</Text>
-                  </Text>
-                  {isCustom ? (
-                    <Pressable
-                      onPress={() => setScheduleOpen(true)}
-                      accessibilityRole="button"
-                      style={{ backgroundColor: t.surface, borderWidth: 1, borderColor: t.purpleBorder, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 }}
-                    >
-                      <Text style={{ fontFamily: F.d700, fontSize: 11, color: t.purple }}>Edit dose</Text>
-                    </Pressable>
-                  ) : (
-                    <>
-                      <RoundBtn label="Decrease dose" onPress={() => setDose(Math.max(0, state.dose - 1))} bg={t.surface} border={t.purpleBorder}>
-                        <MinusIcon stroke={t.purple} />
-                      </RoundBtn>
-                      <RoundBtn label="Increase dose" onPress={() => setDose(Math.min(med.doses.length - 1, state.dose + 1))} bg={t.purple}>
-                        <PlusIcon stroke="#fff" />
-                      </RoundBtn>
-                    </>
-                  )}
-                </View>
-                {taken ? (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 7,
-                      backgroundColor: t.greenTint,
-                      borderRadius: 12,
-                      paddingVertical: 10,
-                    }}
-                  >
-                    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={t.green} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-                      <Path d="m5 12 5 5 9-11" />
-                    </Svg>
-                    <Text style={{ fontFamily: F.d700, fontSize: 12.5, color: t.green }}>
-                      Taken · {taken.site} · {taken.time}
-                    </Text>
-                  </View>
-                ) : (
-                  <Pressable
-                    onPress={() => setShotOpen(true)}
-                    accessibilityRole="button"
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 7,
-                      backgroundColor: t.purple,
-                      borderRadius: 12,
-                      paddingVertical: 10,
-                    }}
-                  >
-                    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round">
-                      <Path d="m5 12 5 5 9-11" />
-                    </Svg>
-                    <Text style={{ fontFamily: F.d700, fontSize: 12.5, color: '#fff' }}>Mark as taken</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
-
-            {/* Page 3: Fiber / Sodium / Sugar */}
-            <View style={{ ...pageStyle, backgroundColor: t.surface2 }}>
-              <ProgressRow label="Fiber" value={totals.fiber} target={state.goal.fiber} color={t.fiber} icon={<FiberIcon color={t.fiber} size={15} />} />
-              <ProgressRow label="Sodium" value={totals.sodium} target={state.goal.sodium} color={t.sodium} icon={<SodiumIcon color={t.sodium} size={15} />} />
-              <ProgressRow label="Sugar" value={totals.sugar} target={state.goal.sugar} color={t.sugar} icon={<SugarIcon color={t.sugar} size={15} />} />
-            </View>
+            {state.medEnabled ? [medCard, waterCard, macrosCard] : [waterCard, macrosCard]}
           </ScrollView>
         )}
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-        {pages.map((i) => (
-          <Pressable
-            key={i}
-            onPress={() => goTo(i)}
-            accessibilityRole="button"
-            accessibilityLabel={`Page ${i + 1}`}
-            accessibilityState={{ selected: page === i }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={{
-              width: page === i ? 16 : 6,
-              height: 6,
-              borderRadius: 99,
-              backgroundColor: page === i ? t.purple : t.border,
-            }}
-          />
-        ))}
+        {pages.map((i) => {
+          let dotColor = t.purple;
+          if (state.medEnabled) {
+            if (i === 0) dotColor = t.purple;
+            else if (i === 1) dotColor = t.water;
+            else dotColor = t.green;
+          } else {
+            if (i === 0) dotColor = t.water;
+            else dotColor = t.green;
+          }
+          const isActive = page === i;
+
+          return (
+            <Pressable
+              key={i}
+              onPress={() => goTo(i)}
+              accessibilityRole="button"
+              accessibilityLabel={`Page ${i + 1}`}
+              accessibilityState={{ selected: isActive }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={{
+                width: isActive ? 16 : 6,
+                height: 6,
+                borderRadius: 99,
+                backgroundColor: dotColor,
+                opacity: isActive ? 1 : 0.35,
+              }}
+            />
+          );
+        })}
       </View>
 
       {scheduleOpen && <MedScheduleModal onClose={() => setScheduleOpen(false)} />}

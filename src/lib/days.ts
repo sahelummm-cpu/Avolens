@@ -30,13 +30,32 @@ export function sumCalories(entries: FoodEntry[]): number {
  * or yesterday. This is the "day streak" shown on Home and the widget.
  */
 export function computeStreak(state: Pick<AvoLensState, 'history' | 'todayEntries'>): number {
-  let streak = state.todayEntries.length > 0 ? 1 : 0;
-  for (let n = 1; n < 1000; n++) {
-    const rec = state.history[daysAgoKey(n)];
-    if (rec && rec.entries.length > 0) streak++;
+  const todayLogged = state.todayEntries.length > 0;
+  let streak = 0;
+  const startOffset = todayLogged ? 0 : 1;
+  for (let n = startOffset; n < 1000; n++) {
+    const entries = n === 0 ? state.todayEntries : (state.history[daysAgoKey(n)]?.entries ?? []);
+    if (entries.length > 0) streak++;
     else break;
   }
   return streak;
+}
+
+/**
+ * Unconsumed calories from yesterday (up to `rolloverMax`, e.g. 200 cals)
+ * that roll over into today's budget if `rolloverEnabled` is true.
+ */
+export function computeRollover(state: Pick<AvoLensState, 'history' | 'goal' | 'rolloverEnabled' | 'rolloverMax'>): number {
+  if (state.rolloverEnabled === false) return 0;
+  const maxRollover = state.rolloverMax ?? 200;
+  const yesterdayKey = daysAgoKey(1);
+  const yesterdayEntries = state.history[yesterdayKey]?.entries ?? [];
+  if (yesterdayEntries.length === 0) return 0;
+  const eaten = sumCalories(yesterdayEntries);
+  const goal = state.goal.calories;
+  const leftover = goal - eaten;
+  if (leftover <= 0) return 0;
+  return Math.min(leftover, maxRollover);
 }
 
 /** Entries logged on a given past day ('' → none). */

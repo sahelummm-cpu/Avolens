@@ -95,8 +95,8 @@ export const lightTheme: Theme = {
   // Micronutrient Colors
   fiber: '#10B981',
   fiberTint: '#ECFDF5',
-  sodium: '#F97316',
-  sodiumTint: '#FFF7ED',
+  sodium: '#06B6D4',
+  sodiumTint: '#ECFEFF',
   sugar: '#EC4899',
   sugarTint: '#FDF2F8',
 
@@ -153,8 +153,8 @@ export const darkTheme: Theme = {
   // Micronutrient Colors
   fiber: '#34D399',
   fiberTint: '#132A22',
-  sodium: '#FB923C',
-  sodiumTint: '#332014',
+  sodium: '#22D3EE',
+  sodiumTint: '#15323B',
   sugar: '#F472B6',
   sugarTint: '#351C2A',
 

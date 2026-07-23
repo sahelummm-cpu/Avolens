@@ -67,6 +67,8 @@ interface StoreValue {
   updateEntry: (id: string, patch: Partial<Omit<FoodEntry, 'id'>>, dateKey?: string) => void;
   removeEntry: (id: string, dateKey?: string) => void;
   toggleFavorite: (f: Omit<FavoriteFood, 'id'>) => void;
+  saveScan: (scan: Omit<import('./types').SavedScan, 'id' | 'date'>) => void;
+  removeSavedScan: (id: string) => void;
   copyDayToToday: (fromKey: string) => void;
   logWeight: (kg: number) => void;
   addMeasurement: (m: Omit<MeasurementEntry, 'date' | 'ts'>) => void;
@@ -83,6 +85,9 @@ interface StoreValue {
   setDisplayName: (name: string) => void;
   setProfile: (p: { sex?: AvoLensState['sex']; age?: number | null; activityLevel?: AvoLensState['activityLevel'] }) => void;
   recalcGoals: () => boolean;
+  setRolloverEnabled: (on: boolean) => void;
+  setRolloverMax: (max: number) => void;
+  setAddBurnedCalories: (on: boolean) => void;
   setLogReminderTime: (hour: number, minute: number) => void;
   clearLoggedData: () => void;
   finishOnboarding: () => void;
@@ -118,7 +123,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [systemDark, setSystemDark] = useState(() => getSystemDark());
   const [activity, setActivity] = useState<ActivitySummary | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const hydrated = useRef(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const skipNextPush = useRef(false);
   // Pushes are held until the signed-in user's remote copy has been fetched,
   // so a slow pull can't be raced by an upsert of fresh local/default state.
@@ -137,27 +142,37 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } catch {
         // ignore corrupt storage
       }
-      hydrated.current = true;
+      setIsHydrated(true);
     })();
 
     const appearanceSub = Appearance.addChangeListener(({ colorScheme }) =>
       setSystemDark(colorScheme === 'dark'),
     );
     const appStateSub = AppState.addEventListener('change', (status) => {
-      if (status === 'active') setState((s) => rolledOver(s));
+      if (status === 'active') {
+        setState((s) => rolledOver(s));
+        if (state.healthConnected) {
+          getTodayActivity().then((a) => {
+            if (a) setActivity(a);
+          });
+        }
+      }
     });
     return () => {
       appearanceSub.remove();
       appStateSub.remove();
     };
-  }, []);
+  }, [state.healthConnected]);
 
   useEffect(() => {
-    if (!hydrated.current) return;
+    if (!isHydrated) return;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {
       // ignore quota errors
     });
-  }, [state]);
+    if (state.logReminderOn) {
+      syncLogReminder(true, state.logReminderHour, state.logReminderMinute);
+    }
+  }, [state, isHydrated]);
 
   const resolvedDark = state.themeMode === 'auto' ? systemDark : state.themeMode === 'dark';
   const theme = resolvedDark ? darkTheme : lightTheme;
@@ -169,7 +184,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Keep the Home / Lock Screen widgets in sync with today's log.
   useEffect(() => {
-    if (!hydrated.current) return;
+    if (!isHydrated) return;
     const totals = state.todayEntries.reduce(
       (acc, e) => ({
         calories: acc.calories + e.calories,
@@ -192,11 +207,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       glasses: state.glasses,
       glassesGoal: state.goal.water,
     });
-  }, [state.todayEntries, state.goal, streak, state.glasses]);
+  }, [state.todayEntries, state.goal, streak, state.glasses, isHydrated]);
 
   // Keep the dose reminder + missed-dose follow-up in sync with the schedule.
   useEffect(() => {
-    if (!hydrated.current) return;
+    if (!isHydrated) return;
     const med = resolveMedication(state);
     const on = state.medEnabled && state.reminderOn;
     syncMedReminder({
@@ -207,10 +222,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       hour: state.medHour,
       minute: state.medMinute,
     });
-    const missedAt =
-      on && !takenThisCycle(state)
-        ? new Date(nextDoseAt(state).getTime() + 14 * 60 * 60 * 1000)
-        : null;
+    let missedAt: Date | null = null;
+    if (on && !takenThisCycle(state)) {
+      const slot = new Date();
+      slot.setHours(state.medHour, state.medMinute, 0, 0);
+      if (med.frequency === 'weekly') {
+        const daysSinceSlot = (slot.getDay() - state.medDay + 7) % 7;
+        slot.setDate(slot.getDate() - daysSinceSlot);
+      }
+      missedAt = new Date(slot.getTime() + 14 * 60 * 60 * 1000);
+    }
     armMissedDoseCheck(missedAt, med.name);
   }, [
     state.medEnabled,
@@ -223,6 +244,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     state.medCustomName,
     state.medCustomFrequency,
     state.medCustomDose,
+    isHydrated,
   ]);
 
   // Pull today's activity from Apple Health / Health Connect while connected.
@@ -268,7 +290,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const client = supabase;
-    if (!client || !session?.user?.id || !hydrated.current) return;
+    if (!client || !session?.user?.id || !isHydrated) return;
     if (pulledFor !== session.user.id) return;
     if (skipNextPush.current) {
       skipNextPush.current = false;
@@ -282,7 +304,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .then(() => {});
     }, 1500);
     return () => clearTimeout(timer);
-  }, [state, session?.user?.id, pulledFor]);
+  }, [state, session?.user?.id, pulledFor, isHydrated]);
 
   const value = useMemo<StoreValue>(
     () => ({
@@ -408,27 +430,46 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             favorites: [{ ...f, id: `f-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` }, ...s.favorites],
           };
         }),
+      saveScan: (scan) =>
+        setState((s) => ({
+          ...s,
+          savedScans: [
+            {
+              ...scan,
+              id: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              date: new Date().toISOString().split('T')[0],
+            },
+            ...(s.savedScans ?? []),
+          ],
+        })),
+      removeSavedScan: (id) =>
+        setState((s) => ({
+          ...s,
+          savedScans: (s.savedScans ?? []).filter((x) => x.id !== id),
+        })),
       copyDayToToday: (fromKey) =>
         setState((s) => {
           const r = rolledOver(s);
           const src = fromKey === r.todayKey ? r.todayEntries : (r.history[fromKey]?.entries ?? []);
           if (src.length === 0) return r;
           const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-          const copies = src.map((e) => ({
+          const copies = src.map((e, idx) => ({
             ...e,
-            id: `e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${e.id.slice(-3)}`,
+            id: `e-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
             time: now,
           }));
           return { ...r, todayEntries: [...copies, ...r.todayEntries] };
         }),
       logWeight: (kg) =>
-        setState((s) => ({
-          ...s,
-          weightLog: [
-            ...s.weightLog,
-            { date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), kg, ts: Date.now() },
-          ],
-        })),
+        setState((s) => {
+          const todayLabel = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const nowTs = Date.now();
+          const filtered = s.weightLog.filter((w) => w.date !== todayLabel);
+          return {
+            ...s,
+            weightLog: [...filtered, { date: todayLabel, kg, ts: nowTs }],
+          };
+        }),
       addMeasurement: (m) =>
         setState((s) => ({
           ...s,
@@ -450,6 +491,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setTargetWeight: (kg) => setState((s) => ({ ...s, targetWeightKg: kg })),
       setDisplayName: (name) => setState((s) => ({ ...s, displayName: name })),
       setProfile: (p) => setState((s) => ({ ...s, ...p })),
+      setRolloverEnabled: (on) => setState((s) => ({ ...s, rolloverEnabled: on })),
+      setRolloverMax: (max) => setState((s) => ({ ...s, rolloverMax: max })),
+      setAddBurnedCalories: (on) => setState((s) => ({ ...s, addBurnedCalories: on })),
       recalcGoals: () => {
         let ok = false;
         setState((s) => {
@@ -556,6 +600,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return error ? error.message : null;
       },
       signOut: async () => {
+        setPulledFor(null);
         await supabase?.auth.signOut();
         // Reset to a fresh install so the next account on this device can't
         // inherit (or accidentally upload) this user's data.
@@ -563,6 +608,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setState(() => ({ ...defaultState(), hasOnboarded: true }));
       },
       deleteAccount: async () => {
+        setPulledFor(null);
         try {
           if (supabase && session) {
             const { error } = await supabase.functions.invoke('delete-account');

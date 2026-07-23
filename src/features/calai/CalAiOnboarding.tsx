@@ -11,7 +11,8 @@
  * `onExit` fires when the user finishes or leaves the flow.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Easing, Image, PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
+import { CHEETAH_BASE64, RABBIT_BASE64, SLOTH_BASE64 } from './animalIcons';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { F } from '@/lib/fonts';
 import {
@@ -359,7 +360,7 @@ export default function CalAiOnboarding({ onExit }: { onExit?: () => void }) {
             <View style={{ marginTop: 34 }}>
               <View style={{ backgroundColor: C.card, borderRadius: 16, padding: 16 }}>
                 <Text style={{ fontFamily: F.d700, fontSize: 15, color: C.ink }}>
-                  You should reach your goal in <Text style={{ color: C.accent }}>{months} month{months > 1 ? 's' : ''}</Text>
+                  You should reach your goal in <Text style={{ color: '#D9822B' }}>{months} month{months > 1 ? 's' : ''}</Text>
                 </Text>
                 <Text style={{ fontFamily: F.b500, fontSize: 12.5, color: C.sub, marginTop: 6, lineHeight: 18 }}>
                   {pace === 'rec' ? 'This is the most balanced pace, motivating and ideal for most users.' : pace === 'slow' ? 'A gentle, sustainable pace that is easy to maintain.' : 'An ambitious pace for fast, focused results.'}
@@ -430,7 +431,7 @@ export default function CalAiOnboarding({ onExit }: { onExit?: () => void }) {
           <View style={{ alignItems: 'center', paddingTop: 20 }}>
             <HandsIllustration />
             <Text style={{ fontFamily: F.d800, fontSize: 30, color: C.ink, textAlign: 'center', marginTop: 34, letterSpacing: -0.6 }}>Thank you for{'\n'}trusting us!</Text>
-            <Text style={{ fontFamily: F.b500, fontSize: 15, color: C.sub, textAlign: 'center', marginTop: 12 }}>Now let's personalize Cal AI for you…</Text>
+            <Text style={{ fontFamily: F.b500, fontSize: 15, color: C.sub, textAlign: 'center', marginTop: 12 }}>Now let's personalize AvoLens for you…</Text>
             <View style={{ marginTop: 30, backgroundColor: C.card, borderRadius: 16, padding: 18, alignItems: 'center' }}>
               <Text style={{ fontFamily: F.d700, fontSize: 15, color: C.ink }}>Personalized to your goals</Text>
               <Text style={{ fontFamily: F.b500, fontSize: 12.5, color: C.sub, textAlign: 'center', marginTop: 6, lineHeight: 18 }}>We'll use your answers to tailor your plan, targets, and recommendations.</Text>
@@ -649,8 +650,8 @@ function Account({ onDone }: { onDone: () => void }) {
           {authBtn('Continue with email', <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={C.ink} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><Rect x="2" y="4" width="20" height="16" rx="2" /><Path d="m2 7 10 6 10-6" /></Svg>)}
         </View>
         <View style={{ paddingBottom: 20 }}>
-          {check(terms, setTerms, "I agree to Cal AI's Terms and Conditions and Privacy Policy")}
-          {check(promo, setPromo, 'Send me tips, new features, and personalized offers from Cal AI')}
+          {check(terms, setTerms, "I agree to AvoLens' Terms and Conditions and Privacy Policy")}
+          {check(promo, setPromo, 'Send me tips, new features, and personalized offers from AvoLens')}
         </View>
       </View>
     </Screen>
@@ -659,17 +660,99 @@ function Account({ onDone }: { onDone: () => void }) {
 
 /* ------------------------------------------------------ pace slider (tap) */
 
+function SlothVector({ color = '#111116', size = 36 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size + 6} height={size} viewBox="0 0 44 38" fill="none">
+      <Rect x="4" y="2" width="5" height="34" rx="2.5" fill={color} />
+      <Path d="M8 8c5-2 12-1 15 2s2 7-1 10-10 2-14-1V8z" fill={color} />
+      <Path d="M8 24c5-2 12-1 15 2s2 7-1 10-10 2-14-1v-11z" fill={color} />
+      <Circle cx={25} cy={14} r={6.5} fill={color} />
+      <Path d="M21 14c0-2.5 1.8-4 4-4s4 1.5 4 4-1.8 4-4 4-4-1.5-4-4z" fill="#FFF" />
+      <Circle cx={24} cy={14} r={1.5} fill={color} />
+    </Svg>
+  );
+}
+
+function RabbitVector({ color = '#D9822B', size = 36 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size + 6} height={size} viewBox="0 0 42 38" fill="none">
+      <Path d="M18 14C15 4 16 0 18.5 0s3.5 4 1.5 14M23 12c-1-5 1.5-9.5 3.5-9.5s2.5 4.5 0.5 9.5" fill={color} />
+      <Circle cx={20} cy={17} r={6} fill={color} />
+      <Path d="M15 19c-4 0-9 3-11 7s-1 10 2 12c3 1.5 11 1.5 15 0s8-4 8-8c0-5-2-8.5-5-10.5l-4-1c-2 0-3-0.5-5-0.5z" fill={color} />
+      <Circle cx={33} cy={30} r={3.5} fill={color} />
+    </Svg>
+  );
+}
+
+function FastCheetahVector({ color = '#111116', size = 36 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size + 14} height={size} viewBox="0 0 60 34" fill="none">
+      <Path d="M2 8h14M1 16h10M3 24h16" stroke={color} strokeWidth={2.8} strokeLinecap="round" />
+      <Path d="M18 16c6-6 15-8 24-7 8 1 15 6 20 8-5 2.5-12 2.5-16 0-7 4.5-16 4.5-23 1-3.5-1-5-2-5-2z" fill={color} />
+      <Path d="M52 15c2.5-3 6-3 7 0s0 6-3 6h-4v-6z" fill={color} />
+      <Path d="M50 11c0-3 2-4 3.5-2.5s0 3.5-1.5 5" fill={color} />
+      <Path d="M20 22c-5 5-8 6.5-11 6.5 2-5 5.5-7 10-8zM45 21c5 5 8 6.5 11 6.5-2-5-5.5-7-10-8z" fill={color} />
+      <Path d="M18 14c-5.5-3-10.5-3.5-15.5-2.5 4.5 3 9.5 4 15.5 2.5z" fill={color} />
+    </Svg>
+  );
+}
+
+function LivePaceIcon({ kind, active }: { kind: 'slow' | 'rec' | 'fast'; active: boolean }) {
+  const scale = useRef(new Animated.Value(active ? 1.2 : 1)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: active ? 1.2 : 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+
+    if (active) {
+      const duration = kind === 'slow' ? 1000 : kind === 'rec' ? 650 : 400;
+      const loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulse, { toValue: kind === 'fast' ? 1.12 : 1.08, duration, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(pulse, { toValue: 1, duration, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        ]),
+      );
+      loop.start();
+      return () => loop.stop();
+    } else {
+      pulse.setValue(1);
+    }
+  }, [active, kind, scale, pulse]);
+
+  const color = active ? '#D9822B' : '#111116';
+
+  return (
+    <Animated.View
+      style={{
+        transform: [{ scale: Animated.multiply(scale, pulse) }],
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: active ? 1 : 0.35,
+        height: 44,
+      }}
+    >
+      {kind === 'slow' && <SlothVector color={color} size={36} />}
+      {kind === 'rec' && <RabbitVector color={color} size={38} />}
+      {kind === 'fast' && <FastCheetahVector color={color} size={42} />}
+    </Animated.View>
+  );
+}
+
+/* ------------------------------------------------------ pace slider (tap/drag) */
+
 function PaceSlider({ value, onChange }: { value: 'slow' | 'rec' | 'fast'; onChange: (v: 'slow' | 'rec' | 'fast') => void }) {
-  const stops: { key: 'slow' | 'rec' | 'fast'; label: string; emoji: string }[] = [
-    { key: 'slow', label: 'Slow', emoji: '🦥' },
-    { key: 'rec', label: 'Recommended', emoji: '🐇' },
-    { key: 'fast', label: 'Fast', emoji: '🐆' },
+  const stops: { key: 'slow' | 'rec' | 'fast'; label: string }[] = [
+    { key: 'slow', label: 'Slow' },
+    { key: 'rec', label: 'Recommended' },
+    { key: 'fast', label: 'Fast' },
   ];
   const idx = stops.findIndex((s) => s.key === value);
 
-  // While dragging we track a continuous 0..1 fraction so the thumb follows the
-  // finger; on release we snap to the nearest of the three stops. Refs keep the
-  // once-created PanResponder reading the latest width / handler.
   const [trackW, setTrackW] = useState(0);
   const [dragFrac, setDragFrac] = useState<number | null>(null);
   const trackWRef = useRef(0);
@@ -701,15 +784,19 @@ function PaceSlider({ value, onChange }: { value: 'slow' | 'rec' | 'fast'; onCha
 
   return (
     <View style={{ marginTop: 26 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-        {stops.map((s, si) => (
-          <Pressable key={s.key} onPress={() => { setDragFrac(null); onChange(s.key); }} style={{ alignItems: 'center', width: 90 }}>
-            <Text style={{ fontSize: 26 }}>{s.emoji}</Text>
-            <Text style={{ fontFamily: F.d700, fontSize: 13, color: si === active ? C.accent : C.sub, marginTop: 4 }}>{s.label}</Text>
-          </Pressable>
-        ))}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+        {stops.map((s, si) => {
+          const isSelected = si === active;
+          const activeColor = isSelected ? '#D9822B' : C.sub;
+          return (
+            <Pressable key={s.key} onPress={() => { setDragFrac(null); onChange(s.key); }} style={{ alignItems: 'center', width: 100 }}>
+              <LivePaceIcon kind={s.key} active={isSelected} />
+              <Text style={{ fontFamily: F.d700, fontSize: 13, color: activeColor, marginTop: 8 }}>{s.label}</Text>
+            </Pressable>
+          );
+        })}
       </View>
-      {/* Tall transparent hit area so the whole strip is swipeable, not just the 8px bar */}
+      {/* Track */}
       <View
         {...pan.panHandlers}
         onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}
@@ -729,7 +816,7 @@ function PaceSlider({ value, onChange }: { value: 'slow' | 'rec' | 'fast'; onCha
             borderRadius: 99,
             backgroundColor: C.white,
             borderWidth: 2,
-            borderColor: C.ink,
+            borderColor: C.border,
             shadowColor: '#000',
             shadowOpacity: 0.16,
             shadowRadius: 6,
@@ -747,10 +834,10 @@ function PaceSlider({ value, onChange }: { value: 'slow' | 'rec' | 'fast'; onCha
 function NotificationPrompt({ onDecide }: { onDecide: () => void }) {
   return (
     <View style={{ alignItems: 'center', paddingTop: 40 }}>
-      <Text style={{ fontFamily: F.d800, fontSize: 28, color: C.ink, textAlign: 'center', letterSpacing: -0.6 }}>Stay on track with{'\n'}Cal AI notifications</Text>
+      <Text style={{ fontFamily: F.d800, fontSize: 28, color: C.ink, textAlign: 'center', letterSpacing: -0.6 }}>Stay on track with{'\n'}AvoLens notifications</Text>
       <View style={{ marginTop: 60, width: 300, backgroundColor: '#F2F2F5', borderRadius: 18, overflow: 'hidden' }}>
         <View style={{ padding: 18, alignItems: 'center' }}>
-          <Text style={{ fontFamily: F.d700, fontSize: 15, color: C.ink }}>"Cal AI" Would Like to Send</Text>
+          <Text style={{ fontFamily: F.d700, fontSize: 15, color: C.ink }}>"AvoLens" Would Like to Send</Text>
           <Text style={{ fontFamily: F.d700, fontSize: 15, color: C.ink }}>You Notifications</Text>
         </View>
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: '#D9D9DE' }}>

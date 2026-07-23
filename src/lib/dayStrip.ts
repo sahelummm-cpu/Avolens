@@ -9,6 +9,7 @@ export const STRIP_FUTURE_DAYS = 7;
 
 export interface SelectedDayTotals {
   left: number;
+  calories: number;
   protein: number;
   carbs: number;
   fat: number;
@@ -17,7 +18,7 @@ export interface SelectedDayTotals {
 /** Values shown in the hero calorie ring for whichever date is tapped in the strip. */
 export function selectedDayTotals(
   state: AvoLensState,
-  liveTotals: { left: number; protein: number; carbs: number; fat: number },
+  liveTotals: { left: number; calories: number; protein: number; carbs: number; fat: number },
 ): SelectedDayTotals {
   if (state.selectedDate === state.todayKey) return liveTotals;
   const entries = entriesFor(state, state.selectedDate);
@@ -32,6 +33,7 @@ export function selectedDayTotals(
   );
   return {
     left: Math.max(0, state.goal.calories - totals.calories),
+    calories: totals.calories,
     protein: totals.protein,
     carbs: totals.carbs,
     fat: totals.fat,

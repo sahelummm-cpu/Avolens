@@ -38,7 +38,7 @@ type Phase = 'idle' | 'scanning' | 'done';
  * The demo plate's fixed nutrition — one realistic total for the whole meal,
  * scaled by the portion multiplier exactly like real AI scan results are.
  */
-const BASE = { calories: 536, protein: 39, carbs: 40, fat: 22.5, fiber: 8, sodium: 560, sugar: 9 };
+const BASE = { calories: 580, protein: 42, carbs: 45, fat: 20, fiber: 10, sodium: 520, sugar: 6 };
 
 export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; onBack: () => void }) {
   const { state, theme: t } = useStore();
@@ -87,20 +87,19 @@ export function OnboardingScannerDemo({ onDone, onBack }: { onDone: () => void; 
     opacity: interpolate(scanY.value, [0, 0.05, 0.95, 1], [0, 1, 1, 0]),
   }));
 
-  // Per-item tags sum to the 536 kcal total shown on the result card.
   const TAGS: { label: string; dot: string; pos: { top: number; left?: number; right?: number } }[] = [
-    { label: 'Grilled Chicken Breast · 320 kcal', dot: t.protein, pos: { top: 96, left: 10 } },
-    { label: 'Steamed Broccoli · 46 kcal', dot: t.green, pos: { top: 18, left: 64 } },
-    { label: 'Roasted Sweet Potato · 170 kcal', dot: t.carbs, pos: { top: 196, right: 10 } },
+    { label: 'Grilled Chicken · 280 kcal', dot: t.protein, pos: { top: 96, left: 10 } },
+    { label: 'Avocado & Rice · 220 kcal', dot: t.carbs, pos: { top: 18, left: 64 } },
+    { label: 'Edamame & Veggies · 80 kcal', dot: t.green, pos: { top: 196, right: 10 } },
   ];
 
   return (
     <Animated.View entering={SlideInRight.duration(350).easing(Easing.out(Easing.poly(4)))} style={{ flex: 1 }}>
       <Screen bg="#121614" inset={false}>
         <View style={{ flex: 1, backgroundColor: '#121614', overflow: 'hidden' }}>
-          {/* Fake live preview — the bundled sample plate, under the same scrim the real camera uses */}
-        <Image source={require('../../../../assets/demo-meal.jpg')} resizeMode="cover" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} accessibilityLabel="Sample meal in the camera preview" />
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(18,22,20,.35)' }} />
+          {/* Fake live preview — real camera meal scan photo fills phone screen */}
+          <Image source={require('../../../../assets/demo-meal.jpg')} resizeMode="cover" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} accessibilityLabel="Sample meal in the camera preview" />
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(18,22,20,.18)' }} />
 
         {/* Camera chrome stays phone-width on wide (web/tablet) screens; the preview above is full-bleed */}
         <View style={{ flex: 1, width: '100%', maxWidth: 480, alignSelf: 'center' }}>

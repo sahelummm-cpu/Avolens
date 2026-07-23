@@ -6,19 +6,16 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, G, LinearGradient, Stop } from 'react-native-svg';
-import { useTheme } from '@/lib/store';
+import Svg, { Circle, G } from 'react-native-svg';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-export interface RingFractions {
+export interface ExerciseFractions {
   calories: number; // 0-1 (or >1 when exceeding goal)
-  protein: number;
-  carbs: number;
-  fat: number;
+  steps: number;
+  minutes: number;
 }
 
-// Mirrors the web transition: 1.1s cubic-bezier(.34,1.2,.44,1) with a .12s stagger.
 const RING_EASING = Easing.bezier(0.34, 1.2, 0.44, 1);
 
 function Ring({
@@ -109,37 +106,28 @@ function Ring({
   );
 }
 
-export function CalorieRing({ size = 156, fractions }: { size?: number; fractions: RingFractions }) {
-  const t = useTheme();
-
+export function ExerciseRing({ size = 156, fractions }: { size?: number; fractions: ExerciseFractions }) {
   const rings = [
     {
       r: 66,
       sw: 12,
-      track: 'rgba(255, 149, 0, 0.18)',
-      color: 'url(#avoRingKcal)',
+      track: 'rgba(255,45,85,0.18)',
+      color: '#FF2D55',
       fraction: fractions.calories,
     },
     {
       r: 51,
       sw: 10,
-      track: 'rgba(255, 45, 85, 0.18)',
-      color: t.protein,
-      fraction: fractions.protein,
+      track: 'rgba(163,230,53,0.18)',
+      color: '#A3E635',
+      fraction: fractions.steps,
     },
     {
       r: 38,
       sw: 10,
-      track: 'rgba(255, 149, 0, 0.18)',
-      color: t.carbs,
-      fraction: fractions.carbs,
-    },
-    {
-      r: 25,
-      sw: 10,
-      track: 'rgba(255, 204, 0, 0.18)',
-      color: t.fat,
-      fraction: fractions.fat,
+      track: 'rgba(0,213,232,0.18)',
+      color: '#00D5E8',
+      fraction: fractions.minutes,
     },
   ];
 
@@ -149,13 +137,6 @@ export function CalorieRing({ size = 156, fractions }: { size?: number; fraction
 
   return (
     <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <Defs>
-        {/* Calories Native Gradient */}
-        <LinearGradient id="avoRingKcal" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor={t.amberGrad1} />
-          <Stop offset="1" stopColor={t.amberGrad2} />
-        </LinearGradient>
-      </Defs>
       {rings.map((ring, i) => (
         <Ring
           key={i}

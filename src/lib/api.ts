@@ -32,12 +32,17 @@ export async function lookupBarcode(code: string): Promise<ScanResult> {
       .filter(Boolean)
       .slice(0, 6)
     : [];
+  const energyKcal =
+    n['energy-kcal_100g'] ??
+    n['energy-kcal'] ??
+    n['energy-kcal_value'] ??
+    (n['energy_100g'] ? n['energy_100g'] / 4.184 : 0);
   return {
     name: [p.product_name, p.brands ? `(${String(p.brands).split(',')[0].trim()})` : '']
       .filter(Boolean)
       .join(' ') || 'Scanned product',
     matchConfidence: 100,
-    calories: Math.round(n['energy-kcal_100g'] ?? 0),
+    calories: Math.round(energyKcal ?? 0),
     protein: Math.round(n.proteins_100g ?? 0),
     carbs: Math.round(n.carbohydrates_100g ?? 0),
     fat: Math.round(n.fat_100g ?? 0),

@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Logo } from '@/components/Logo';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -9,7 +9,11 @@ import { F } from '@/lib/fonts';
 
 export default function SplashPage() {
   const router = useRouter();
-  const { finishOnboarding, theme: t } = useStore();
+  const { state, finishOnboarding, theme: t } = useStore();
+
+  if (state.hasOnboarded) {
+    return <Redirect href="/home" />;
+  }
 
   const start = () => router.push('/onboarding');
 
