@@ -49,7 +49,12 @@ export const SEED_ENTRIES: FoodEntry[] = [
     sodium: 95,
     sugar: 18,
     healthScore: 8,
-    ingredients: ['Greek yogurt', 'Granola', 'Honey', 'Berries'],
+    ingredients: [
+      { name: 'Greek yogurt', amount: '1 cup', calories: 150 },
+      { name: 'Granola', amount: '1/3 cup', calories: 120 },
+      { name: 'Honey', amount: '1 tbsp', calories: 30 },
+      { name: 'Berries', amount: '1/2 cup', calories: 20 },
+    ],
     icon: 'yogurt',
   },
   {
@@ -65,7 +70,12 @@ export const SEED_ENTRIES: FoodEntry[] = [
     sodium: 640,
     sugar: 7,
     healthScore: 9,
-    ingredients: ['Chicken breast', 'Brown rice', 'Broccoli', 'Olive oil'],
+    ingredients: [
+      { name: 'Chicken breast', amount: '150 g', calories: 250 },
+      { name: 'Brown rice', amount: '1 cup', calories: 215 },
+      { name: 'Broccoli', amount: '1 cup', calories: 35 },
+      { name: 'Olive oil', amount: '1 tbsp', calories: 20 },
+    ],
     icon: 'bowl',
   },
 ];

@@ -15,7 +15,13 @@ const ScanResultSchema = z.object({
   sodium: z.number(),
   sugar: z.number(),
   healthScore: z.number(),
-  ingredients: z.array(z.string()),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      amount: z.string(),
+      calories: z.number(),
+    }),
+  ),
 });
 
 export type ScanResult = z.infer<typeof ScanResultSchema>;
@@ -59,7 +65,7 @@ export async function POST(request: Request) {
             },
             {
               type: 'text',
-              text: 'Identify the meal in this photo and estimate its nutrition. Give a short common name for the dish, a 0-100 confidence that the name matches what is shown, total calories, protein/carbs/fat/fiber/sugar in grams, sodium in milligrams, a 1-10 health score, and a list of the visible ingredients.',
+              text: 'Identify the meal in this photo and estimate its nutrition. Give a short common name for the dish, a 0-100 confidence that the name matches what is shown, total calories, protein/carbs/fat/fiber/sugar in grams, sodium in milligrams, and a 1-10 health score. Also break the meal down into its visible ingredients: for each ingredient give its name, an approximate amount with a household unit (e.g. "1.5 cups", "2 tbsp", "150 g", "3 pieces"), and its estimated calories. The ingredient calories should roughly add up to the total.',
             },
           ],
         },

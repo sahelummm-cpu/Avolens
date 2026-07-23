@@ -2,6 +2,12 @@ export type ThemeMode = 'auto' | 'light' | 'dark';
 export type WeightUnit = 'kg' | 'lb';
 export type ChartRange = 'W' | 'M' | 'Y';
 
+export interface Ingredient {
+  name: string;
+  amount: string; // e.g. "1.5 cups", "2 tbsp"
+  calories: number;
+}
+
 export interface FoodEntry {
   id: string;
   name: string;
@@ -15,7 +21,7 @@ export interface FoodEntry {
   sodium: number;
   sugar: number;
   healthScore: number;
-  ingredients?: string[];
+  ingredients?: Ingredient[];
   icon?: 'yogurt' | 'bowl' | 'generic';
 }
 

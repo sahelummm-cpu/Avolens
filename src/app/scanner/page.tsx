@@ -31,6 +31,8 @@ export default function ScannerPage() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [addingIngredient, setAddingIngredient] = useState(false);
+  const [newIng, setNewIng] = useState({ name: '', amount: '', calories: '' });
 
   const [mode, setMode] = useState<'food' | 'barcode'>('food');
   const [manualCode, setManualCode] = useState('');
@@ -152,7 +154,23 @@ export default function ScannerPage() {
 
   const removeIngredient = (i: number) => {
     if (!result) return;
-    setResult({ ...result, ingredients: result.ingredients.filter((_, idx) => idx !== i) });
+    const removed = result.ingredients[i];
+    setResult({
+      ...result,
+      calories: Math.max(0, result.calories - (removed?.calories ?? 0)),
+      ingredients: result.ingredients.filter((_, idx) => idx !== i),
+    });
+  };
+
+  const addIngredient = () => {
+    if (!result) return;
+    const name = newIng.name.trim();
+    if (!name) return;
+    const cals = Math.max(0, Math.round(Number(newIng.calories) || 0));
+    const ing = { name, amount: newIng.amount.trim() || '1 serving', calories: cals };
+    setResult({ ...result, calories: result.calories + cals, ingredients: [...result.ingredients, ing] });
+    setNewIng({ name: '', amount: '', calories: '' });
+    setAddingIngredient(false);
   };
 
   const addToLog = () => {
@@ -285,14 +303,41 @@ export default function ScannerPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
-              <span style={{ font: '600 11px var(--font-body)', color: 'var(--av-muted-2)', width: '100%' }}>Ingredients</span>
-              {result.ingredients.map((ing, i) => (
-                <span key={ing + i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, font: '600 11px var(--font-body)', color: 'var(--av-green-grad-2)', background: 'var(--av-green-tint)', padding: '4px 8px 4px 10px', borderRadius: 99 }}>
-                  {ing}
-                  <svg onClick={() => removeIngredient(i)} width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#7FB79A" strokeWidth="3" strokeLinecap="round" style={{ cursor: 'pointer' }}><path d="M6 6l12 12M18 6 6 18" /></svg>
+            <div style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ font: '700 13px var(--font-display)', color: 'var(--av-ink)' }}>Ingredients</span>
+                <span onClick={() => setAddingIngredient((v) => !v)} role="button" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, font: '600 12px var(--font-body)', color: 'var(--av-green)', cursor: 'pointer' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--av-green)" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  Add more
                 </span>
-              ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {result.ingredients.map((ing, i) => (
+                  <div key={ing.name + i} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--av-surface-2)', border: '1px solid var(--av-border)', borderRadius: 12, padding: '10px 12px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ font: '600 13px var(--font-body)', color: 'var(--av-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ing.name}</div>
+                      <div style={{ font: '500 11px var(--font-body)', color: 'var(--av-muted-2)', marginTop: 1 }}>{ing.calories} cal</div>
+                    </div>
+                    <span style={{ font: '600 12px var(--font-body)', color: 'var(--av-muted)', flexShrink: 0 }}>{ing.amount}</span>
+                    <svg onClick={() => removeIngredient(i)} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--av-muted-2)" strokeWidth="2.4" strokeLinecap="round" style={{ cursor: 'pointer', flexShrink: 0 }}><path d="M6 6l12 12M18 6 6 18" /></svg>
+                  </div>
+                ))}
+                {result.ingredients.length === 0 && !addingIngredient && (
+                  <div style={{ font: '500 12px var(--font-body)', color: 'var(--av-muted-2)', padding: '2px' }}>No ingredients yet — tap “Add more” to add them.</div>
+                )}
+              </div>
+
+              {addingIngredient && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8, background: 'var(--av-surface-2)', border: '1px solid var(--av-border)', borderRadius: 12, padding: 10 }}>
+                  <input value={newIng.name} onChange={(e) => setNewIng({ ...newIng, name: e.target.value })} placeholder="Ingredient (e.g. Butter)" style={ingInput} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input value={newIng.amount} onChange={(e) => setNewIng({ ...newIng, amount: e.target.value })} placeholder="Amount (e.g. 2 tbsp)" style={{ ...ingInput, flex: 1 }} />
+                    <input value={newIng.calories} onChange={(e) => setNewIng({ ...newIng, calories: e.target.value.replace(/[^0-9]/g, '') })} placeholder="kcal" inputMode="numeric" style={{ ...ingInput, width: 76, flex: 'none' }} />
+                  </div>
+                  <button onClick={addIngredient} style={{ height: 40, borderRadius: 10, background: 'var(--av-green)', border: 'none', color: '#fff', font: '700 13px var(--font-display)', cursor: 'pointer' }}>Add ingredient</button>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -439,6 +484,17 @@ export default function ScannerPage() {
     </MobileFrame>
   );
 }
+
+const ingInput: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--av-surface)',
+  border: '1px solid var(--av-border)',
+  borderRadius: 10,
+  padding: '10px 12px',
+  font: '500 13px var(--font-body)',
+  color: 'var(--av-ink)',
+  outline: 'none',
+};
 
 function ModeChip({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
   return (
