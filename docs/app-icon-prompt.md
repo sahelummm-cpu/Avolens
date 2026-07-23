@@ -20,26 +20,28 @@ hand-drawn avocado with a brown pit and light-green veined flesh.
 
 ---
 
-## ★ All-black (monochrome) — the selected direction
+## ★ Black & white (grayscale) — the selected direction
 
-Everything black — a black-on-black avocado defined only by subtle edge light.
-Upload `public/images/avo-logo.png` to Nano Banana, then use:
+Recolor the avocado's green / brown / white into **black and white only** — keep the
+shape and shading, drop all the color. Upload `public/images/avo-logo.png` to Nano
+Banana, then use:
 
-> Turn this avocado illustration into a fully monochrome all-black app icon. Recolor the
-> entire avocado to black — remove all green and brown. Make it a sleek black-on-black
-> design: a matte black avocado half with a slightly glossy black pit, its shape and the
-> pit readable only through subtle dark-gray edge highlights, a soft rim light along the
-> top-left edge, and a faint inner shadow. Keep the leaf-vein pattern as a barely-visible
-> darker texture on black. Background is pure black `#000000`, kept a hair darker than the
-> avocado (avocado around `#0e0e0e`) so the silhouette separates from it. Center the
-> avocado at about 70% fill with even padding. Perfectly square 1:1, full-bleed, no
-> rounded corners, 1024×1024, crisp edges, no text, no wordmark, premium minimalist
-> stealth look.
+> Convert this avocado illustration to pure black and white — remove all color. Render the
+> green flesh, brown pit, and skin as a clean grayscale illustration: near-black skin rim,
+> medium-to-light gray flesh with the leaf-vein pattern drawn in fine darker-gray lines,
+> and a dark charcoal pit with a soft white highlight — all on a pure white background.
+> Keep the friendly hand-drawn shape and soft shading so it still has depth. Center it at
+> about 70% fill with even padding. Perfectly square 1:1, full-bleed, no rounded corners,
+> 1024×1024, crisp edges, no text, no wordmark, clean minimal black-and-white app icon.
 
-**Readability note:** true black-on-black is hard to see at 32px. If it disappears in the
-browser tab, add: *"increase the rim light and edge contrast so the avocado is clearly
-visible as a black silhouette against the background."* An all-black icon pairs naturally
-with the app's dark theme (`--av-bg: #12160f`, `--av-nav-bg: #0c0f0a`).
+**Pure two-tone variant** (flat ink look, no gray) — swap the middle for:
+
+> Render it as flat two-tone black-and-white ink art: solid black outlines and fills for
+> the skin and pit, white flesh, only thin black lines for the vein pattern, no gray
+> tones, minimalist logo style, on a pure white background.
+
+**Inverted variant** (white avocado on black) — if you want it to sit on your app's dark
+theme, add: *"invert it — a white and light-gray avocado on a solid black background."*
 
 ---
 
