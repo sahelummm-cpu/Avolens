@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MobileFrame } from '@/components/MobileFrame';
 import { useStore } from '@/lib/store';
 import { FREQUENT_FOODS } from '@/lib/constants';
 import type { FoodEntry } from '@/lib/types';
+import type { FoodItem } from '@/app/api/foods/route';
 
 const MEALS: FoodEntry['meal'][] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
@@ -14,6 +15,9 @@ export default function ManualEntryPage() {
   const { addEntry } = useStore();
 
   const [search, setSearch] = useState('');
+  const [results, setResults] = useState<FoodItem[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [name, setName] = useState('Avocado toast');
   const [meal, setMeal] = useState<FoodEntry['meal']>('Breakfast');
   const [servings, setServings] = useState(1);
@@ -27,13 +31,65 @@ export default function ManualEntryPage() {
 
   const calories = useMemo(() => Math.round((protein * 4 + carbs * 4 + fat * 9) * servings), [protein, carbs, fat, servings]);
 
-  const filteredFrequent = FREQUENT_FOODS.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()));
+  // Debounced live search against the real food database (Open Food Facts).
+  useEffect(() => {
+    const q = search.trim();
+    let cancelled = false;
+    const ctrl = new AbortController();
+    const run = async () => {
+      if (q.length < 2) {
+        if (!cancelled) {
+          setResults([]);
+          setSearching(false);
+          setSearchError(null);
+        }
+        return;
+      }
+      if (!cancelled) {
+        setSearching(true);
+        setSearchError(null);
+      }
+      try {
+        const res = await fetch(`/api/foods?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) throw new Error(data.error || 'Search failed');
+        setResults(data.items as FoodItem[]);
+      } catch (err) {
+        if (cancelled || (err instanceof Error && err.name === 'AbortError')) return;
+        setResults([]);
+        setSearchError('Could not reach the food database. Check your connection or create a custom entry below.');
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    };
+    const timer = setTimeout(run, q.length < 2 ? 0 : 350);
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+      clearTimeout(timer);
+    };
+  }, [search]);
 
   const applyFrequent = (f: (typeof FREQUENT_FOODS)[number]) => {
     setName(f.name);
     setProtein(f.protein);
     setCarbs(f.carbs);
     setFat(f.fat);
+  };
+
+  const applyFood = (f: FoodItem) => {
+    setName(f.brand ? `${f.name} · ${f.brand}` : f.name);
+    setProtein(f.protein);
+    setCarbs(f.carbs);
+    setFat(f.fat);
+    setFiber(f.fiber);
+    setSodium(f.sodium);
+    setSugar(f.sugar);
+    setServings(1);
+    setShowMoreNutrients(true);
+    setSearch('');
+    setResults([]);
   };
 
   const save = () => {
@@ -78,24 +134,63 @@ export default function ManualEntryPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search food database"
+            placeholder="Search foods by name or brand"
             style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', font: '500 14px var(--font-body)', color: 'var(--av-ink)' }}
           />
         </div>
 
-        <div style={{ font: '700 11px var(--font-body)', color: 'var(--av-muted-2)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>Frequent</div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-          {filteredFrequent.map((f) => (
-            <span
-              key={f.name}
-              onClick={() => applyFrequent(f)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, font: '600 12px var(--font-body)', color: 'var(--av-ink)', background: 'var(--av-surface)', border: '1px solid var(--av-border)', padding: '8px 12px', borderRadius: 99, cursor: 'pointer' }}
-            >
-              <span style={{ width: 7, height: 7, borderRadius: 9, background: f.color }} />
-              {f.name}
-            </span>
-          ))}
-        </div>
+        {search.trim().length >= 2 ? (
+          <div style={{ marginBottom: 20 }}>
+            {searching && (
+              <div style={{ font: '500 13px var(--font-body)', color: 'var(--av-muted)', padding: '4px 2px 12px' }}>Searching the food database…</div>
+            )}
+            {!searching && searchError && (
+              <div style={{ font: '500 13px var(--font-body)', color: 'var(--av-protein)', padding: '4px 2px 12px' }}>{searchError}</div>
+            )}
+            {!searching && !searchError && results.length === 0 && (
+              <div style={{ font: '500 13px var(--font-body)', color: 'var(--av-muted)', padding: '4px 2px 12px' }}>No matches — try another name, or create a custom entry below.</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {results.map((f) => (
+                <div
+                  key={f.id}
+                  onClick={() => applyFood(f)}
+                  role="button"
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--av-surface)', border: '1px solid var(--av-border)', borderRadius: 14, padding: '11px 14px', cursor: 'pointer' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ font: '600 14px var(--font-body)', color: 'var(--av-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {f.name}
+                      {f.brand && <span style={{ color: 'var(--av-muted)', fontWeight: 500 }}> · {f.brand}</span>}
+                    </div>
+                    <div style={{ font: '500 11px var(--font-body)', color: 'var(--av-muted-2)', marginTop: 3 }}>
+                      {f.calories} cal · P{f.protein} C{f.carbs} F{f.fat} · per {f.serving}
+                    </div>
+                  </div>
+                  <div style={{ width: 30, height: 30, borderRadius: 99, background: 'var(--av-green-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--av-green)" strokeWidth="2.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ font: '700 11px var(--font-body)', color: 'var(--av-muted-2)', letterSpacing: '.06em', textTransform: 'uppercase', marginBottom: 10 }}>Frequent</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+              {FREQUENT_FOODS.map((f) => (
+                <span
+                  key={f.name}
+                  onClick={() => applyFrequent(f)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, font: '600 12px var(--font-body)', color: 'var(--av-ink)', background: 'var(--av-surface)', border: '1px solid var(--av-border)', padding: '8px 12px', borderRadius: 99, cursor: 'pointer' }}
+                >
+                  <span style={{ width: 7, height: 7, borderRadius: 9, background: f.color }} />
+                  {f.name}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
           <div style={{ flex: 1, height: 1, background: 'var(--av-border)' }} />

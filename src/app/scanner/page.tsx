@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MobileFrame } from '@/components/MobileFrame';
 import { useStore } from '@/lib/store';
 import type { ScanResult } from '@/app/api/scan/route';
+import type { FoodItem } from '@/app/api/foods/route';
 
 function mealForNow(): 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack' {
   const h = new Date().getHours();
@@ -13,6 +14,12 @@ function mealForNow(): 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack' {
   if (h < 21) return 'Dinner';
   return 'Snack';
 }
+
+// Minimal shape of the browser BarcodeDetector API (not in the TS DOM lib yet).
+interface BarcodeDetectorLike {
+  detect: (source: CanvasImageSource) => Promise<{ rawValue: string }[]>;
+}
+type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => BarcodeDetectorLike;
 
 export default function ScannerPage() {
   const router = useRouter();
@@ -24,6 +31,12 @@ export default function ScannerPage() {
   const [scanError, setScanError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+
+  const [mode, setMode] = useState<'food' | 'barcode'>('food');
+  const [manualCode, setManualCode] = useState('');
+  const [barcodeLoading, setBarcodeLoading] = useState(false);
+  const [barcodeError, setBarcodeError] = useState<string | null>(null);
+  const [barcodeProduct, setBarcodeProduct] = useState<FoodItem | null>(null);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -41,6 +54,69 @@ export default function ScannerPage() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 1800);
+  };
+
+  const lookupBarcode = useCallback(async (code: string) => {
+    setBarcodeLoading(true);
+    setBarcodeError(null);
+    try {
+      const res = await fetch(`/api/foods?barcode=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Lookup failed');
+      setBarcodeProduct(data.item as FoodItem);
+    } catch (err) {
+      setBarcodeError(err instanceof Error ? err.message : 'Barcode lookup failed.');
+    } finally {
+      setBarcodeLoading(false);
+    }
+  }, []);
+
+  // Live barcode scanning off the camera when the browser supports BarcodeDetector.
+  useEffect(() => {
+    if (mode !== 'barcode' || cameraError || barcodeProduct) return;
+    const Ctor = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+    if (!Ctor) return;
+    let detector: BarcodeDetectorLike;
+    try {
+      detector = new Ctor({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+    } catch {
+      return;
+    }
+    let stopped = false;
+    let timer = 0;
+    const tick = async () => {
+      if (stopped) return;
+      const video = videoRef.current;
+      if (video && video.readyState >= 2) {
+        try {
+          const codes = await detector.detect(video);
+          if (!stopped && codes.length && codes[0].rawValue) {
+            stopped = true;
+            lookupBarcode(codes[0].rawValue);
+            return;
+          }
+        } catch {
+          // Ignore transient detect errors and keep polling.
+        }
+      }
+      timer = window.setTimeout(tick, 600);
+    };
+    timer = window.setTimeout(tick, 600);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+  }, [mode, cameraError, barcodeProduct, lookupBarcode]);
+
+  const selectMode = (next: 'food' | 'barcode') => {
+    setMode(next);
+    if (next === 'food') {
+      setBarcodeProduct(null);
+      setBarcodeError(null);
+    } else {
+      setResult(null);
+      setScanError(null);
+    }
   };
 
   const capture = async () => {
@@ -99,8 +175,51 @@ export default function ScannerPage() {
     router.push('/home');
   };
 
+  const addProductToLog = () => {
+    if (!barcodeProduct) return;
+    const p = barcodeProduct;
+    addEntry({
+      name: p.brand ? `${p.name} · ${p.brand}` : p.name,
+      meal: mealForNow(),
+      time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+      calories: p.calories,
+      protein: p.protein,
+      carbs: p.carbs,
+      fat: p.fat,
+      fiber: p.fiber,
+      sodium: p.sodium,
+      sugar: p.sugar,
+      healthScore: 6,
+      icon: 'generic',
+    });
+    router.push('/home');
+  };
+
+  const scanAnother = () => {
+    setBarcodeProduct(null);
+    setBarcodeError(null);
+    setManualCode('');
+  };
+
+  const submitManualCode = () => {
+    const code = manualCode.trim();
+    if (code.length < 6) {
+      setBarcodeError('Enter a valid barcode number (at least 6 digits).');
+      return;
+    }
+    lookupBarcode(code);
+  };
+
   const macroTotal = result ? result.protein + result.carbs + result.fat : 0;
   const pct = (v: number) => (macroTotal > 0 ? Math.round((v / macroTotal) * 100) : 0);
+
+  const barcodeSupported = typeof window !== 'undefined' && 'BarcodeDetector' in window;
+  const bracketLabel =
+    mode === 'barcode'
+      ? barcodeSupported
+        ? 'Point your camera at a barcode'
+        : 'Enter the barcode number below'
+      : (cameraError ?? 'Center your plate in the frame');
 
   return (
     <MobileFrame bg="#121614">
@@ -113,18 +232,18 @@ export default function ScannerPage() {
           <div onClick={() => router.push('/home')} role="button" style={{ width: 40, height: 40, borderRadius: 99, background: 'rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m15 5-7 7 7 7" /></svg>
           </div>
-          <div style={{ font: '600 14px var(--font-body)', color: '#fff' }}>Scan your meal</div>
+          <div style={{ font: '600 14px var(--font-body)', color: '#fff' }}>{mode === 'barcode' ? 'Scan a barcode' : 'Scan your meal'}</div>
           <div style={{ width: 40, height: 40 }} />
         </div>
 
-        {!result && !loading && (
+        {!result && !barcodeProduct && !loading && (
           <div style={{ position: 'absolute', top: 100, left: 52, right: 52, height: 286, zIndex: 20 }}>
             <div style={{ position: 'absolute', top: 0, left: 0, width: 38, height: 38, borderTop: '3px solid var(--av-green-grad-1)', borderLeft: '3px solid var(--av-green-grad-1)', borderTopLeftRadius: 16 }} />
             <div style={{ position: 'absolute', top: 0, right: 0, width: 38, height: 38, borderTop: '3px solid var(--av-green-grad-1)', borderRight: '3px solid var(--av-green-grad-1)', borderTopRightRadius: 16 }} />
             <div style={{ position: 'absolute', bottom: 0, left: 0, width: 38, height: 38, borderBottom: '3px solid var(--av-green-grad-1)', borderLeft: '3px solid var(--av-green-grad-1)', borderBottomLeftRadius: 16 }} />
             <div style={{ position: 'absolute', bottom: 0, right: 0, width: 38, height: 38, borderBottom: '3px solid var(--av-green-grad-1)', borderRight: '3px solid var(--av-green-grad-1)', borderBottomRightRadius: 16 }} />
             <div style={{ position: 'absolute', bottom: -32, left: 0, right: 0, textAlign: 'center', font: '500 12px var(--font-body)', color: 'rgba(255,255,255,.55)' }}>
-              {cameraError ?? 'Center your plate in the frame'}
+              {bracketLabel}
             </div>
           </div>
         )}
@@ -198,16 +317,68 @@ export default function ScannerPage() {
           </div>
         )}
 
-        {!result && (
+        {barcodeProduct && (
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--av-surface)', borderRadius: '28px 28px 0 0', padding: '18px 22px 34px', zIndex: 30, maxHeight: '70dvh', overflowY: 'auto', border: '1px solid var(--av-border)', borderBottom: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'var(--av-green-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--av-green)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" /></svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ font: '600 15px var(--font-body)', color: 'var(--av-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{barcodeProduct.name}</div>
+                <div style={{ font: '500 12px var(--font-body)', color: 'var(--av-muted)', marginTop: 3 }}>
+                  {barcodeProduct.brand ? `${barcodeProduct.brand} · ` : ''}per {barcodeProduct.serving}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ font: '800 24px var(--font-display)', color: 'var(--av-ink)' }}>{barcodeProduct.calories}</div>
+                <div style={{ font: '500 11px var(--font-body)', color: 'var(--av-muted-2)', marginTop: -4 }}>kcal</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <MacroCell color="var(--av-protein)" value={`${barcodeProduct.protein}g`} label="Protein" />
+              <MacroCell color="var(--av-carbs)" value={`${barcodeProduct.carbs}g`} label="Carbs" />
+              <MacroCell color="var(--av-fat)" value={`${barcodeProduct.fat}g`} label="Fat" />
+            </div>
+
+            <div style={{ display: 'flex', marginTop: 12, border: '1px solid var(--av-border)', borderRadius: 12, overflow: 'hidden' }}>
+              <NutrientCell value={`${barcodeProduct.fiber}g`} label="Fiber" />
+              <NutrientCell value={`${barcodeProduct.sodium}mg`} label="Sodium" border />
+              <NutrientCell value={`${barcodeProduct.sugar}g`} label="Sugar" border />
+            </div>
+
+            <button onClick={addProductToLog} style={{ width: '100%', height: 50, borderRadius: 16, background: 'var(--av-green)', border: 'none', color: '#fff', font: '700 15px var(--font-display)', marginTop: 14, cursor: 'pointer' }}>
+              Add to Log
+            </button>
+            <div onClick={scanAnother} role="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, cursor: 'pointer' }}>
+              <span style={{ font: '600 13px var(--font-body)', color: 'var(--av-muted)' }}>Scan another</span>
+            </div>
+          </div>
+        )}
+
+        {!result && !barcodeProduct && (
           <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '0 20px 32px', zIndex: 30 }}>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '700 12px var(--font-body)', color: 'var(--av-ink)', background: '#fff', padding: '9px 15px', borderRadius: 99, boxShadow: '0 2px 10px rgba(0,0,0,.18)' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--av-green)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2v6a2 2 0 0 0 4 0V2" /><path d="M8 8v14" /><path d="M17 2c-1.6 0-2.6 2-2.6 5s1 5 2.6 5 2.6-1.6 2.6-5S18.6 2 17 2Z" /><path d="M17 12v10" /></svg>
-                Food
-              </div>
-              <ModeChip title="Barcode" onClick={() => showToast('Barcode scanning coming soon')}>
-                <path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" />
-              </ModeChip>
+              {mode === 'food' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '700 12px var(--font-body)', color: 'var(--av-ink)', background: '#fff', padding: '9px 15px', borderRadius: 99, boxShadow: '0 2px 10px rgba(0,0,0,.18)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--av-green)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2v6a2 2 0 0 0 4 0V2" /><path d="M8 8v14" /><path d="M17 2c-1.6 0-2.6 2-2.6 5s1 5 2.6 5 2.6-1.6 2.6-5S18.6 2 17 2Z" /><path d="M17 12v10" /></svg>
+                  Food
+                </div>
+              ) : (
+                <ModeChip title="Food" onClick={() => selectMode('food')}>
+                  <path d="M6 2v6a2 2 0 0 0 4 0V2" /><path d="M8 8v14" /><path d="M17 2c-1.6 0-2.6 2-2.6 5s1 5 2.6 5 2.6-1.6 2.6-5S18.6 2 17 2Z" /><path d="M17 12v10" />
+                </ModeChip>
+              )}
+              {mode === 'barcode' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '700 12px var(--font-body)', color: 'var(--av-ink)', background: '#fff', padding: '9px 15px', borderRadius: 99, boxShadow: '0 2px 10px rgba(0,0,0,.18)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--av-green)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" /></svg>
+                  Barcode
+                </div>
+              ) : (
+                <ModeChip title="Barcode" onClick={() => selectMode('barcode')}>
+                  <path d="M4 6v12M7.5 6v12M11 6v12M14.5 6v12M18 6v12M20.5 6v12" />
+                </ModeChip>
+              )}
               <ModeChip title="Label" onClick={() => showToast('Label scanning coming soon')}>
                 <rect x="4" y="3" width="16" height="18" rx="2.5" /><path d="M8 8h8M8 12h8M8 16h5" />
               </ModeChip>
@@ -218,17 +389,44 @@ export default function ScannerPage() {
                 <rect x="9" y="3" width="6" height="12" rx="3" /><path d="M6 11a6 6 0 0 0 12 0M12 17v4" />
               </ModeChip>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px' }}>
-              <div onClick={() => router.push('/manual-entry')} role="button" style={{ width: 44, height: 44, borderRadius: 99, background: 'rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="12" cy="12" r="3.5" /></svg>
+
+            {mode === 'food' ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px' }}>
+                <div onClick={() => router.push('/manual-entry')} role="button" style={{ width: 44, height: 44, borderRadius: 99, background: 'rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="12" cy="12" r="3.5" /></svg>
+                </div>
+                <div onClick={capture} role="button" style={{ width: 72, height: 72, borderRadius: '50%', border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fff' }} />
+                </div>
+                <div style={{ width: 44, height: 44, borderRadius: 99, background: 'rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
+                </div>
               </div>
-              <div onClick={capture} role="button" style={{ width: 72, height: 72, borderRadius: '50%', border: '4px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fff' }} />
+            ) : (
+              <div style={{ background: 'var(--av-surface)', border: '1px solid var(--av-border)', borderRadius: 20, padding: 16 }}>
+                <div style={{ font: '500 12px var(--font-body)', color: 'var(--av-muted)', marginBottom: 10, textAlign: 'center' }}>
+                  {barcodeSupported ? 'Hold a barcode inside the frame — or type the number below.' : 'Type or paste the barcode number below.'}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    onKeyDown={(e) => e.key === 'Enter' && submitManualCode()}
+                    placeholder="Barcode number"
+                    inputMode="numeric"
+                    style={{ flex: 1, background: 'var(--av-surface-2)', border: '1px solid var(--av-border)', borderRadius: 12, padding: '12px 14px', font: '600 14px var(--font-body)', color: 'var(--av-ink)', outline: 'none' }}
+                  />
+                  <button
+                    onClick={submitManualCode}
+                    disabled={barcodeLoading}
+                    style={{ padding: '0 18px', borderRadius: 12, background: 'var(--av-green)', border: 'none', color: '#fff', font: '700 14px var(--font-display)', cursor: barcodeLoading ? 'default' : 'pointer', opacity: barcodeLoading ? 0.7 : 1 }}
+                  >
+                    {barcodeLoading ? '…' : 'Look up'}
+                  </button>
+                </div>
+                {barcodeError && <div style={{ font: '500 12px var(--font-body)', color: 'var(--av-protein)', marginTop: 10 }}>{barcodeError}</div>}
               </div>
-              <div style={{ width: 44, height: 44, borderRadius: 99, background: 'rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
