@@ -20,7 +20,30 @@ hand-drawn avocado with a brown pit and light-green veined flesh.
 
 ---
 
-## ✅ Prompt A — Recommended: reframe the EXISTING avocado
+## ★ All-black (monochrome) — the selected direction
+
+Everything black — a black-on-black avocado defined only by subtle edge light.
+Upload `public/images/avo-logo.png` to Nano Banana, then use:
+
+> Turn this avocado illustration into a fully monochrome all-black app icon. Recolor the
+> entire avocado to black — remove all green and brown. Make it a sleek black-on-black
+> design: a matte black avocado half with a slightly glossy black pit, its shape and the
+> pit readable only through subtle dark-gray edge highlights, a soft rim light along the
+> top-left edge, and a faint inner shadow. Keep the leaf-vein pattern as a barely-visible
+> darker texture on black. Background is pure black `#000000`, kept a hair darker than the
+> avocado (avocado around `#0e0e0e`) so the silhouette separates from it. Center the
+> avocado at about 70% fill with even padding. Perfectly square 1:1, full-bleed, no
+> rounded corners, 1024×1024, crisp edges, no text, no wordmark, premium minimalist
+> stealth look.
+
+**Readability note:** true black-on-black is hard to see at 32px. If it disappears in the
+browser tab, add: *"increase the rim light and edge contrast so the avocado is clearly
+visible as a black silhouette against the background."* An all-black icon pairs naturally
+with the app's dark theme (`--av-bg: #12160f`, `--av-nav-bg: #0c0f0a`).
+
+---
+
+## ✅ Prompt A — Alternative: reframe the EXISTING avocado (green on brand gradient)
 
 Upload `public/images/avo-logo.png` to Nano Banana, then use:
 
